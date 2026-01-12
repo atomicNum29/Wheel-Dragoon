@@ -78,8 +78,9 @@ void loop()
         digitalWrite(right_dir_control_pin, LOW);
     }
 
-    left_speed = map(left_speed, 1500, 2000, 0, 255);
-    right_speed = map(right_speed, 1500, 2000, 0, 255);
+    left_speed = map(left_speed, 1500, 2000, 0, 100);
+    right_speed = map(right_speed, 1500, 2000, 0, 100);
+
     lefts.setWiper(left_speed);
     rights.setWiper(right_speed);
 }
@@ -94,6 +95,8 @@ void left_decodePWM()
     if ((prevTime != 0) && !digitalRead(left_speed_controller_pin))
     {
         unsigned long tmp = micros() - prevTime;
+        if (tmp > 2000)
+            return;
         sum += tmp - dataA[idx];
         dataA[idx] = tmp;
         idx = (idx + 1) % 10;
@@ -116,6 +119,8 @@ void right_decodePWM()
     if ((prevTime != 0) && !digitalRead(right_speed_controller_pin))
     {
         unsigned long tmp = micros() - prevTime;
+        if (tmp > 2000)
+            return;
         sum += tmp - dataA[idx];
         dataA[idx] = tmp;
         idx = (idx + 1) % 10;
