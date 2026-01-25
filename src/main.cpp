@@ -2,66 +2,63 @@
 #include <SPI.h>
 #include "MCP41100.hpp"
 
-const int w_speed_controller_pin = 5;
-const int v_speed_controller_pin = 6;
-const int brake_controller_pin = 7;
-
-const int left_speed_control_pin = 9;
-const int right_speed_control_pin = 10;
-
-const int left_dir_control_pin = 12;
-const int left_brake_control_pin = 13;
-const int right_dir_control_pin = 14;
-const int right_brake_control_pin = 15;
-
-const double W = 0.42; // m
-const double R = 0.14; // m
-
-MCP41100 lefts(left_speed_control_pin);
-MCP41100 rights(right_speed_control_pin);
+// remote control signal pins
+const int w_speed_controller_pin = 0;
+const int v_speed_controller_pin = 1;
 
 volatile unsigned int v_pulseWidth = 0;
 volatile unsigned int w_pulseWidth = 0;
-volatile unsigned int isbraked = true;
 
 void v_decodePWM();
 void w_decodePWM();
-void brake_decodePWM();
+
+// motor speed control pins
+const int lf_speed_control_pin = 3;
+const int lr_speed_control_pin = 4;
+const int rr_speed_control_pin = 5;
+const int rf_speed_control_pin = 6;
+
+// motor control feedback pins
+const int lf_wheel_pulse_pin = 7;
+const int lr_wheel_pulse_pin = 8;
+const int rr_wheel_pulse_pin = 9;
+const int rf_wheel_pulse_pin = 10;
+// volatile unsigned int lf_wheel_pulse_count = 0;
+// volatile unsigned int lr_wheel_pulse_count = 0;
+// volatile unsigned int rr_wheel_pulse_count = 0;
+// volatile unsigned int rf_wheel_pulse_count = 0;
+
+// motor direction control pins
+const int left_dir_control_pin = 14;
+const int right_dir_control_pin = 15;
+
+// car width and wheel radius
+const double W = 0.42; // m
+const double R = 0.14; // m
+
+MCP41100 lf_motor(lf_speed_control_pin);
+MCP41100 lr_motor(lr_speed_control_pin);
+MCP41100 rf_motor(rf_speed_control_pin);
+MCP41100 rr_motor(rr_speed_control_pin);
 
 void setup()
 {
     Serial.begin(115200);
 
-    lefts.begin();
-    rights.begin();
+    lf_motor.begin();
+    lr_motor.begin();
+    rf_motor.begin();
+    rr_motor.begin();
 
     attachInterrupt(digitalPinToInterrupt(v_speed_controller_pin), v_decodePWM, CHANGE);
     attachInterrupt(digitalPinToInterrupt(w_speed_controller_pin), w_decodePWM, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(brake_controller_pin), brake_decodePWM, CHANGE);
 
     pinMode(left_dir_control_pin, OUTPUT);
-    pinMode(left_brake_control_pin, OUTPUT);
     pinMode(right_dir_control_pin, OUTPUT);
-    pinMode(right_brake_control_pin, OUTPUT);
-
-    digitalWrite(left_brake_control_pin, HIGH);
-    digitalWrite(right_brake_control_pin, HIGH);
-    digitalWrite(left_dir_control_pin, LOW);
-    digitalWrite(right_dir_control_pin, HIGH);
 }
 
 void loop()
 {
-    if (isbraked)
-    {
-        digitalWrite(left_brake_control_pin, HIGH);
-        digitalWrite(right_brake_control_pin, HIGH);
-    }
-    else
-    {
-        digitalWrite(left_brake_control_pin, LOW);
-        digitalWrite(right_brake_control_pin, LOW);
-    }
 
     double v_velocity = v_pulseWidth;
     double w_velocity = w_pulseWidth;
@@ -115,8 +112,10 @@ void loop()
         digitalWrite(right_dir_control_pin, LOW);
     }
 
-    lefts.setWiper(left_control_signal);
-    rights.setWiper(right_control_signal);
+    lf_motor.setWiper(left_control_signal);
+    lr_motor.setWiper(left_control_signal);
+    rf_motor.setWiper(right_control_signal);
+    rr_motor.setWiper(right_control_signal);
 }
 
 void v_decodePWM()
@@ -160,26 +159,6 @@ void w_decodePWM()
         idx = (idx + 1) % 10;
         w_pulseWidth = sum / 10;
         prevTime = 0;
-    }
-    else
-    {
-        prevTime = micros();
-    }
-}
-
-void brake_decodePWM()
-{
-    static unsigned long prevTime = 0;
-    static volatile unsigned int pulseWidth = 0;
-
-    if ((prevTime != 0) && !digitalRead(brake_controller_pin))
-    {
-        pulseWidth = micros() - prevTime;
-
-        if (pulseWidth > 1700)
-            isbraked = true;
-        else
-            isbraked = false;
     }
     else
     {
