@@ -18,7 +18,7 @@ const int lr_speed_control_pin = 4;
 const int rr_speed_control_pin = 5;
 const int rf_speed_control_pin = 6;
 
-// motor control feedback pins
+// motor control feedback pins, 60 PPR encoders
 const int lf_wheel_pulse_pin = 7;
 const int lr_wheel_pulse_pin = 8;
 const int rr_wheel_pulse_pin = 9;
