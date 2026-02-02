@@ -21,6 +21,10 @@ const int rf_speed_control_pin = 6;
 volatile unsigned int led_state = 0;
 
 // motor control feedback pins, 60 PPR encoders
+#define WHEEL_PULSE_PER_REVOLUTION 60
+#define WHEEL_PLUSE_COUNT_INTERVAL_MS 10
+#define WHEEL_PLUSE_COUNT_SAMPLING_NUM (1000 / WHEEL_PLUSE_COUNT_INTERVAL_MS)
+
 const int lf_wheel_pulse_pin = 9;
 const int lr_wheel_pulse_pin = 10;
 const int rr_wheel_pulse_pin = 11;
@@ -29,11 +33,20 @@ volatile unsigned int lf_wheel_pulse_count = 0;
 volatile unsigned int lr_wheel_pulse_count = 0;
 volatile unsigned int rr_wheel_pulse_count = 0;
 volatile unsigned int rf_wheel_pulse_count = 0;
+volatile unsigned int lf_wheel_pulse_count_buf[WHEEL_PLUSE_COUNT_SAMPLING_NUM] = {0};
+volatile unsigned int lr_wheel_pulse_count_buf[WHEEL_PLUSE_COUNT_SAMPLING_NUM] = {0};
+volatile unsigned int rr_wheel_pulse_count_buf[WHEEL_PLUSE_COUNT_SAMPLING_NUM] = {0};
+volatile unsigned int rf_wheel_pulse_count_buf[WHEEL_PLUSE_COUNT_SAMPLING_NUM] = {0};
+volatile unsigned int lf_wheel_pulse_count_sec = 0;
+volatile unsigned int lr_wheel_pulse_count_sec = 0;
+volatile unsigned int rr_wheel_pulse_count_sec = 0;
+volatile unsigned int rf_wheel_pulse_count_sec = 0;
+volatile unsigned int wheel_pulse_index = 0;
 void lf_wheel_pulse_ISR();
 void lr_wheel_pulse_ISR();
 void rr_wheel_pulse_ISR();
 void rf_wheel_pulse_ISR();
-void clear_wheel_pulse_counts();
+void wheel_pulse_index_increment();
 
 // motor direction control pins
 const int left_dir_control_pin = 14;
@@ -96,26 +109,22 @@ void loop()
     int left_control_signal = left_velocity * 300;
     int right_control_signal = right_velocity * 300;
 
-    // Serial.print(">v:");
-    // Serial.println(v_velocity);
-    // Serial.print(">w:");
-    // Serial.println(w_velocity);
-    // Serial.print(">left_velocity:");
-    // Serial.println(left_velocity);
-    // Serial.print(">right_velocity:");
-    // Serial.println(right_velocity);
-    // Serial.print(">left_control_signal:");
-    // Serial.println(left_control_signal);
-    // Serial.print(">right_control_signal:");
-    // Serial.println(right_control_signal);
     Serial.print(">lf_pulse:");
-    Serial.println(lf_wheel_pulse_count);
+    Serial.println(lf_wheel_pulse_count_buf[wheel_pulse_index]);
     Serial.print(">lr_pulse:");
-    Serial.println(lr_wheel_pulse_count);
+    Serial.println(lr_wheel_pulse_count_buf[wheel_pulse_index]);
     Serial.print(">rf_pulse:");
-    Serial.println(rf_wheel_pulse_count);
+    Serial.println(rf_wheel_pulse_count_buf[wheel_pulse_index]);
     Serial.print(">rr_pulse:");
-    Serial.println(rr_wheel_pulse_count);
+    Serial.println(rr_wheel_pulse_count_buf[wheel_pulse_index]);
+    Serial.print(">lf_pulse_1sec:");
+    Serial.println(lf_wheel_pulse_count_sec);
+    Serial.print(">lr_pulse_1sec:");
+    Serial.println(lr_wheel_pulse_count_sec);
+    Serial.print(">rr_pulse_1sec:");
+    Serial.println(rr_wheel_pulse_count_sec);
+    Serial.print(">rf_pulse_1sec:");
+    Serial.println(rf_wheel_pulse_count_sec);
     delay(10);
 
     if (left_control_signal < 0)
@@ -143,12 +152,9 @@ void loop()
     analogWrite(lr_speed_control_pin, constrain(left_control_signal, 0, 1023));
     analogWrite(rf_speed_control_pin, constrain(right_control_signal, 0, 1023));
     analogWrite(rr_speed_control_pin, constrain(right_control_signal, 0, 1023));
-    // lf_motor.setWiper(left_control_signal);
-    // lr_motor.setWiper(left_control_signal);
-    // rf_motor.setWiper(right_control_signal);
-    // rr_motor.setWiper(right_control_signal);
 
-    clear_wheel_pulse_counts();
+    // clear_wheel_pulse_counts();
+    wheel_pulse_index_increment();
 }
 
 void v_decodePWM()
@@ -223,15 +229,24 @@ void rf_wheel_pulse_ISR()
     digitalWrite(LED_BUILTIN, led_state ^= 1);
 }
 
-void clear_wheel_pulse_counts()
+void wheel_pulse_index_increment()
 {
-    static unsigned int prev_t = 0;
-    unsigned int curr_t = millis();
-    if (curr_t - prev_t < 100)
+    static unsigned long lastMillis = 0;
+    unsigned long currentMillis = millis();
+    if (currentMillis - lastMillis < WHEEL_PLUSE_COUNT_INTERVAL_MS)
         return;
-    prev_t = curr_t;
+    lastMillis = currentMillis;
+    wheel_pulse_index = (wheel_pulse_index + 1) % WHEEL_PLUSE_COUNT_SAMPLING_NUM;
+    lf_wheel_pulse_count_sec += (lf_wheel_pulse_count - lf_wheel_pulse_count_buf[wheel_pulse_index]);
+    lf_wheel_pulse_count_buf[wheel_pulse_index] = lf_wheel_pulse_count;
     lf_wheel_pulse_count = 0;
+    lr_wheel_pulse_count_sec += (lr_wheel_pulse_count - lr_wheel_pulse_count_buf[wheel_pulse_index]);
+    lr_wheel_pulse_count_buf[wheel_pulse_index] = lr_wheel_pulse_count;
     lr_wheel_pulse_count = 0;
+    rr_wheel_pulse_count_sec += (rr_wheel_pulse_count - rr_wheel_pulse_count_buf[wheel_pulse_index]);
+    rr_wheel_pulse_count_buf[wheel_pulse_index] = rr_wheel_pulse_count;
     rr_wheel_pulse_count = 0;
+    rf_wheel_pulse_count_sec += (rf_wheel_pulse_count - rf_wheel_pulse_count_buf[wheel_pulse_index]);
+    rf_wheel_pulse_count_buf[wheel_pulse_index] = rf_wheel_pulse_count;
     rf_wheel_pulse_count = 0;
 }
