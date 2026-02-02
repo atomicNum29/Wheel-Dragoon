@@ -86,8 +86,10 @@ static inline float pi_update(PIController &pi, float error, float dt_s)
 }
 
 // Tunables (start conservative)
-PIController leftPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
-PIController rightPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
+PIController lfPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
+PIController lrPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
+PIController rrPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
+PIController rfPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
 
 // 10ms control loop
 static constexpr float CTRL_DT_S = (float)WHEEL_DT_MS / 1000.0f;
@@ -334,16 +336,18 @@ void control_tick()
     float left_err = left_ref_abs - left_meas_abs;
     float right_err = right_ref_abs - right_meas_abs;
 
-    float left_u = pi_update(leftPI, left_err, CTRL_DT_S);
-    float right_u = pi_update(rightPI, right_err, CTRL_DT_S);
+    float lf_u = pi_update(lfPI, left_err, CTRL_DT_S);
+    float lr_u = pi_update(lrPI, left_err, CTRL_DT_S);
+    float rr_u = pi_update(rrPI, right_err, CTRL_DT_S);
+    float rf_u = pi_update(rfPI, right_err, CTRL_DT_S);
 
     // Apply direction pins
     digitalWrite(left_dir_control_pin, left_fwd ? HIGH : LOW);
     digitalWrite(right_dir_control_pin, right_fwd ? LOW : HIGH);
 
     // Apply PWM
-    analogWrite(lf_speed_control_pin, (int)left_u);
-    analogWrite(lr_speed_control_pin, (int)left_u);
-    analogWrite(rf_speed_control_pin, (int)right_u);
-    analogWrite(rr_speed_control_pin, (int)right_u);
+    analogWrite(lf_speed_control_pin, (int)lf_u);
+    analogWrite(lr_speed_control_pin, (int)lr_u);
+    analogWrite(rr_speed_control_pin, (int)rr_u);
+    analogWrite(rf_speed_control_pin, (int)rf_u);
 }
