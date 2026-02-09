@@ -185,32 +185,52 @@ void loop()
         right_rpm_ref_cmd = right_rpm_ref;
         interrupts();
 
-        // Debug (optional)
-        Serial.print(">L_rpm_ref:");
-        Serial.println(left_rpm_ref);
-        Serial.print(">R_rpm_ref:");
-        Serial.println(right_rpm_ref);
-        Serial.print(">lf_RPS:");
-        Serial.println((float)lf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-        Serial.print(">lr_RPS:");
-        Serial.println((float)lr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-        Serial.print(">rf_RPS:");
-        Serial.println((float)rf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-        Serial.print(">rr_RPS:");
-        Serial.println((float)rr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-        // Serial.print(">lf_sum_1s:");
-        // Serial.println(lf_sum_1s);
-        // Serial.print(">lr_sum_1s:");
-        // Serial.println(lr_sum_1s);
-        // Serial.print(">rr_sum_1s:");
-        // Serial.println(rr_sum_1s);
-        // Serial.print(">rf_sum_1s:");
-        // Serial.println(rf_sum_1s);
-        delay(10);
+        // // Debug (optional)
+        // Serial.print(">L_rpm_ref:");
+        // Serial.println(left_rpm_ref);
+        // Serial.print(">R_rpm_ref:");
+        // Serial.println(right_rpm_ref);
+        // Serial.print(">lf_RPS:");
+        // Serial.println((float)lf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+        // Serial.print(">lr_RPS:");
+        // Serial.println((float)lr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+        // Serial.print(">rf_RPS:");
+        // Serial.println((float)rf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+        // Serial.print(">rr_RPS:");
+        // Serial.println((float)rr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+        // // Serial.print(">lf_sum_1s:");
+        // // Serial.println(lf_sum_1s);
+        // // Serial.print(">lr_sum_1s:");
+        // // Serial.println(lr_sum_1s);
+        // // Serial.print(">rr_sum_1s:");
+        // // Serial.println(rr_sum_1s);
+        // // Serial.print(">rf_sum_1s:");
+        // // Serial.println(rf_sum_1s);
+        // delay(10);
     }
     else
     {
         // Auto mode: (not implemented) receive v/w from UART
+        if (Serial.available() >= 8)
+        {
+            // Simple protocol: 4 bytes float v, 4 bytes float w
+            float v_cmd;
+            float w_cmd;
+            Serial.readBytes((char *)&v_cmd, 4);
+            Serial.readBytes((char *)&w_cmd, 4);
+
+            double left_velocity = v_cmd - w_cmd * W / 2;
+            double right_velocity = v_cmd + w_cmd * W / 2;
+
+            // --- Target RPM from v/w command ---
+            float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
+            float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
+
+            noInterrupts();
+            left_rpm_ref_cmd = left_rpm_ref;
+            right_rpm_ref_cmd = right_rpm_ref;
+            interrupts();
+        }
     }
 }
 
