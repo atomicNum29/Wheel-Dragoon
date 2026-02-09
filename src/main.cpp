@@ -7,12 +7,15 @@ const double R = 0.14; // m
 // remote control signal pins
 const int w_speed_controller_pin = 0;
 const int v_speed_controller_pin = 1;
+const int mode_control_pin = 2;
 
 volatile unsigned int v_pulseWidth = 0;
 volatile unsigned int w_pulseWidth = 0;
+volatile unsigned int mode_state = 0; // 0: stop, 1: manual, 2: auto(UART)
 
 void v_decodePWM();
 void w_decodePWM();
+void mode_decodePWM();
 
 // motor speed control pins
 const int lf_speed_control_pin = 3;
@@ -118,6 +121,7 @@ void setup()
     pinMode(w_speed_controller_pin, INPUT);
     attachInterrupt(digitalPinToInterrupt(v_speed_controller_pin), v_decodePWM, CHANGE);
     attachInterrupt(digitalPinToInterrupt(w_speed_controller_pin), w_decodePWM, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(mode_control_pin), mode_decodePWM, CHANGE);
 
     pinMode(lf_speed_control_pin, OUTPUT);
     pinMode(lr_speed_control_pin, OUTPUT);
@@ -147,53 +151,67 @@ void setup()
 
 void loop()
 {
+    if (mode_state == 0)
+    {
+        // Stop mode
+        noInterrupts();
+        left_rpm_ref_cmd = 0.0f;
+        right_rpm_ref_cmd = 0.0f;
+        interrupts();
+    }
+    else if (mode_state == 1)
+    {
+        double v_velocity = v_pulseWidth;
+        double w_velocity = w_pulseWidth;
 
-    double v_velocity = v_pulseWidth;
-    double w_velocity = w_pulseWidth;
+        v_velocity -= 1500; // 양수면 전진
+        w_velocity -= 1500; // 양수면 좌선회 (우측 바퀴가 +)
 
-    v_velocity -= 1500; // 양수면 전진
-    w_velocity -= 1500; // 양수면 좌선회 (우측 바퀴가 +)
+        v_velocity /= 250; // -500~500 범위를 -2~2 범위로 줄임. (m/s)
+        w_velocity /= 100; // -500~500 범위를 -5~5 범위로 줄임. (rad/s)
 
-    v_velocity /= 250; // -500~500 범위를 -2~2 범위로 줄임. (m/s)
-    w_velocity /= 100; // -500~500 범위를 -5~5 범위로 줄임. (rad/s)
+        double left_velocity = 0;
+        double right_velocity = 0;
 
-    double left_velocity = 0;
-    double right_velocity = 0;
+        left_velocity = v_velocity - w_velocity * W / 2;
+        right_velocity = v_velocity + w_velocity * W / 2;
 
-    left_velocity = v_velocity - w_velocity * W / 2;
-    right_velocity = v_velocity + w_velocity * W / 2;
+        // --- Target RPM from v/w command ---
+        float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
+        float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
 
-    // --- Target RPM from v/w command ---
-    float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
-    float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
+        noInterrupts();
+        left_rpm_ref_cmd = left_rpm_ref;
+        right_rpm_ref_cmd = right_rpm_ref;
+        interrupts();
 
-    noInterrupts();
-    left_rpm_ref_cmd = left_rpm_ref;
-    right_rpm_ref_cmd = right_rpm_ref;
-    interrupts();
-
-    // Debug (optional)
-    Serial.print(">L_rpm_ref:");
-    Serial.println(left_rpm_ref);
-    Serial.print(">R_rpm_ref:");
-    Serial.println(right_rpm_ref);
-    Serial.print(">lf_RPS:");
-    Serial.println((float)lf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-    Serial.print(">lr_RPS:");
-    Serial.println((float)lr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-    Serial.print(">rf_RPS:");
-    Serial.println((float)rf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-    Serial.print(">rr_RPS:");
-    Serial.println((float)rr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-    // Serial.print(">lf_sum_1s:");
-    // Serial.println(lf_sum_1s);
-    // Serial.print(">lr_sum_1s:");
-    // Serial.println(lr_sum_1s);
-    // Serial.print(">rr_sum_1s:");
-    // Serial.println(rr_sum_1s);
-    // Serial.print(">rf_sum_1s:");
-    // Serial.println(rf_sum_1s);
-    delay(10);
+        // Debug (optional)
+        Serial.print(">L_rpm_ref:");
+        Serial.println(left_rpm_ref);
+        Serial.print(">R_rpm_ref:");
+        Serial.println(right_rpm_ref);
+        Serial.print(">lf_RPS:");
+        Serial.println((float)lf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+        Serial.print(">lr_RPS:");
+        Serial.println((float)lr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+        Serial.print(">rf_RPS:");
+        Serial.println((float)rf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+        Serial.print(">rr_RPS:");
+        Serial.println((float)rr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+        // Serial.print(">lf_sum_1s:");
+        // Serial.println(lf_sum_1s);
+        // Serial.print(">lr_sum_1s:");
+        // Serial.println(lr_sum_1s);
+        // Serial.print(">rr_sum_1s:");
+        // Serial.println(rr_sum_1s);
+        // Serial.print(">rf_sum_1s:");
+        // Serial.println(rf_sum_1s);
+        delay(10);
+    }
+    else
+    {
+        // Auto mode: (not implemented) receive v/w from UART
+    }
 }
 
 void v_decodePWM()
@@ -236,6 +254,35 @@ void w_decodePWM()
         dataA[idx] = tmp;
         idx = (idx + 1) % 10;
         w_pulseWidth = sum / 10;
+        prevTime = 0;
+    }
+    else
+    {
+        prevTime = micros();
+    }
+}
+
+void mode_decodePWM()
+{
+    static unsigned long prevTime = 0;
+    static unsigned long dataA[10] = {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
+    static unsigned int idx = 0;
+    static unsigned long sum = 15000;
+
+    if ((prevTime != 0) && !digitalRead(mode_control_pin))
+    {
+        unsigned long tmp = micros() - prevTime;
+        if (tmp > 2000)
+            return;
+        sum += tmp - dataA[idx];
+        dataA[idx] = tmp;
+        idx = (idx + 1) % 10;
+        if (sum / 10 < 1300)
+            mode_state = 0; // stop
+        else if (sum / 10 < 1700)
+            mode_state = 1; // manual
+        else
+            mode_state = 2; // auto(UART)
         prevTime = 0;
     }
     else
