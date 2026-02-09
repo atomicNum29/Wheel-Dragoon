@@ -86,10 +86,10 @@ static inline float pi_update(PIController &pi, float error, float dt_s)
 }
 
 // Tunables (start conservative)
-PIController lfPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
-PIController lrPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
-PIController rrPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
-PIController rfPI = {.kp = 8.0f, .ki = 2.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
+PIController lfPI = {.kp = 8.0f, .ki = 0.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
+PIController lrPI = {.kp = 8.0f, .ki = 0.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
+PIController rrPI = {.kp = 8.0f, .ki = 0.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
+PIController rfPI = {.kp = 8.0f, .ki = 0.0f, .integral = 0.0f, .out_min = 0.0f, .out_max = 1023.0f, .i_min = -300.0f, .i_max = 300.0f};
 
 // 10ms control loop
 static constexpr float CTRL_DT_S = (float)WHEEL_DT_MS / 1000.0f;
@@ -172,16 +172,28 @@ void loop()
     right_rpm_ref_cmd = right_rpm_ref;
     interrupts();
 
-    // // Debug (optional)
-    // Serial.print(">L_rpm_ref:");
-    // Serial.println(left_rpm_ref);
-    // Serial.print(">L_rpm_meas:");
-    // Serial.println(left_rpm_meas);
-    // Serial.print(">R_rpm_ref:");
-    // Serial.println(right_rpm_ref);
-    // Serial.print(">R_rpm_meas:");
-    // Serial.println(right_rpm_meas);
-    // delay(10);
+    // Debug (optional)
+    Serial.print(">L_rpm_ref:");
+    Serial.println(left_rpm_ref);
+    Serial.print(">R_rpm_ref:");
+    Serial.println(right_rpm_ref);
+    Serial.print(">lf_RPS:");
+    Serial.println((float)lf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+    Serial.print(">lr_RPS:");
+    Serial.println((float)lr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+    Serial.print(">rf_RPS:");
+    Serial.println((float)rf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+    Serial.print(">rr_RPS:");
+    Serial.println((float)rr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
+    // Serial.print(">lf_sum_1s:");
+    // Serial.println(lf_sum_1s);
+    // Serial.print(">lr_sum_1s:");
+    // Serial.println(lr_sum_1s);
+    // Serial.print(">rr_sum_1s:");
+    // Serial.println(rr_sum_1s);
+    // Serial.print(">rf_sum_1s:");
+    // Serial.println(rf_sum_1s);
+    delay(10);
 }
 
 void v_decodePWM()
@@ -235,25 +247,21 @@ void w_decodePWM()
 void lf_wheel_pulse_ISR()
 {
     lf_bin_count++;
-    digitalWrite(LED_BUILTIN, led_state ^= 1);
 }
 
 void lr_wheel_pulse_ISR()
 {
     lr_bin_count++;
-    digitalWrite(LED_BUILTIN, led_state ^= 1);
 }
 
 void rr_wheel_pulse_ISR()
 {
     rr_bin_count++;
-    digitalWrite(LED_BUILTIN, led_state ^= 1);
 }
 
 void rf_wheel_pulse_ISR()
 {
     rf_bin_count++;
-    digitalWrite(LED_BUILTIN, led_state ^= 1);
 }
 
 void wheel_bins_update()
@@ -336,10 +344,14 @@ void control_tick()
     float left_err = left_ref_abs - left_meas_abs;
     float right_err = right_ref_abs - right_meas_abs;
 
-    float lf_u = pi_update(lfPI, left_err, CTRL_DT_S);
-    float lr_u = pi_update(lrPI, left_err, CTRL_DT_S);
-    float rr_u = pi_update(rrPI, right_err, CTRL_DT_S);
-    float rf_u = pi_update(rfPI, right_err, CTRL_DT_S);
+    // float lf_u = pi_update(lfPI, left_err, CTRL_DT_S);
+    // float lr_u = pi_update(lrPI, left_err, CTRL_DT_S);
+    // float rr_u = pi_update(rrPI, right_err, CTRL_DT_S);
+    // float rf_u = pi_update(rfPI, right_err, CTRL_DT_S);
+    int lf_u = constrain(left_ref_abs * 5, 0, 1023); // Open-loop for initial testing
+    int lr_u = constrain(left_ref_abs * 5, 0, 1023);
+    int rr_u = constrain(right_ref_abs * 5, 0, 1023);
+    int rf_u = constrain(right_ref_abs * 5, 0, 1023);
 
     // Apply direction pins
     digitalWrite(left_dir_control_pin, left_fwd ? HIGH : LOW);
