@@ -141,15 +141,48 @@ void loop()
     }
     else
     {
-        // Auto mode: (not implemented) receive v/w from UART
-        if (Serial.available() >= 8)
-        {
-            // Simple protocol: 4 bytes float v, 4 bytes float w
-            float v_cmd;
-            float w_cmd;
-            Serial.readBytes((char *)&v_cmd, 4);
-            Serial.readBytes((char *)&w_cmd, 4);
+        // Auto mode: receive v/w from UART
+        static unsigned int message_complete = 0;
+        static unsigned char rx_buffer[32];
+        static unsigned int rx_index = 0;
+        static float v_cmd = 0.0f;
+        static float w_cmd = 0.0f;
 
+        if (Serial.available() > 0)
+        {
+            // Packet: 0xAA 0x55 | float v (4) | float w (4) | 0x55 0xAA
+            unsigned char byte_in = Serial.read();
+            rx_buffer[rx_index++] = byte_in;
+            if (rx_index >= 2)
+            {
+                // Check header
+                if ((rx_buffer[0] != 0xAA) || (rx_buffer[1] != 0x55))
+                {
+                    // Shift buffer left by one
+                    for (unsigned int i = 1; i < rx_index; i++)
+                    {
+                        rx_buffer[i - 1] = rx_buffer[i];
+                    }
+                    rx_index--;
+                }
+            }
+            if (rx_index >= 12)
+            {
+                // Check footer
+                if ((rx_buffer[10] == 0x55) && (rx_buffer[11] == 0xAA))
+                {
+                    // Extract v/w floats
+                    memcpy(&v_cmd, &rx_buffer[2], sizeof(float));
+                    memcpy(&w_cmd, &rx_buffer[6], sizeof(float));
+                    message_complete = 1;
+                    Serial.print(">ACK");
+                }
+                // Reset for next message
+                rx_index = 0;
+            }
+        }
+        if (message_complete == 1)
+        {
             double left_velocity = v_cmd - w_cmd * W / 2;
             double right_velocity = v_cmd + w_cmd * W / 2;
 
@@ -161,6 +194,9 @@ void loop()
             left_rpm_ref_cmd = left_rpm_ref;
             right_rpm_ref_cmd = right_rpm_ref;
             interrupts();
+
+            message_complete = 0;
+            rx_index = 0;
         }
     }
 }
