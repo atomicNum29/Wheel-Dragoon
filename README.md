@@ -25,7 +25,6 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 현재 펌웨�
 - Serial 명령 타임아웃 기반 disable/zero 처리
 - kick-start, ramp limiting, minimum PWM, per-wheel gain
 - motor watchdog 및 error bitfield/status state 관리
-- Python 디버그 스크립트(`src/control.py`)의 ROS command packet 대응
 
 ## 하드웨어 기준
 
@@ -110,26 +109,6 @@ w = w_cmd / 1000.0 * 5.0     # rad/s
 - skid-steer 모터 믹싱 수행: 구현됨
 - kick-start, ramp limiting, minimum PWM, per-wheel gain, motor watchdog 동작 수행: 아직 미구현
 - 저수준 타임아웃 및 안전 동작 강제: Stop 모드의 RPM 0 설정만 구현됨
-
-## 이전 UART 디버그 패킷
-
-이전에 사용하던 12바이트 float 기반 테스트 패킷입니다. 현재 `src/main.cpp`의 Auto 모드는 이 형식을 더 이상 파싱하지 않고, ROS command packet 형식을 사용합니다.
-
-```text
-0xAA 0x55 | float32 little-endian v | float32 little-endian w | 0x55 0xAA
-```
-
-- `v`: 선속도 명령, 단위 `m/s`
-- `w`: 각속도 명령, 단위 `rad/s`
-- Baud rate: `115200`
-- 현재 Auto 모드에서는 이 패킷을 인식하지 않습니다.
-- checksum, length, packet type, sequence counter는 사용하지 않습니다.
-
-Python 디버그 스크립트는 다음 방식으로 이 패킷을 구성합니다.
-
-```python
-payload = b"\xaa\x55" + struct.pack("<ff", v, w) + b"\x55\xaa"
-```
 
 ## ROS Packet Protocol
 
@@ -224,7 +203,7 @@ framework = arduino
 
 ## Python 제어 스크립트
 
-`src/control.py`는 이전 float 기반 테스트 패킷을 전송하는 보조 스크립트입니다. 현재 펌웨어의 Auto 모드는 ROS 연동용 정규화 `int16` command packet을 사용하므로, 이 스크립트는 현재 Auto 모드 검증용으로는 맞지 않습니다.
+`src/control.py`는 ROS command packet 형식으로 단일 명령을 전송하는 보조 스크립트입니다. `seq`는 기본값 `0`이며, `--seq`로 지정할 수 있습니다.
 
 의존성은 `pyproject.toml`에 정의되어 있습니다.
 
@@ -235,22 +214,35 @@ uv sync
 자동 포트 감지로 명령을 보내려면:
 
 ```bash
-uv run python src/control.py 0.5 0.0
+uv run python src/control.py 250 0
 ```
 
 포트를 직접 지정하려면:
 
 ```bash
-uv run python src/control.py 0.5 0.0 --port /dev/ttyACM0
+uv run python src/control.py 250 0 --port /dev/ttyACM0
+```
+
+sequence counter를 지정하려면:
+
+```bash
+uv run python src/control.py 250 0 --seq 12
+```
+
+disable 또는 emergency stop flag를 보내려면:
+
+```bash
+uv run python src/control.py 0 0 --disable
+uv run python src/control.py 0 0 --estop
 ```
 
 예시:
 
 | 명령 | 의미 |
 | --- | --- |
-| `uv run python src/control.py 0.5 0.0` | float 기반 전진 테스트 |
-| `uv run python src/control.py 0.0 1.0` | float 기반 제자리 회전 테스트 |
-| `uv run python src/control.py 0.0 0.0` | float 기반 정지 테스트 |
+| `uv run python src/control.py 250 0` | 정규화 명령 기준 약 `0.5 m/s` 전진 |
+| `uv run python src/control.py 0 200` | 정규화 명령 기준 약 `1.0 rad/s` 제자리 회전 |
+| `uv run python src/control.py 0 0` | enable 상태의 정지 명령 |
 
 ## 프로젝트 구조
 

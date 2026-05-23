@@ -5,10 +5,48 @@ from typing import Optional
 import serial
 import struct
 
-# /Users/baksiu/Documents/PlatformIO/Projects/car_demo/src/control.py
-# GitHub Copilot
-
 import serial.tools.list_ports
+
+HEADER = b"\xaa\x55"
+COMMAND_LENGTH = 7
+COMMAND_TYPE = 0x01
+FLAG_ENABLE = 0x01
+FLAG_ESTOP = 0x02
+
+
+def xor_checksum(data: bytes) -> int:
+    checksum = 0
+    for byte in data:
+        checksum ^= byte
+    return checksum
+
+
+def build_command_packet(
+    v_cmd: int,
+    w_cmd: int,
+    seq: int = 0,
+    enable: bool = True,
+    emergency_stop: bool = False,
+) -> bytes:
+    flags = 0
+    if enable:
+        flags |= FLAG_ENABLE
+    if emergency_stop:
+        flags |= FLAG_ESTOP
+
+    packet_without_checksum = (
+        HEADER
+        + struct.pack(
+            "<BBBhhB", # little-endian: unsigned char 3 bytes, then 2x int16, then unsigned char 1 byte
+            COMMAND_LENGTH,
+            COMMAND_TYPE,
+            seq & 0xFF,
+            int(v_cmd),
+            int(w_cmd),
+            flags,
+        )
+    )
+    return packet_without_checksum + bytes([xor_checksum(packet_without_checksum)])
 
 
 def find_teensy_port() -> Optional[str]:
@@ -35,14 +73,17 @@ def find_teensy_port() -> Optional[str]:
 
 
 def send_command(
-    v_value: float,
-    w_value: float,
+    v_cmd: int,
+    w_cmd: int,
+    seq: int = 0,
+    enable: bool = True,
+    emergency_stop: bool = False,
     port: Optional[str] = None,
     baud: int = 115200,
     timeout: float = 1.0,
 ) -> str:
     """
-    Open serial port to Teensy and send a command value (as a line).
+    Open serial port to Teensy and send one ROS-MCU command packet.
     Returns the first line of response (empty string if none).
     """
     if port is None:
@@ -50,9 +91,13 @@ def send_command(
         if port is None:
             raise RuntimeError("Teensy port not found. Provide port explicitly.")
     with serial.Serial(port, baud, timeout=timeout) as ser:
-        v = float(v_value)
-        w = float(w_value)
-        payload = b"\xaa\x55" + struct.pack("<ff", v, w) + b"\x55\xaa"
+        payload = build_command_packet(
+            v_cmd=v_cmd,
+            w_cmd=w_cmd,
+            seq=seq,
+            enable=enable,
+            emergency_stop=emergency_stop,
+        )
         ser.write(payload)
         # give device a short moment to respond
         time.sleep(0.05)
@@ -65,10 +110,34 @@ def send_command(
 
 def main(argv):
     parser = argparse.ArgumentParser(
-        description="Send command value to Teensy over USB (UART)."
+        description="Send one ROS-MCU command packet to Teensy over USB serial."
     )
-    parser.add_argument("v_value", type=float, help="Command value to send (float).")
-    parser.add_argument("w_value", type=float, help="Command value to send (float).")
+    parser.add_argument(
+        "v_cmd",
+        type=int,
+        help="Normalized linear command, typically -1000 to +1000.",
+    )
+    parser.add_argument(
+        "w_cmd",
+        type=int,
+        help="Normalized angular command, typically -1000 to +1000.",
+    )
+    parser.add_argument(
+        "--seq",
+        type=int,
+        default=0,
+        help="Sequence counter byte, default 0.",
+    )
+    parser.add_argument(
+        "--disable",
+        action="store_true",
+        help="Clear the enable flag.",
+    )
+    parser.add_argument(
+        "--estop",
+        action="store_true",
+        help="Set the emergency_stop flag.",
+    )
     parser.add_argument("--port", "-p", help="Serial port (auto-detected if omitted).")
     parser.add_argument(
         "--baud", "-b", type=int, default=115200, help="Baud rate (default 115200)."
@@ -76,8 +145,29 @@ def main(argv):
     args = parser.parse_args(argv)
 
     try:
-        print(f"Sending v={args.v_value}, w={args.w_value} to port={args.port or 'auto-detected'} at {args.baud} baud...")
-        resp = send_command(args.v_value, args.w_value, port=args.port, baud=args.baud)
+        payload = build_command_packet(
+            v_cmd=args.v_cmd,
+            w_cmd=args.w_cmd,
+            seq=args.seq,
+            enable=not args.disable,
+            emergency_stop=args.estop,
+        )
+        print(
+            "Sending "
+            f"v_cmd={args.v_cmd}, w_cmd={args.w_cmd}, seq={args.seq & 0xFF}, "
+            f"enable={not args.disable}, emergency_stop={args.estop}, "
+            f"packet={payload.hex(' ')} "
+            f"to port={args.port or 'auto-detected'} at {args.baud} baud..."
+        )
+        resp = send_command(
+            args.v_cmd,
+            args.w_cmd,
+            seq=args.seq,
+            enable=not args.disable,
+            emergency_stop=args.estop,
+            port=args.port,
+            baud=args.baud,
+        )
         if resp:
             print(resp)
     except Exception as e:
