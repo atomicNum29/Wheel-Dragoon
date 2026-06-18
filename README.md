@@ -66,9 +66,9 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 현재 펌웨�
 
 | PWM 범위 | 모드 | 동작 |
 | --- | --- | --- |
-| `< 1300 us` | Stop | 좌/우 목표 RPM을 `0`으로 설정 |
-| `1300-1699 us` | Manual | RC `v`, `w` 입력으로 주행 |
-| `>= 1700 us` | Auto | ROS-UART command packet으로 `v_cmd`, `w_cmd` 수신 |
+| `< 1300 us` | Stop (`DRIVE_MODE_STOP`) | 좌/우 목표 RPM을 `0`으로 설정 |
+| `1300-1699 us` | Manual (`DRIVE_MODE_MANUAL`) | RC `v`, `w` 입력으로 주행 |
+| `>= 1700 us` | Auto (`DRIVE_MODE_AUTO`) | ROS-UART command packet으로 `v_cmd`, `w_cmd` 수신 |
 
 Manual 모드에서 RC PWM은 다음 범위로 변환됩니다.
 

@@ -51,6 +51,13 @@ typedef enum
     MOTOR_STATE_CALIBRATION = 6
 } MotorState;
 
+typedef enum
+{
+    DRIVE_MODE_STOP = 0,
+    DRIVE_MODE_MANUAL = 1,
+    DRIVE_MODE_AUTO = 2
+} DriveMode;
+
 #define MOTOR_ERR_CHECKSUM_ERROR (1u << 0)
 #define MOTOR_ERR_COMMAND_TIMEOUT (1u << 1)
 #define MOTOR_ERR_DRIVER_FAULT (1u << 2)
@@ -70,7 +77,7 @@ const int mode_control_pin = 2;
 
 volatile unsigned int v_pulseWidth = 0;
 volatile unsigned int w_pulseWidth = 0;
-volatile unsigned int mode_state = 0; // 0: stop, 1: manual, 2: auto(UART)
+volatile DriveMode mode_state = DRIVE_MODE_STOP;
 
 void v_decodePWM();
 void w_decodePWM();
@@ -405,7 +412,7 @@ void loop()
 {
     unsigned long now = millis();
 
-    if (mode_state == 2)
+    if (mode_state == DRIVE_MODE_AUTO)
     {
         command_timeout = (last_valid_command_ms == 0) || (now - last_valid_command_ms > COMMAND_TIMEOUT_MS);
         if (command_timeout)
@@ -415,10 +422,10 @@ void loop()
     {
         command_timeout = false;
         estop_active = false;
-        motor_enabled = (mode_state == 1);
+        motor_enabled = (mode_state == DRIVE_MODE_MANUAL);
     }
 
-    if (mode_state == 0)
+    if (mode_state == DRIVE_MODE_STOP)
     {
         // Stop mode
         noInterrupts();
@@ -426,7 +433,7 @@ void loop()
         right_rpm_ref_cmd = 0.0f;
         interrupts();
     }
-    else if (mode_state == 1)
+    else if (mode_state == DRIVE_MODE_MANUAL)
     {
         double v_velocity = v_pulseWidth;
         double w_velocity = w_pulseWidth;
@@ -475,7 +482,7 @@ void loop()
         // // Serial.println(rf_sum_1s);
         // delay(10);
     }
-    else
+    else if (mode_state == DRIVE_MODE_AUTO)
     {
         // Auto mode: receive normalized ROS command packet from UART
         static ByteQueue rx_queue = {{0}, 0, 0, 0};
@@ -588,11 +595,11 @@ void mode_decodePWM()
         dataA[idx] = tmp;
         idx = (idx + 1) % 10;
         if (sum / 10 < 1300)
-            mode_state = 0; // stop
+            mode_state = DRIVE_MODE_STOP;
         else if (sum / 10 < 1700)
-            mode_state = 1; // manual
+            mode_state = DRIVE_MODE_MANUAL;
         else
-            mode_state = 2; // auto(UART)
+            mode_state = DRIVE_MODE_AUTO;
         prevTime = 0;
     }
     else
