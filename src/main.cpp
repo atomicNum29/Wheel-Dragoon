@@ -10,12 +10,20 @@ const uint8_t PKT_HEADER_1 = 0x55;
 const uint8_t CMD_PACKET_LENGTH = 7;
 const uint8_t CMD_PACKET_TYPE = 0x01;
 const uint8_t CMD_PACKET_SIZE = 11;
+const uint8_t STATUS_PACKET_LENGTH = 7;
+const uint8_t STATUS_PACKET_TYPE = 0x81;
+const uint8_t STATUS_PACKET_SIZE = 11;
 const uint8_t RX_QUEUE_SIZE = 64;
+const int16_t CMD_MIN = -1000;
+const int16_t CMD_MAX = 1000;
 const float CMD_NORMALIZATION_SCALE = 1000.0f;
 const float MAX_LINEAR_MPS = 2.0f;
 const float MAX_ANGULAR_RADPS = 5.0f;
 const uint8_t CMD_FLAG_ENABLE = 0x01;
 const uint8_t CMD_FLAG_ESTOP = 0x02;
+const unsigned long COMMAND_TIMEOUT_MS = 500;
+const unsigned long STATUS_PERIOD_MS = 50;       // 20 Hz
+const uint16_t BATTERY_LOW_THRESHOLD_MV = 21000; // 24 V battery placeholder threshold
 
 struct CommandPacket
 {
@@ -32,6 +40,29 @@ struct ByteQueue
     uint8_t count;
 };
 
+typedef enum
+{
+    MOTOR_STATE_DISABLED = 0,
+    MOTOR_STATE_ENABLED = 1,
+    MOTOR_STATE_TIMEOUT_STOP = 2,
+    MOTOR_STATE_ESTOP = 3,
+    MOTOR_STATE_FAULT = 4,
+    MOTOR_STATE_BOOTING = 5,
+    MOTOR_STATE_CALIBRATION = 6
+} MotorState;
+
+#define MOTOR_ERR_CHECKSUM_ERROR (1u << 0)
+#define MOTOR_ERR_COMMAND_TIMEOUT (1u << 1)
+#define MOTOR_ERR_DRIVER_FAULT (1u << 2)
+#define MOTOR_ERR_EMERGENCY_STOP_ACTIVE (1u << 3)
+#define MOTOR_ERR_BATTERY_LOW (1u << 4)
+#define MOTOR_ERR_SERIAL_FRAMING_ERROR (1u << 5)
+#define MOTOR_ERR_COMMAND_OUT_OF_RANGE (1u << 6)
+#define MOTOR_ERR_WATCHDOG_RESET_DETECTED (1u << 7)
+#define MOTOR_ERR_OVER_CURRENT (1u << 8)
+#define MOTOR_ERR_OVER_TEMPERATURE (1u << 9)
+#define MOTOR_ERR_PARAMETER_ERROR (1u << 10)
+
 // remote control signal pins
 const int w_speed_controller_pin = 0;
 const int v_speed_controller_pin = 1;
@@ -44,6 +75,12 @@ volatile unsigned int mode_state = 0; // 0: stop, 1: manual, 2: auto(UART)
 void v_decodePWM();
 void w_decodePWM();
 void mode_decodePWM();
+uint16_t motor_build_error_bits(void);
+MotorState motor_get_current_state(void);
+uint16_t motor_read_battery_mv(void);
+uint8_t protocol_xor_checksum(const uint8_t *data, size_t len);
+void protocol_send_basic_status(void);
+void protocol_send_basic_status_if_due(void);
 
 // motor speed control pins
 const int lf_speed_control_pin = 3;
@@ -60,6 +97,28 @@ void control_tick();
 // motor direction control pins
 const int left_dir_control_pin = 14;
 const int right_dir_control_pin = 15;
+
+static bool booting = true;
+static bool calibration_active = false;
+static bool motor_enabled = false;
+static bool estop_active = false;
+static bool command_timeout = true;
+static bool driver_fault = false;
+static bool over_current = false;
+static bool over_temperature = false;
+static bool parameter_error = false;
+static bool watchdog_reset_detected = false;
+static bool checksum_error_latched = false;
+static bool serial_framing_error_latched = false;
+static bool command_out_of_range_latched = false;
+static unsigned long last_valid_command_ms = 0;
+static unsigned long last_status_tx_ms = 0;
+static uint8_t status_tx_seq = 0;
+
+static inline bool command_in_range(int16_t cmd)
+{
+    return cmd >= CMD_MIN && cmd <= CMD_MAX;
+}
 
 // Helper: m/s -> wheel RPM
 static inline float vel_mps_to_rpm(float v_mps)
@@ -141,12 +200,14 @@ static bool try_parse_command_packet(ByteQueue &queue, CommandPacket &command)
 
     if (queue_peek(queue, 0) != PKT_HEADER_0)
     {
+        serial_framing_error_latched = true;
         queue_pop(queue);
         return false;
     }
 
     if (queue_peek(queue, 1) != PKT_HEADER_1)
     {
+        serial_framing_error_latched = true;
         queue_pop(queue);
         return false;
     }
@@ -156,6 +217,7 @@ static bool try_parse_command_packet(ByteQueue &queue, CommandPacket &command)
 
     if (queue_peek(queue, 2) != CMD_PACKET_LENGTH || queue_peek(queue, 3) != CMD_PACKET_TYPE)
     {
+        serial_framing_error_latched = true;
         queue_pop(queue);
         return false;
     }
@@ -171,6 +233,7 @@ static bool try_parse_command_packet(ByteQueue &queue, CommandPacket &command)
 
     if (xor_checksum(packet, CMD_PACKET_SIZE - 1) != packet[CMD_PACKET_SIZE - 1])
     {
+        checksum_error_latched = true;
         queue_pop(queue);
         return false;
     }
@@ -184,7 +247,118 @@ static bool try_parse_command_packet(ByteQueue &queue, CommandPacket &command)
         queue_pop(queue);
     }
 
+    if (!command_in_range(command.v_cmd) || !command_in_range(command.w_cmd))
+    {
+        command_out_of_range_latched = true;
+        return false;
+    }
+
     return true;
+}
+
+uint8_t protocol_xor_checksum(const uint8_t *data, size_t len)
+{
+    uint8_t checksum = 0;
+    for (size_t i = 0; i < len; i++)
+    {
+        checksum ^= data[i];
+    }
+    return checksum;
+}
+
+uint16_t motor_read_battery_mv(void)
+{
+    // TODO: Add ADC-based battery voltage measurement. Return 0 while unsupported.
+    return 0;
+}
+
+uint16_t motor_build_error_bits(void)
+{
+    uint16_t error = 0;
+
+    if (checksum_error_latched)
+        error |= MOTOR_ERR_CHECKSUM_ERROR;
+    if (command_timeout)
+        error |= MOTOR_ERR_COMMAND_TIMEOUT;
+    if (driver_fault)
+        error |= MOTOR_ERR_DRIVER_FAULT;
+    if (estop_active)
+        error |= MOTOR_ERR_EMERGENCY_STOP_ACTIVE;
+
+    uint16_t battery_mv = motor_read_battery_mv();
+    if (battery_mv > 0 && battery_mv < BATTERY_LOW_THRESHOLD_MV)
+        error |= MOTOR_ERR_BATTERY_LOW;
+
+    if (serial_framing_error_latched)
+        error |= MOTOR_ERR_SERIAL_FRAMING_ERROR;
+    if (command_out_of_range_latched)
+        error |= MOTOR_ERR_COMMAND_OUT_OF_RANGE;
+    if (watchdog_reset_detected)
+        error |= MOTOR_ERR_WATCHDOG_RESET_DETECTED;
+    if (over_current)
+        error |= MOTOR_ERR_OVER_CURRENT;
+    if (over_temperature)
+        error |= MOTOR_ERR_OVER_TEMPERATURE;
+    if (parameter_error)
+        error |= MOTOR_ERR_PARAMETER_ERROR;
+
+    return error;
+}
+
+MotorState motor_get_current_state(void)
+{
+    if (driver_fault || over_current || over_temperature || parameter_error)
+        return MOTOR_STATE_FAULT;
+    if (estop_active)
+        return MOTOR_STATE_ESTOP;
+    if (booting)
+        return MOTOR_STATE_BOOTING;
+    if (calibration_active)
+        return MOTOR_STATE_CALIBRATION;
+    if (command_timeout)
+        return MOTOR_STATE_TIMEOUT_STOP;
+    if (!motor_enabled)
+        return MOTOR_STATE_DISABLED;
+    return MOTOR_STATE_ENABLED;
+}
+
+void protocol_send_basic_status(void)
+{
+    uint8_t packet[STATUS_PACKET_SIZE];
+    uint16_t error = motor_build_error_bits();
+    uint16_t battery_mv = motor_read_battery_mv();
+
+    packet[0] = PKT_HEADER_0;
+    packet[1] = PKT_HEADER_1;
+    packet[2] = STATUS_PACKET_LENGTH;
+    packet[3] = STATUS_PACKET_TYPE;
+    // Basic Status Packet uses its own MCU TX sequence counter.
+    packet[4] = status_tx_seq;
+    packet[5] = (uint8_t)motor_get_current_state();
+    packet[6] = (uint8_t)(error & 0xFF);
+    packet[7] = (uint8_t)((error >> 8) & 0xFF);
+    packet[8] = (uint8_t)(battery_mv & 0xFF);
+    packet[9] = (uint8_t)((battery_mv >> 8) & 0xFF);
+    packet[10] = protocol_xor_checksum(packet, STATUS_PACKET_SIZE - 1);
+
+    if (Serial.availableForWrite() >= STATUS_PACKET_SIZE)
+    {
+        Serial.write(packet, STATUS_PACKET_SIZE);
+        status_tx_seq++;
+        checksum_error_latched = false;
+        serial_framing_error_latched = false;
+        command_out_of_range_latched = false;
+    }
+}
+
+void protocol_send_basic_status_if_due(void)
+{
+    unsigned long now = millis();
+    if (now - last_status_tx_ms >= STATUS_PERIOD_MS)
+    {
+        last_status_tx_ms = now;
+        protocol_send_basic_status();
+    }
 }
 
 // --- Fixed-rate 10ms control scheduling (Teensy IntervalTimer) ---
@@ -224,10 +398,26 @@ void setup()
 
     // Start fixed-rate 10ms control loop
     controlTimer.begin(control_tick, CONTROL_DT_MS * 1000); // microseconds
+    booting = false;
 }
 
 void loop()
 {
+    unsigned long now = millis();
+
+    if (mode_state == 2)
+    {
+        command_timeout = (last_valid_command_ms == 0) || (now - last_valid_command_ms > COMMAND_TIMEOUT_MS);
+        if (command_timeout)
+            motor_enabled = false;
+    }
+    else
+    {
+        command_timeout = false;
+        estop_active = false;
+        motor_enabled = (mode_state == 1);
+    }
+
     if (mode_state == 0)
     {
         // Stop mode
@@ -295,10 +485,15 @@ void loop()
 
         if (try_parse_command_packet(rx_queue, command))
         {
+            last_valid_command_ms = now;
+            command_timeout = false;
+            estop_active = (command.flags & CMD_FLAG_ESTOP) != 0;
+            motor_enabled = ((command.flags & CMD_FLAG_ENABLE) != 0) && !estop_active;
+
             float v_velocity = normalized_linear_to_mps(command.v_cmd);
             float w_velocity = normalized_angular_to_radps(command.w_cmd);
 
-            if ((command.flags & CMD_FLAG_ENABLE) == 0 || (command.flags & CMD_FLAG_ESTOP) != 0)
+            if (!motor_enabled)
             {
                 v_velocity = 0.0f;
                 w_velocity = 0.0f;
@@ -316,7 +511,17 @@ void loop()
             right_rpm_ref_cmd = right_rpm_ref;
             interrupts();
         }
+
+        if (command_timeout)
+        {
+            noInterrupts();
+            left_rpm_ref_cmd = 0.0f;
+            right_rpm_ref_cmd = 0.0f;
+            interrupts();
+        }
     }
+
+    protocol_send_basic_status_if_due();
 }
 
 void v_decodePWM()

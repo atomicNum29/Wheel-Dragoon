@@ -2,7 +2,7 @@
 
 Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 현재 펌웨어는 RC 수신기의 PWM 입력으로 수동 조종하거나, USB Serial(UART)로 ROS 목표 command packet을 받아 좌/우 바퀴 목표 RPM을 계산합니다.
 
-이 README에는 현재 구현 상태와 ROS 패키지 연동을 위한 목표 프로토콜을 함께 기록합니다. ROS용 command packet 파싱은 구현되어 있지만, status packet 송신은 아직 `src/main.cpp`에 구현되어 있지 않습니다.
+이 README에는 현재 구현 상태와 ROS 패키지 연동 프로토콜을 함께 기록합니다. ROS용 command packet 파싱과 basic status packet 송신이 `src/main.cpp`에 구현되어 있습니다.
 
 ## 주요 기능
 
@@ -13,6 +13,9 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 현재 펌웨�
 - 원형 큐 기반 UART 수신 및 패킷 재동기화
 - XOR checksum 검증
 - `flags`의 enable 및 emergency_stop 처리
+- Basic Status Packet 20 Hz 송신
+- command timeout 감지 및 timeout 시 모터 목표 RPM 0 처리
+- state/error bitfield 산출
 - 차동 구동식 기반 좌/우 바퀴 목표 RPM 계산
 - 10 ms 주기 `IntervalTimer` 제어 루프
 - 10 kHz, 10 bit PWM 모터 출력
@@ -20,11 +23,10 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 현재 펌웨�
 
 ### 아직 구현되지 않음
 
-- ROS로 status packet 송신
 - `seq` 기반 응답/상태 동기화
-- Serial 명령 타임아웃 기반 disable/zero 처리
 - kick-start, ramp limiting, minimum PWM, per-wheel gain
-- motor watchdog 및 error bitfield/status state 관리
+- 실제 배터리 전압 ADC 측정
+- 드라이버 fault, 과전류, 과열, 파라미터 오류 감지 입력
 
 ## 하드웨어 기준
 
@@ -107,12 +109,14 @@ w = w_cmd / 1000.0 * 5.0     # rad/s
 
 - 정규화된 `v_cmd`, `w_cmd`를 휠 레벨 명령으로 변환: 구현됨
 - skid-steer 모터 믹싱 수행: 구현됨
+- Basic Status Packet 주기 송신: 구현됨
+- command timeout 시 `TIMEOUT_STOP` 및 `COMMAND_TIMEOUT` 송신: 구현됨
 - kick-start, ramp limiting, minimum PWM, per-wheel gain, motor watchdog 동작 수행: 아직 미구현
-- 저수준 타임아웃 및 안전 동작 강제: Stop 모드의 RPM 0 설정만 구현됨
+- 저수준 안전 동작 강제: Stop, disable, estop, timeout 시 목표 RPM 0 설정 구현됨
 
 ## ROS Packet Protocol
 
-다음 프로토콜은 ROS 패키지 연동을 위한 통신 명세입니다. 현재 `src/main.cpp`는 command packet 수신과 checksum 검증을 구현하고, status packet 송신은 아직 구현하지 않았습니다.
+다음 프로토콜은 ROS 패키지 연동을 위한 통신 명세입니다. 현재 `src/main.cpp`는 command packet 수신, checksum 검증, basic status packet 송신을 구현합니다.
 
 모든 패킷은 `0xAA 0x55`로 시작합니다. Checksum은 byte 0부터 checksum 직전 byte까지 모든 바이트의 XOR 값입니다.
 
@@ -142,7 +146,7 @@ AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
 
 ### Status Packet: MCU to ROS
 
-MCU가 ROS 노드로 보내는 상태 패킷입니다. 현재 MCU 펌웨어는 status packet을 송신하지 않습니다.
+MCU가 ROS 노드로 20 Hz로 보내는 상태 패킷입니다. 명령 수신 여부와 무관하게 disabled, timeout, fault 상태에서도 주기적으로 송신합니다.
 
 | Byte | Field | Type | Description |
 | --- | --- | --- | --- |
@@ -150,10 +154,10 @@ MCU가 ROS 노드로 보내는 상태 패킷입니다. 현재 MCU 펌웨어는 s
 | 1 | `header[1]` | `uint8` | `0x55` |
 | 2 | `length` | `uint8` | `7` |
 | 3 | `type` | `uint8` | `0x81` |
-| 4 | `seq` | `uint8` | Sequence counter |
+| 4 | `seq` | `uint8` | MCU status 송신 counter. 송신할 때마다 1 증가, `255` 이후 `0`으로 wrap |
 | 5 | `state` | `uint8` | MCU state |
 | 6-7 | `error` | `uint16 LE` | MCU error bitfield/code |
-| 8-9 | `battery_mv` | `uint16 LE` | Battery voltage in millivolts |
+| 8-9 | `battery_mv` | `uint16 LE` | Battery voltage in millivolts. 현재 센서 미구현으로 `0` 송신 |
 | 10 | `checksum` | `uint8` | XOR checksum |
 
 Payload는 `type + seq + state + error + battery_mv`이며, length는 `7`입니다.
@@ -161,6 +165,38 @@ Payload는 `type + seq + state + error + battery_mv`이며, length는 `7`입니�
 ```text
 AA 55 07 81 seq state error_lo error_hi batt_lo batt_hi checksum
 ```
+
+State 값은 다음 enum 매핑을 사용합니다.
+
+| 값 | State | 의미 |
+| --- | --- | --- |
+| `0` | `DISABLED` | enable 명령이 없거나 사용자가 disable한 상태 |
+| `1` | `ENABLED` | 정상 명령을 받고 있으며 모터 출력이 허용된 상태 |
+| `2` | `TIMEOUT_STOP` | 정상 명령 timeout으로 정지한 상태 |
+| `3` | `ESTOP` | emergency stop 활성 상태 |
+| `4` | `FAULT` | 드라이버 fault 또는 심각 오류 상태 |
+| `5` | `BOOTING` | MCU 부팅 또는 초기화 중 |
+| `6` | `CALIBRATION` | 보정 또는 설정 동작 중 |
+
+상태 우선순위는 `FAULT > ESTOP > BOOTING > CALIBRATION > TIMEOUT_STOP > DISABLED > ENABLED`입니다.
+
+Error bitfield는 다음 매핑을 사용합니다.
+
+| Bit | 값 | 이름 |
+| --- | --- | --- |
+| 0 | `0x0001` | `CHECKSUM_ERROR` |
+| 1 | `0x0002` | `COMMAND_TIMEOUT` |
+| 2 | `0x0004` | `DRIVER_FAULT` |
+| 3 | `0x0008` | `EMERGENCY_STOP_ACTIVE` |
+| 4 | `0x0010` | `BATTERY_LOW` |
+| 5 | `0x0020` | `SERIAL_FRAMING_ERROR` |
+| 6 | `0x0040` | `COMMAND_OUT_OF_RANGE` |
+| 7 | `0x0080` | `WATCHDOG_RESET_DETECTED` |
+| 8 | `0x0100` | `OVER_CURRENT` |
+| 9 | `0x0200` | `OVER_TEMPERATURE` |
+| 10 | `0x0400` | `PARAMETER_ERROR` |
+
+현재 센서가 없는 항목은 내부 상태값이 `false`로 고정되어 있습니다. `CHECKSUM_ERROR`, `SERIAL_FRAMING_ERROR`, `COMMAND_OUT_OF_RANGE`는 발생 후 다음 status packet에 반영되고, 실제 status 송신 후 latch를 clear합니다. `COMMAND_TIMEOUT`은 정상 command packet을 다시 수신하면 해제됩니다. `EMERGENCY_STOP_ACTIVE`는 estop flag가 해제된 정상 command를 수신하면 해제됩니다.
 
 ### Checksum 계산
 
@@ -273,4 +309,4 @@ int lf_u = constrain(left_ref_abs * 5, 0, 1023);
 - Auto 모드를 사용하려면 모드 입력 PWM이 `1700 us` 이상이어야 합니다.
 - RC PWM 입력은 10개 샘플 이동 평균으로 필터링됩니다.
 - 현재 MCU 펌웨어는 ROS command packet 형식의 바이너리 패킷만 인식합니다. 일반 텍스트 `"0.5,0.0"` 형태로 보내면 인식되지 않습니다.
-- status packet 송신을 사용하려면 MCU 펌웨어에 상태 생성 및 송신 처리를 추가해야 합니다.
+- status packet과 command packet은 같은 Serial 포트를 공유하므로, ROS 수신부는 binary packet framing을 기준으로 파싱해야 합니다.
