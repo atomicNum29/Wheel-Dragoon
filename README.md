@@ -1,12 +1,12 @@
 # Wheel-Dragoon
 
-Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 현재 펌웨어는 RC 수신기의 PWM 입력으로 수동 조종하거나, USB Serial(UART)로 ROS 목표 command packet을 받아 좌/우 바퀴 목표 RPM을 계산합니다.
+Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드웨어는 MDROBOT `MDH100` 인휠 모터 4개와 `MD200T` 듀얼채널 모터 드라이버 2개입니다. ROS와 Teensy 사이의 USB Serial(UART) command/status packet 연결은 유지하고, Teensy는 계산한 휠 목표 속도를 CAN bus로 두 개의 MD200T에 전달합니다.
 
-이 README에는 현재 구현 상태와 ROS 패키지 연동 프로토콜을 함께 기록합니다. ROS용 command packet 파싱과 basic status packet 송신이 `src/main.cpp`에 구현되어 있습니다.
+이 README는 MD200T/CAN 전환 목표 구조와 ROS 패키지 연동 프로토콜을 함께 기록합니다. ROS용 command packet 파싱과 basic status packet 송신은 기존 `src/main.cpp` 구현을 기준으로 유지합니다.
 
 ## 주요 기능
 
-### 현재 구현됨
+### 유지되는 기능
 
 - RC PWM 입력 기반 수동 주행
 - ROS-UART 정규화 `int16` command packet 파싱
@@ -18,19 +18,26 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 현재 펌웨�
 - state/error bitfield 산출
 - 차동 구동식 기반 좌/우 바퀴 목표 RPM 계산
 - 10 ms 주기 `IntervalTimer` 제어 루프
-- 10 kHz, 10 bit PWM 모터 출력
-- 목표 RPM 절댓값에 비례한 오픈루프 PWM 출력
+
+### MD200T/CAN 전환 목표
+
+- MD200T 2대 CAN 제어
+- MDH100 4개 휠 목표 속도 명령 분배
+- 드라이버별 2채널 속도/enable/stop 명령 송신
+- Stop, disable, emergency stop, command timeout 시 모든 MD200T 채널 정지 명령 송신
 
 ### 아직 구현되지 않음
 
 - `seq` 기반 응답/상태 동기화
-- kick-start, ramp limiting, minimum PWM, per-wheel gain
+- MD200T CAN bitrate, CAN ID, command/status frame format 확정
+- Teensy 3.2 CAN transceiver 배선 및 CAN 라이브러리 선정
+- 채널별 direction polarity 검증
 - 실제 배터리 전압 ADC 측정
 - 드라이버 fault, 과전류, 과열, 파라미터 오류 감지 입력
 
 ## 하드웨어 기준
 
-현재 펌웨어는 다음 차량 파라미터를 기준으로 작성되어 있습니다.
+전환 목표는 다음 하드웨어 구성을 기준으로 합니다.
 
 | 항목 | 값 |
 | --- | --- |
@@ -38,6 +45,9 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 현재 펌웨�
 | 바퀴 반지름 `R` | `0.14 m` |
 | 보드 | Teensy 3.2 (`teensy31`) |
 | 프레임워크 | Arduino |
+| 모터 | MDROBOT `MDH100` x 4, 24 V급, 100-200 W |
+| 모터 드라이버 | MDROBOT `MD200T` x 2, 12-48 V, 10 A x 2 ch |
+| Teensy-MD200T 통신 | CAN bus |
 
 ## 핀맵
 
@@ -49,16 +59,28 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 현재 펌웨�
 | 선속도 입력 `v` | `1` | RC PWM 입력 |
 | 모드 선택 | `2` | RC PWM 입력 |
 
-### 모터 출력
+### CAN / MD200T 연결
+
+| 기능 | 연결 | 설명 |
+| --- | --- | --- |
+| Teensy CAN TX/RX | TBD | Teensy 3.2의 실제 CAN 핀은 구현 시 확인 |
+| CAN transceiver | TBD | Teensy와 MD200T 사이에 CAN transceiver 필요 |
+| MD200T CAN_H/CAN_L | CAN bus | 두 MD200T를 같은 CAN bus에 연결 |
+| CAN 종단저항 | TBD | bus 양 끝단 기준으로 적용 여부 확인 |
+| GND 공통 | Teensy / transceiver / MD200T | 통신 기준 전위 공유 |
+
+### Legacy 직접 모터 출력
+
+다음 핀은 교체 전 직접 모터 구동 구조에서 사용하던 출력입니다. MD200T/CAN 전환 후에는 모터 명령을 CAN frame으로 송신하므로 사용하지 않는 방향으로 정리합니다.
 
 | 기능 | 핀 | 설명 |
 | --- | --- | --- |
-| 좌측 전륜 PWM | `3` | 10 kHz PWM |
-| 좌측 후륜 PWM | `4` | 10 kHz PWM |
-| 우측 후륜 PWM | `5` | 10 kHz PWM |
-| 우측 전륜 PWM | `6` | 10 kHz PWM |
-| 좌측 방향 | `14` | 방향 제어 |
-| 우측 방향 | `15` | 방향 제어 |
+| 좌측 전륜 출력 | `3` | 교체 전 직접 구동 출력 |
+| 좌측 후륜 출력 | `4` | 교체 전 직접 구동 출력 |
+| 우측 후륜 출력 | `5` | 교체 전 직접 구동 출력 |
+| 우측 전륜 출력 | `6` | 교체 전 직접 구동 출력 |
+| 좌측 방향 | `14` | 교체 전 방향 제어 |
+| 우측 방향 | `15` | 교체 전 방향 제어 |
 
 ## 동작 모드
 
@@ -91,9 +113,46 @@ w = w_cmd / 1000.0 * 5.0     # rad/s
 
 `v_cmd`, `w_cmd`는 packet의 `int16 LE` 값을 그대로 사용하며 MCU에서 clamp하지 않습니다. 프로토콜 범위를 벗어난 값은 송신 측 오류로 보고 ROS 노드에서 제한해야 합니다.
 
+## 구동 명령 흐름
+
+MD200T/CAN 전환 후의 목표 명령 흐름은 다음과 같습니다.
+
+```text
+ROS /cmd_vel
+  -> ROS node: v_cmd, w_cmd 정규화 packet 생성
+  -> USB Serial(UART)
+  -> Teensy 3.2: command packet 파싱
+  -> Teensy 3.2: v, w 환산 및 skid-steer 좌/우 RPM 계산
+  -> Teensy 3.2: 4개 휠 목표 RPM으로 분배
+  -> CAN bus
+  -> MD200T 2대: 각 2채널 MDH100 속도 제어
+```
+
+Teensy는 좌/우 목표 RPM을 다음 휠 명령으로 복제합니다.
+
+| 휠 | 목표 RPM |
+| --- | --- |
+| LF | `left_rpm_ref` |
+| LR | `left_rpm_ref` |
+| RF | `right_rpm_ref` |
+| RR | `right_rpm_ref` |
+
+Stop, disable, emergency stop, command timeout 상태에서는 네 개 채널 모두에 zero/disable 명령을 송신해야 합니다.
+
+## 드라이버/모터 매핑
+
+두 개의 MD200T는 대각선으로 묶인 모터를 담당합니다.
+
+| 드라이버 | CAN ID | CH1 | CH2 | 비고 |
+| --- | --- | --- | --- | --- |
+| MD200T A | TBD | LF | RR | 대각 페어 |
+| MD200T B | TBD | RF | LR | 대각 페어 |
+
+각 채널의 `direction polarity`는 실제 배선 후 검증해야 합니다. CAN bitrate, CAN ID 설정 방식, command/status frame format은 MD200T CAN 매뉴얼 확인 후 확정합니다.
+
 ## ROS 연동 목표 책임 분리
 
-다음 내용은 ROS 패키지와 MCU 펌웨어가 최종적으로 가져야 할 책임 경계입니다. 현재 저장소의 `src/main.cpp`는 이 책임 중 일부만 구현합니다.
+다음 내용은 ROS 패키지와 MCU 펌웨어가 가져야 할 책임 경계입니다. ROS와 Teensy 사이의 packet protocol은 유지하고, Teensy 이후의 모터 출력 계층만 MD200T CAN 제어로 교체합니다.
 
 ### ROS 노드 책임
 
@@ -107,12 +166,13 @@ w = w_cmd / 1000.0 * 5.0     # rad/s
 
 ### MCU 책임
 
-- 정규화된 `v_cmd`, `w_cmd`를 휠 레벨 명령으로 변환: 구현됨
-- skid-steer 모터 믹싱 수행: 구현됨
-- Basic Status Packet 주기 송신: 구현됨
-- command timeout 시 `TIMEOUT_STOP` 및 `COMMAND_TIMEOUT` 송신: 구현됨
-- kick-start, ramp limiting, minimum PWM, per-wheel gain, motor watchdog 동작 수행: 아직 미구현
-- 저수준 안전 동작 강제: Stop, disable, estop, timeout 시 목표 RPM 0 설정 구현됨
+- 정규화된 `v_cmd`, `w_cmd`를 `v`, `w`로 환산
+- skid-steer 모터 믹싱으로 좌/우 목표 RPM 계산
+- 좌/우 목표 RPM을 LF/LR/RF/RR 4개 휠 명령으로 분배
+- MD200T A/B의 2채널 CAN 명령 송신
+- Basic Status Packet 주기 송신
+- command timeout 시 `TIMEOUT_STOP` 및 `COMMAND_TIMEOUT` 송신
+- Stop, disable, estop, timeout 시 모든 MD200T 채널 zero/disable 명령 강제
 
 ## ROS Packet Protocol
 
@@ -290,23 +350,33 @@ uv run python src/control.py 0 0 --estop
 │   ├── main.cpp            # Teensy 펌웨어
 │   └── control.py          # UART 명령 송신 스크립트
 └── lib/
-    └── MCP41100/           # MCP41100 디지털 가변저항 보조 라이브러리
+    └── MCP41100/           # 교체 전 직접 구동 구조의 보조 라이브러리
 ```
 
-## 현재 제어 방식
+## 목표 제어 방식
 
-현재 `control_tick()`은 목표 RPM의 절댓값에 비례해 PWM 값을 출력하는 오픈루프 방식입니다.
+MD200T/CAN 전환 후 Teensy는 모터를 직접 구동하지 않습니다. Teensy는 ROS 또는 RC 입력에서 계산한 목표 속도, enable, stop 상태를 MD200T CAN command로 변환해 송신하고, 실제 MDH100 속도 제어는 MD200T 내부 제어기를 사용합니다.
 
-```cpp
-int lf_u = constrain(left_ref_abs * 5, 0, 1023);
-```
+구현 시 확정해야 할 항목은 다음과 같습니다.
 
-현재 구현에는 엔코더 피드백, 폐루프 PI/PID 제어, 개별 휠 게인, ramp limiting, minimum PWM, kick-start가 연결되어 있지 않습니다.
+- MD200T CAN bitrate
+- MD200T A/B CAN ID
+- 속도 command frame format
+- enable/disable 및 stop command frame format
+- MD200T status/fault frame 수신 여부와 error bitfield 매핑
+- 채널별 direction polarity
 
 ## 주의 사항
 
-- 방향 핀의 HIGH/LOW 극성은 현재 모터 드라이버 배선 기준입니다. 배선이 다르면 좌/우 또는 전/후진 방향이 반대로 동작할 수 있습니다.
+- MD200T/CAN 상세 프로토콜은 아직 README에서 확정하지 않습니다. 구현 전 MD200T CAN 매뉴얼로 bitrate, CAN ID, frame format을 확인해야 합니다.
+- MD200T A/B의 CH1/CH2 방향 극성은 실제 배선 후 저속 테스트로 검증해야 합니다.
+- CAN 통신에는 Teensy와 MD200T 사이의 CAN transceiver, CAN_H/CAN_L 배선, 공통 GND, 종단저항 검토가 필요합니다.
 - Auto 모드를 사용하려면 모드 입력 PWM이 `1700 us` 이상이어야 합니다.
 - RC PWM 입력은 10개 샘플 이동 평균으로 필터링됩니다.
 - 현재 MCU 펌웨어는 ROS command packet 형식의 바이너리 패킷만 인식합니다. 일반 텍스트 `"0.5,0.0"` 형태로 보내면 인식되지 않습니다.
 - status packet과 command packet은 같은 Serial 포트를 공유하므로, ROS 수신부는 binary packet framing을 기준으로 파싱해야 합니다.
+
+## 참고 자료
+
+- MDROBOT MD200T 제품 페이지: <https://www.mdrobot.co.kr/BLDCmotordriver-store-dualchannel/?idx=160>
+- MDROBOT MDH100 제품 페이지: <https://www.mdrobot.co.kr/inwheelmotor-store/?idx=274>
