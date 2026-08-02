@@ -88,22 +88,9 @@ uint16_t motor_read_battery_mv(void);
 uint8_t protocol_xor_checksum(const uint8_t *data, size_t len);
 void protocol_send_basic_status(void);
 void protocol_send_basic_status_if_due(void);
-
-// motor speed control pins
-const int lf_speed_control_pin = 3;
-const int lr_speed_control_pin = 4;
-const int rr_speed_control_pin = 5;
-const int rf_speed_control_pin = 6;
-
-volatile unsigned int led_state = 0;
-
-#define CONTROL_DT_MS 10
-
-void control_tick();
-
-// motor direction control pins
-const int left_dir_control_pin = 14;
-const int right_dir_control_pin = 15;
+void motor_set_left_right_rpm(float left_rpm, float right_rpm);
+void motor_stop_all(void);
+void motor_send_target_if_due(void);
 
 static bool booting = true;
 static bool calibration_active = false;
@@ -120,7 +107,27 @@ static bool serial_framing_error_latched = false;
 static bool command_out_of_range_latched = false;
 static unsigned long last_valid_command_ms = 0;
 static unsigned long last_status_tx_ms = 0;
+static unsigned long last_md200t_command_tx_ms = 0;
 static uint8_t status_tx_seq = 0;
+
+const unsigned long MD200T_COMMAND_PERIOD_MS = 10;
+
+struct WheelRpmCommand
+{
+    float lf_rpm;
+    float lr_rpm;
+    float rf_rpm;
+    float rr_rpm;
+};
+
+struct Md200tDriverCommand
+{
+    float ch1_rpm;
+    float ch2_rpm;
+    bool enabled;
+};
+
+static WheelRpmCommand target_wheel_rpm_cmd = {0.0f, 0.0f, 0.0f, 0.0f};
 
 static inline bool command_in_range(int16_t cmd)
 {
@@ -368,12 +375,50 @@ void protocol_send_basic_status_if_due(void)
     }
 }
 
-// --- Fixed-rate 10ms control scheduling (Teensy IntervalTimer) ---
-IntervalTimer controlTimer;
+void motor_set_left_right_rpm(float left_rpm, float right_rpm)
+{
+    target_wheel_rpm_cmd.lf_rpm = left_rpm;
+    target_wheel_rpm_cmd.lr_rpm = left_rpm;
+    target_wheel_rpm_cmd.rf_rpm = right_rpm;
+    target_wheel_rpm_cmd.rr_rpm = right_rpm;
+}
 
-// Target wheel RPM references computed in loop() and consumed in control ISR
-volatile float left_rpm_ref_cmd = 0.0f;
-volatile float right_rpm_ref_cmd = 0.0f;
+void motor_stop_all(void)
+{
+    motor_set_left_right_rpm(0.0f, 0.0f);
+}
+
+static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a, const Md200tDriverCommand &driver_b)
+{
+    (void)driver_a;
+    (void)driver_b;
+
+    // TODO: Send MD200T CAN frames after bitrate, CAN IDs, and frame formats are confirmed.
+}
+
+void motor_send_target_if_due(void)
+{
+    unsigned long now = millis();
+    if (now - last_md200t_command_tx_ms < MD200T_COMMAND_PERIOD_MS)
+        return;
+
+    last_md200t_command_tx_ms = now;
+
+    bool command_enabled = motor_enabled && !estop_active && !command_timeout && !driver_fault && !over_current && !over_temperature && !parameter_error;
+    WheelRpmCommand target = command_enabled ? target_wheel_rpm_cmd : WheelRpmCommand{0.0f, 0.0f, 0.0f, 0.0f};
+
+    Md200tDriverCommand driver_a = {
+        target.lf_rpm, // MD200T A CH1 = LF
+        target.rr_rpm, // MD200T A CH2 = RR
+        command_enabled};
+
+    Md200tDriverCommand driver_b = {
+        target.rf_rpm, // MD200T B CH1 = RF
+        target.lr_rpm, // MD200T B CH2 = LR
+        command_enabled};
+
+    md200t_send_driver_commands(driver_a, driver_b);
+}
 
 void setup()
 {
@@ -386,25 +431,8 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(w_speed_controller_pin), w_decodePWM, CHANGE);
     attachInterrupt(digitalPinToInterrupt(mode_control_pin), mode_decodePWM, CHANGE);
 
-    pinMode(lf_speed_control_pin, OUTPUT);
-    pinMode(lr_speed_control_pin, OUTPUT);
-    pinMode(rr_speed_control_pin, OUTPUT);
-    pinMode(rf_speed_control_pin, OUTPUT);
-
-    analogWriteFrequency(lf_speed_control_pin, 10000); // 10 kHz PWM
-    analogWriteFrequency(lr_speed_control_pin, 10000);
-    analogWriteFrequency(rr_speed_control_pin, 10000);
-    analogWriteFrequency(rf_speed_control_pin, 10000);
-
-    analogWriteResolution(10); // 10 bit resolution (0-1023)
-
     pinMode(LED_BUILTIN, OUTPUT);
 
-    pinMode(left_dir_control_pin, OUTPUT);
-    pinMode(right_dir_control_pin, OUTPUT);
-
-    // Start fixed-rate 10ms control loop
-    controlTimer.begin(control_tick, CONTROL_DT_MS * 1000); // microseconds
     booting = false;
 }
 
@@ -428,10 +456,7 @@ void loop()
     if (mode_state == DRIVE_MODE_STOP)
     {
         // Stop mode
-        noInterrupts();
-        left_rpm_ref_cmd = 0.0f;
-        right_rpm_ref_cmd = 0.0f;
-        interrupts();
+        motor_stop_all();
     }
     else if (mode_state == DRIVE_MODE_MANUAL)
     {
@@ -454,33 +479,7 @@ void loop()
         float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
         float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
 
-        noInterrupts();
-        left_rpm_ref_cmd = left_rpm_ref;
-        right_rpm_ref_cmd = right_rpm_ref;
-        interrupts();
-
-        // // Debug (optional)
-        // Serial.print(">L_rpm_ref:");
-        // Serial.println(left_rpm_ref);
-        // Serial.print(">R_rpm_ref:");
-        // Serial.println(right_rpm_ref);
-        // Serial.print(">lf_RPS:");
-        // Serial.println((float)lf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-        // Serial.print(">lr_RPS:");
-        // Serial.println((float)lr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-        // Serial.print(">rf_RPS:");
-        // Serial.println((float)rf_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-        // Serial.print(">rr_RPS:");
-        // Serial.println((float)rr_sum_1s / (float)WHEEL_COUNTS_PER_REV);
-        // // Serial.print(">lf_sum_1s:");
-        // // Serial.println(lf_sum_1s);
-        // // Serial.print(">lr_sum_1s:");
-        // // Serial.println(lr_sum_1s);
-        // // Serial.print(">rr_sum_1s:");
-        // // Serial.println(rr_sum_1s);
-        // // Serial.print(">rf_sum_1s:");
-        // // Serial.println(rf_sum_1s);
-        // delay(10);
+        motor_set_left_right_rpm(left_rpm_ref, right_rpm_ref);
     }
     else if (mode_state == DRIVE_MODE_AUTO)
     {
@@ -513,21 +512,16 @@ void loop()
             float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
             float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
 
-            noInterrupts();
-            left_rpm_ref_cmd = left_rpm_ref;
-            right_rpm_ref_cmd = right_rpm_ref;
-            interrupts();
+            motor_set_left_right_rpm(left_rpm_ref, right_rpm_ref);
         }
 
         if (command_timeout)
         {
-            noInterrupts();
-            left_rpm_ref_cmd = 0.0f;
-            right_rpm_ref_cmd = 0.0f;
-            interrupts();
+            motor_stop_all();
         }
     }
 
+    motor_send_target_if_due();
     protocol_send_basic_status_if_due();
 }
 
@@ -606,42 +600,4 @@ void mode_decodePWM()
     {
         prevTime = micros();
     }
-}
-
-void control_tick()
-{
-    float left_rpm_ref, right_rpm_ref;
-
-    noInterrupts();
-    left_rpm_ref = left_rpm_ref_cmd;
-    right_rpm_ref = right_rpm_ref_cmd;
-    interrupts();
-
-    // Direction from target sign; control magnitude is PI output
-    bool left_fwd = (left_rpm_ref >= 0.0f);
-    bool right_fwd = (right_rpm_ref >= 0.0f);
-
-    float left_ref_abs = fabsf(left_rpm_ref);
-    float right_ref_abs = fabsf(right_rpm_ref);
-
-    // Low-speed deadband to reduce hunting
-    if (left_ref_abs < 1.0f)
-        left_ref_abs = 0.0f;
-    if (right_ref_abs < 1.0f)
-        right_ref_abs = 0.0f;
-
-    int lf_u = constrain(left_ref_abs * 5, 0, 1023); // Open-loop for initial testing
-    int lr_u = constrain(left_ref_abs * 5, 0, 1023);
-    int rr_u = constrain(right_ref_abs * 5, 0, 1023);
-    int rf_u = constrain(right_ref_abs * 5, 0, 1023);
-
-    // Apply direction pins
-    digitalWrite(left_dir_control_pin, left_fwd ? HIGH : LOW);
-    digitalWrite(right_dir_control_pin, right_fwd ? LOW : HIGH);
-
-    // Apply PWM
-    analogWrite(lf_speed_control_pin, (int)lf_u);
-    analogWrite(lr_speed_control_pin, (int)lr_u);
-    analogWrite(rr_speed_control_pin, (int)rr_u);
-    analogWrite(rf_speed_control_pin, (int)rf_u);
 }

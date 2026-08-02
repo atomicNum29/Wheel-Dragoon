@@ -17,7 +17,7 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - command timeout 감지 및 timeout 시 모터 목표 RPM 0 처리
 - state/error bitfield 산출
 - 차동 구동식 기반 좌/우 바퀴 목표 RPM 계산
-- 10 ms 주기 `IntervalTimer` 제어 루프
+- 10 ms 주기 MD200T command 송신 스케줄링
 
 ### MD200T/CAN 전환 목표
 
@@ -32,6 +32,7 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - MD200T CAN bitrate, CAN ID, command/status frame format 확정
 - Teensy 3.2 CAN transceiver 배선 및 CAN 라이브러리 선정
 - 채널별 direction polarity 검증
+- 실제 MD200T CAN frame 송신 구현
 - 실제 배터리 전압 ADC 측정
 - 드라이버 fault, 과전류, 과열, 파라미터 오류 감지 입력
 
@@ -68,19 +69,6 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 | MD200T CAN_H/CAN_L | CAN bus | 두 MD200T를 같은 CAN bus에 연결 |
 | CAN 종단저항 | TBD | bus 양 끝단 기준으로 적용 여부 확인 |
 | GND 공통 | Teensy / transceiver / MD200T | 통신 기준 전위 공유 |
-
-### Legacy 직접 모터 출력
-
-다음 핀은 교체 전 직접 모터 구동 구조에서 사용하던 출력입니다. MD200T/CAN 전환 후에는 모터 명령을 CAN frame으로 송신하므로 사용하지 않는 방향으로 정리합니다.
-
-| 기능 | 핀 | 설명 |
-| --- | --- | --- |
-| 좌측 전륜 출력 | `3` | 교체 전 직접 구동 출력 |
-| 좌측 후륜 출력 | `4` | 교체 전 직접 구동 출력 |
-| 우측 후륜 출력 | `5` | 교체 전 직접 구동 출력 |
-| 우측 전륜 출력 | `6` | 교체 전 직접 구동 출력 |
-| 좌측 방향 | `14` | 교체 전 방향 제어 |
-| 우측 방향 | `15` | 교체 전 방향 제어 |
 
 ## 동작 모드
 
@@ -349,13 +337,11 @@ uv run python src/control.py 0 0 --estop
 ├── src/
 │   ├── main.cpp            # Teensy 펌웨어
 │   └── control.py          # UART 명령 송신 스크립트
-└── lib/
-    └── MCP41100/           # 교체 전 직접 구동 구조의 보조 라이브러리
 ```
 
 ## 목표 제어 방식
 
-MD200T/CAN 전환 후 Teensy는 모터를 직접 구동하지 않습니다. Teensy는 ROS 또는 RC 입력에서 계산한 목표 속도, enable, stop 상태를 MD200T CAN command로 변환해 송신하고, 실제 MDH100 속도 제어는 MD200T 내부 제어기를 사용합니다.
+Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서 계산한 목표 속도, enable, stop 상태를 MD200T CAN command로 변환해 송신하고, 실제 MDH100 속도 제어는 MD200T 내부 제어기를 사용합니다.
 
 구현 시 확정해야 할 항목은 다음과 같습니다.
 
