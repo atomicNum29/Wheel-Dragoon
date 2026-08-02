@@ -79,6 +79,21 @@ volatile unsigned int v_pulseWidth = 0;
 volatile unsigned int w_pulseWidth = 0;
 volatile DriveMode mode_state = DRIVE_MODE_STOP;
 
+struct WheelRpmCommand
+{
+    float lf_rpm;
+    float lr_rpm;
+    float rf_rpm;
+    float rr_rpm;
+};
+
+struct Md200tDriverCommand
+{
+    float ch1_rpm;
+    float ch2_rpm;
+    bool enabled;
+};
+
 void v_decodePWM();
 void w_decodePWM();
 void mode_decodePWM();
@@ -91,6 +106,18 @@ void protocol_send_basic_status_if_due(void);
 void motor_set_left_right_rpm(float left_rpm, float right_rpm);
 void motor_stop_all(void);
 void motor_send_target_if_due(void);
+static bool command_in_range(int16_t cmd);
+static float vel_mps_to_rpm(float v_mps);
+static int16_t read_i16_le(const unsigned char *data);
+static uint8_t xor_checksum(const unsigned char *data, uint8_t len);
+static float normalized_linear_to_mps(int16_t cmd);
+static float normalized_angular_to_radps(int16_t cmd);
+static void queue_push(ByteQueue &queue, unsigned char value);
+static unsigned char queue_peek(const ByteQueue &queue, uint8_t offset);
+static void queue_pop(ByteQueue &queue);
+static void read_serial_byte_to_queue(ByteQueue &queue);
+static bool try_parse_command_packet(ByteQueue &queue, CommandPacket &command);
+static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a, const Md200tDriverCommand &driver_b);
 
 static bool booting = true;
 static bool calibration_active = false;
@@ -112,22 +139,112 @@ static uint8_t status_tx_seq = 0;
 
 const unsigned long MD200T_COMMAND_PERIOD_MS = 10;
 
-struct WheelRpmCommand
-{
-    float lf_rpm;
-    float lr_rpm;
-    float rf_rpm;
-    float rr_rpm;
-};
-
-struct Md200tDriverCommand
-{
-    float ch1_rpm;
-    float ch2_rpm;
-    bool enabled;
-};
-
 static WheelRpmCommand target_wheel_rpm_cmd = {0.0f, 0.0f, 0.0f, 0.0f};
+
+void setup()
+{
+    Serial.begin(115200);
+
+    pinMode(v_speed_controller_pin, INPUT);
+    pinMode(w_speed_controller_pin, INPUT);
+    pinMode(mode_control_pin, INPUT);
+    attachInterrupt(digitalPinToInterrupt(v_speed_controller_pin), v_decodePWM, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(w_speed_controller_pin), w_decodePWM, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(mode_control_pin), mode_decodePWM, CHANGE);
+
+    pinMode(LED_BUILTIN, OUTPUT);
+
+    booting = false;
+}
+
+void loop()
+{
+    unsigned long now = millis();
+
+    if (mode_state == DRIVE_MODE_AUTO)
+    {
+        command_timeout = (last_valid_command_ms == 0) || (now - last_valid_command_ms > COMMAND_TIMEOUT_MS);
+        if (command_timeout)
+            motor_enabled = false;
+    }
+    else
+    {
+        command_timeout = false;
+        estop_active = false;
+        motor_enabled = (mode_state == DRIVE_MODE_MANUAL);
+    }
+
+    if (mode_state == DRIVE_MODE_STOP)
+    {
+        // Stop mode
+        motor_stop_all();
+    }
+    else if (mode_state == DRIVE_MODE_MANUAL)
+    {
+        double v_velocity = v_pulseWidth;
+        double w_velocity = w_pulseWidth;
+
+        v_velocity -= 1500; // 양수면 전진
+        w_velocity -= 1500; // 양수면 좌선회 (우측 바퀴가 +)
+
+        v_velocity /= 250; // -500~500 범위를 -2~2 범위로 줄임. (m/s)
+        w_velocity /= 100; // -500~500 범위를 -5~5 범위로 줄임. (rad/s)
+
+        double left_velocity = 0;
+        double right_velocity = 0;
+
+        left_velocity = v_velocity - w_velocity * W / 2;
+        right_velocity = v_velocity + w_velocity * W / 2;
+
+        // --- Target RPM from v/w command ---
+        float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
+        float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
+
+        motor_set_left_right_rpm(left_rpm_ref, right_rpm_ref);
+    }
+    else if (mode_state == DRIVE_MODE_AUTO)
+    {
+        // Auto mode: receive normalized ROS command packet from UART
+        static ByteQueue rx_queue = {{0}, 0, 0, 0};
+        CommandPacket command;
+
+        read_serial_byte_to_queue(rx_queue);
+
+        if (try_parse_command_packet(rx_queue, command))
+        {
+            last_valid_command_ms = now;
+            command_timeout = false;
+            estop_active = (command.flags & CMD_FLAG_ESTOP) != 0;
+            motor_enabled = ((command.flags & CMD_FLAG_ENABLE) != 0) && !estop_active;
+
+            float v_velocity = normalized_linear_to_mps(command.v_cmd);
+            float w_velocity = normalized_angular_to_radps(command.w_cmd);
+
+            if (!motor_enabled)
+            {
+                v_velocity = 0.0f;
+                w_velocity = 0.0f;
+            }
+
+            double left_velocity = v_velocity - w_velocity * W / 2;
+            double right_velocity = v_velocity + w_velocity * W / 2;
+
+            // --- Target RPM from v/w command ---
+            float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
+            float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
+
+            motor_set_left_right_rpm(left_rpm_ref, right_rpm_ref);
+        }
+
+        if (command_timeout)
+        {
+            motor_stop_all();
+        }
+    }
+
+    motor_send_target_if_due();
+    protocol_send_basic_status_if_due();
+}
 
 static inline bool command_in_range(int16_t cmd)
 {
@@ -418,111 +535,6 @@ void motor_send_target_if_due(void)
         command_enabled};
 
     md200t_send_driver_commands(driver_a, driver_b);
-}
-
-void setup()
-{
-    Serial.begin(115200);
-
-    pinMode(v_speed_controller_pin, INPUT);
-    pinMode(w_speed_controller_pin, INPUT);
-    pinMode(mode_control_pin, INPUT);
-    attachInterrupt(digitalPinToInterrupt(v_speed_controller_pin), v_decodePWM, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(w_speed_controller_pin), w_decodePWM, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(mode_control_pin), mode_decodePWM, CHANGE);
-
-    pinMode(LED_BUILTIN, OUTPUT);
-
-    booting = false;
-}
-
-void loop()
-{
-    unsigned long now = millis();
-
-    if (mode_state == DRIVE_MODE_AUTO)
-    {
-        command_timeout = (last_valid_command_ms == 0) || (now - last_valid_command_ms > COMMAND_TIMEOUT_MS);
-        if (command_timeout)
-            motor_enabled = false;
-    }
-    else
-    {
-        command_timeout = false;
-        estop_active = false;
-        motor_enabled = (mode_state == DRIVE_MODE_MANUAL);
-    }
-
-    if (mode_state == DRIVE_MODE_STOP)
-    {
-        // Stop mode
-        motor_stop_all();
-    }
-    else if (mode_state == DRIVE_MODE_MANUAL)
-    {
-        double v_velocity = v_pulseWidth;
-        double w_velocity = w_pulseWidth;
-
-        v_velocity -= 1500; // 양수면 전진
-        w_velocity -= 1500; // 양수면 좌선회 (우측 바퀴가 +)
-
-        v_velocity /= 250; // -500~500 범위를 -2~2 범위로 줄임. (m/s)
-        w_velocity /= 100; // -500~500 범위를 -5~5 범위로 줄임. (rad/s)
-
-        double left_velocity = 0;
-        double right_velocity = 0;
-
-        left_velocity = v_velocity - w_velocity * W / 2;
-        right_velocity = v_velocity + w_velocity * W / 2;
-
-        // --- Target RPM from v/w command ---
-        float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
-        float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
-
-        motor_set_left_right_rpm(left_rpm_ref, right_rpm_ref);
-    }
-    else if (mode_state == DRIVE_MODE_AUTO)
-    {
-        // Auto mode: receive normalized ROS command packet from UART
-        static ByteQueue rx_queue = {{0}, 0, 0, 0};
-        CommandPacket command;
-
-        read_serial_byte_to_queue(rx_queue);
-
-        if (try_parse_command_packet(rx_queue, command))
-        {
-            last_valid_command_ms = now;
-            command_timeout = false;
-            estop_active = (command.flags & CMD_FLAG_ESTOP) != 0;
-            motor_enabled = ((command.flags & CMD_FLAG_ENABLE) != 0) && !estop_active;
-
-            float v_velocity = normalized_linear_to_mps(command.v_cmd);
-            float w_velocity = normalized_angular_to_radps(command.w_cmd);
-
-            if (!motor_enabled)
-            {
-                v_velocity = 0.0f;
-                w_velocity = 0.0f;
-            }
-
-            double left_velocity = v_velocity - w_velocity * W / 2;
-            double right_velocity = v_velocity + w_velocity * W / 2;
-
-            // --- Target RPM from v/w command ---
-            float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
-            float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
-
-            motor_set_left_right_rpm(left_rpm_ref, right_rpm_ref);
-        }
-
-        if (command_timeout)
-        {
-            motor_stop_all();
-        }
-    }
-
-    motor_send_target_if_due();
-    protocol_send_basic_status_if_due();
 }
 
 void v_decodePWM()
