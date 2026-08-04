@@ -94,29 +94,53 @@ struct Md200tDriverCommand
     bool enabled;
 };
 
+// RC linear velocity PWM pulse width decoder ISR.
 void v_decodePWM();
+// RC angular velocity PWM pulse width decoder ISR.
 void w_decodePWM();
+// RC mode select PWM decoder ISR.
 void mode_decodePWM();
+// Build the status packet error bitfield from current latched and live faults.
 uint16_t motor_build_error_bits(void);
+// Resolve the current high-level motor state with fault and safety priority.
 MotorState motor_get_current_state(void);
+// Read battery voltage in millivolts; returns 0 until ADC sensing is implemented.
 uint16_t motor_read_battery_mv(void);
+// Compute XOR checksum for ROS-MCU protocol packets.
 uint8_t protocol_xor_checksum(const uint8_t *data, size_t len);
+// Send one basic status packet to ROS over USB Serial.
 void protocol_send_basic_status(void);
+// Send the periodic basic status packet when the 20 Hz interval has elapsed.
 void protocol_send_basic_status_if_due(void);
+// Convert left/right skid-steer RPM targets into four wheel RPM targets.
 void motor_set_left_right_rpm(float left_rpm, float right_rpm);
+// Set every wheel target RPM to zero.
 void motor_stop_all(void);
+// Periodically forward the current wheel targets to the MD200T command layer.
 void motor_send_target_if_due(void);
+// Check whether a normalized command value is inside the supported protocol range.
 static bool command_in_range(int16_t cmd);
+// Convert linear wheel speed in m/s to wheel RPM.
 static float vel_mps_to_rpm(float v_mps);
+// Decode a little-endian signed 16-bit integer from packet bytes.
 static int16_t read_i16_le(const unsigned char *data);
+// Compute XOR checksum for raw queued command packet bytes.
 static uint8_t xor_checksum(const unsigned char *data, uint8_t len);
+// Convert normalized ROS linear command to m/s.
 static float normalized_linear_to_mps(int16_t cmd);
+// Convert normalized ROS angular command to rad/s.
 static float normalized_angular_to_radps(int16_t cmd);
+// Push one byte into the circular RX queue, dropping the oldest byte if full.
 static void queue_push(ByteQueue &queue, unsigned char value);
+// Read one byte from the circular RX queue without removing it.
 static unsigned char queue_peek(const ByteQueue &queue, uint8_t offset);
+// Remove the oldest byte from the circular RX queue.
 static void queue_pop(ByteQueue &queue);
+// Read at most one Serial byte into the command RX queue.
 static void read_serial_byte_to_queue(ByteQueue &queue);
+// Parse one complete ROS command packet from the RX queue when available.
 static bool try_parse_command_packet(ByteQueue &queue, CommandPacket &command);
+// Send prepared per-driver commands to MD200T devices over CAN once protocol details are set.
 static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a, const Md200tDriverCommand &driver_b);
 
 static bool booting = true;
