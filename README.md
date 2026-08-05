@@ -29,10 +29,11 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 ### 아직 구현되지 않음
 
 - `seq` 기반 응답/상태 동기화
-- MD200T CAN bitrate, CAN ID, command/status frame format 확정
-- Teensy 3.2 CAN transceiver 배선 및 CAN 라이브러리 선정
+- FlexCAN0 직접 레지스터 TX 코드 구현
+- Teensy 3.2 외부 CAN transceiver 배선 검증
 - 채널별 direction polarity 검증
 - 실제 MD200T CAN frame 송신 구현
+- FlexCAN ESR1/ECR diagnostics 출력
 - 실제 배터리 전압 ADC 측정
 - 드라이버 fault, 과전류, 과열, 파라미터 오류 감지 입력
 
@@ -64,11 +65,176 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 
 | 기능 | 연결 | 설명 |
 | --- | --- | --- |
-| Teensy CAN TX/RX | TBD | Teensy 3.2의 실제 CAN 핀은 구현 시 확인 |
-| CAN transceiver | TBD | Teensy와 MD200T 사이에 CAN transceiver 필요 |
+| Teensy CAN TX | pin `3` / `PTA12` / `CAN0_TX` | `PORTA_PCR12 = PORT_PCR_MUX(2)` |
+| Teensy CAN RX | pin `4` / `PTA13` / `CAN0_RX` | `PORTA_PCR13 = PORT_PCR_MUX(2)` |
+| CAN transceiver | 외부 CAN transceiver | Teensy 3.2는 CAN controller만 내장하므로 TX/RX를 transceiver TXD/RXD에 연결 |
 | MD200T CAN_H/CAN_L | CAN bus | 두 MD200T를 같은 CAN bus에 연결 |
-| CAN 종단저항 | TBD | bus 양 끝단 기준으로 적용 여부 확인 |
+| CAN 종단저항 | bus 양 끝 | 실제 배선 길이와 MD200T 내장 종단 여부 확인 후 양 끝단 기준 적용 |
 | GND 공통 | Teensy / transceiver / MD200T | 통신 기준 전위 공유 |
+
+## FlexCAN0 직접 레지스터 구현 조사 결과
+
+이번 구현 단계에서는 외부 CAN 라이브러리를 사용하지 않는다. Teensyduino 코어의 `kinetis.h`가 제공하는 `CAN0_MCR`, `CAN0_CTRL1`, `CAN0_IFLAG1` 등 CAN0 레지스터 주소 정의를 쓰고, bit mask와 MB field 배치는 `datasheet/K20P64M72SF1RM.pdf`의 FlexCAN 장에서 확인한 값으로 `flexcan0.cpp` 안에 로컬 상수로 둔다.
+
+### 확인한 문서
+
+- 확인함: `datasheet/K20P64M72SF1RM.pdf`
+- 확인함: `datasheet/MDROBOT-CAN communication protocol on controllers[EN].pdf`
+- 저장소에서 못 찾음: `datasheet/K20P64M72SF1.pdf`
+
+문서 부재 때문에 MCU 패키지별 핀 멀티플렉싱은 레퍼런스 매뉴얼의 64-pin pinout과 Teensyduino 코어 pin map을 교차 확인했다. MD200T는 별도 전용 매뉴얼 PDF가 없는 것으로 보고, CAN baudrate 설정만 MDROBOT protocol 문서 기준으로 명시한다.
+
+### 구현 파일 구조
+
+```text
+include/flexcan0.hpp
+src/flexcan0.cpp
+include/md200t_can.hpp
+src/md200t_can.cpp
+src/main.cpp
+```
+
+FlexCAN 계층 API:
+
+```cpp
+struct CanFrame {
+    uint16_t id;      // standard 11-bit ID only
+    uint8_t dlc;      // 0..8
+    uint8_t data[8];
+};
+
+bool can_begin(uint32_t bitrate);
+bool can_transmit(const CanFrame& frame, uint32_t timeout_us);
+```
+
+MD200T 계층 API:
+
+```cpp
+bool md200t_set_motor1_rpm(uint8_t driver_id, int16_t rpm);
+bool md200t_set_motor2_rpm(uint8_t driver_id, int16_t rpm);
+bool md200t_torque_off(uint8_t driver_id);
+```
+
+`can_begin()`과 `can_transmit()`의 모든 polling loop는 `micros()` 기반 timeout을 가져야 한다. timeout 대상은 low-power acknowledge 해제, freeze acknowledge 진입/해제, soft reset 완료, TX MB active/abort 대기, TX 완료 `IFLAG1` 대기다. 동적 메모리와 interrupt는 사용하지 않는다. 첫 구현은 검증한 `250000` bitrate만 허용하고, 다른 bitrate는 별도 timing table을 문서로 확인한 뒤 추가한다.
+
+### FlexCAN 클록과 250 kbit/s 비트 타이밍
+
+K20 레퍼런스 매뉴얼은 FlexCAN clock source가 `CANx_CTRL1[CLKSRC]`로 `OSCERCLK` 또는 bus clock 중 선택된다고 설명한다. Teensyduino FlexCAN 초기화 코드는 `OSC0_CR |= OSC_ERCLKEN` 후 `CAN0_CTRL1[CLKSRC]=0`을 사용해 16 MHz crystal clock을 FlexCAN source로 선택한다. 직접 구현도 이 경로를 따른다.
+
+기본 bitrate `250000 bit/s` 설정:
+
+| 항목 | 값 |
+| --- | --- |
+| FlexCAN source clock | `16,000,000 Hz` (`OSCERCLK`, `CTRL1[CLKSRC]=0`) |
+| PRESDIV register | `3` |
+| Clock divisor | `PRESDIV + 1 = 4` |
+| Time quantum clock | `16,000,000 / 4 = 4,000,000 Hz` |
+| Time quantum | `250 ns` |
+| PROPSEG register | `2` |
+| PROPSEG actual | `PROPSEG + 1 = 3 TQ` |
+| PSEG1 register | `7` |
+| PSEG1 actual | `PSEG1 + 1 = 8 TQ` |
+| PSEG2 register | `3` |
+| PSEG2 actual | `PSEG2 + 1 = 4 TQ` |
+| RJW register | `1` |
+| RJW actual | `RJW + 1 = 2 TQ` |
+| Total time quanta | `1 sync + 3 prop + 8 pseg1 + 4 pseg2 = 16 TQ` |
+| Sample point | `(1 + 3 + 8) / 16 = 75%` |
+| Actual bitrate | `16,000,000 / 4 / 16 = 250,000 bit/s` |
+| `CAN0_CTRL1` timing bits | `0x037B0002` before optional non-timing bits |
+
+`CAN0_CTRL1[CLKSRC]`는 Disable mode에서만 쓸 수 있으므로 `MCR[MDIS]`를 clear하기 전에 0으로 둔다. `CAN0_CTRL1`의 timing field는 Freeze mode에서만 쓴다. 이번 TX-only polling 구현에서는 interrupt mask bit를 켜지 않는다. RX FIFO는 사용하지 않으므로 `MCR[RFEN]=0`을 유지한다.
+
+### FlexCAN0 초기화 순서
+
+1. `SIM_SCGC5 |= SIM_SCGC5_PORTA`로 PORTA clock을 켠다.
+2. `SIM_SCGC6 |= SIM_SCGC6_FLEXCAN0`로 FlexCAN0 clock을 켠다.
+3. `OSC0_CR |= OSC_ERCLKEN`으로 external reference clock을 켠다.
+4. `PORTA_PCR12 = PORT_PCR_MUX(2)`, `PORTA_PCR13 = PORT_PCR_MUX(2)`로 CAN0_TX/RX를 선택한다.
+5. Reset 직후 `MCR[MDIS]=1`인 Disable mode에서 `CAN0_CTRL1 &= ~CTRL1_CLKSRC`로 oscillator clock source를 선택한다.
+6. `CAN0_MCR |= MCR_FRZ`, `CAN0_MCR &= ~MCR_MDIS` 후 `MCR[LPM_ACK]`가 0이 될 때까지 timeout polling한다.
+7. `CAN0_MCR |= MCR_SOFT_RST` 후 `MCR[SOFT_RST]`가 0이 될 때까지 timeout polling한다.
+8. `CAN0_MCR |= MCR_FRZ | MCR_HALT` 후 `MCR[FRZ_ACK]`가 1이 될 때까지 timeout polling한다.
+9. `MCR[MAXMB]=15`, `MCR[SRX_DIS]=1`, `MCR[RFEN]=0`으로 16개 MB, self reception disabled, Rx FIFO disabled를 설정한다.
+10. `CAN0_CTRL1 = 0x037B0002`로 250 kbit/s timing을 설정한다. `CLK_SRC` bit는 0이어야 한다.
+11. `CAN0_IMASK1 = 0`, `CAN0_IFLAG1 = 0xFFFFFFFF`로 interrupt를 끄고 pending flag를 w1c clear한다.
+12. MB0..MB15 RAM을 모두 초기화한다. `CS=0`, `ID=0`, `WORD0=0`, `WORD1=0`으로 지운 뒤 TX로 쓸 MB0만 `CS = CODE_TX_INACTIVE << 24`로 둔다.
+13. `CAN0_MCR &= ~MCR_HALT` 후 `MCR[FRZ_ACK]`가 0이 될 때까지 timeout polling한다.
+
+MK20DX256의 FlexCAN0은 16개 message buffer를 가진다. MB 하나는 16 byte이고, MB memory는 `CAN0` base `0x40024000 + 0x80 + n * 0x10` 위치다. Teensyduino 코어의 `kinetis.h`는 `CAN0_MBn_CS(n)`, `CAN0_MBn_ID(n)`, `CAN0_MBn_WORD0(n)`, `CAN0_MBn_WORD1(n)` macro를 제공하지 않으므로 직접 구현에서는 base offset helper를 로컬 `volatile uint32_t&` 함수로 둔다.
+
+### TX Message Buffer 작성 규칙
+
+레퍼런스 매뉴얼에서 확인한 MB field:
+
+| 항목 | 값 |
+| --- | --- |
+| TX inactive CODE | `0b1000` |
+| TX abort CODE | `0b1001` |
+| TX data frame once CODE | `0b1100` |
+| Standard data frame | `IDE=0`, `RTR=0` |
+| DLC 위치 | `CS[19:16]` |
+| CODE 위치 | `CS[27:24]` |
+| Standard ID 위치 | `ID[28:18]`, 즉 `(id & 0x7FF) << 18` |
+| Data byte order | `WORD0[31:24]=data[0]`, `WORD0[23:16]=data[1]`, `WORD0[15:8]=data[2]`, `WORD0[7:0]=data[3]`, `WORD1`도 같은 순서로 `data[4]..data[7]` |
+| TX complete flag | `CAN0_IFLAG1 & (1u << tx_mb)` |
+| IFLAG clear | 해당 bit에 `1` 쓰기, 예: `CAN0_IFLAG1 = (1u << tx_mb)` |
+
+`can_transmit()` 절차:
+
+1. `id <= 0x7FF`, `dlc <= 8`, `can_begin()` 완료 여부를 검사한다.
+2. TX MB의 pending flag가 있으면 먼저 `CAN0_IFLAG1 = mask`로 clear한다.
+3. TX MB가 `CODE_TX_INACTIVE`가 아니면 `CODE_TX_ABORT`를 쓰고 해당 `IFLAG1`이 set될 때까지 timeout polling한 뒤 flag를 clear한다. abort 이후에도 inactive가 아니면 실패 처리한다.
+4. `ID`, `WORD0`, `WORD1`을 쓴다. `dlc`보다 뒤의 byte는 0으로 채운다.
+5. 마지막으로 `CS = (CODE_TX_DATA_ONCE << 24) | (dlc << 16)`을 써서 MB를 arbitration에 올린다.
+6. `IFLAG1` 해당 bit가 set될 때까지 timeout polling한다.
+7. 완료 후 `CAN0_IFLAG1 = mask`로 clear하고 성공을 반환한다.
+
+### ESR1/ECR diagnostics 추후 구현
+
+`can_print_diagnostics()`는 이번 TX-only 1차 구현의 우선순위에서 제외한다. 추후 구현 시 최소한 다음 값을 출력한다.
+
+```text
+CAN0_MCR
+CAN0_CTRL1
+CAN0_ESR1
+CAN0_ECR
+CAN0_IFLAG1
+ECR_TXERR = ECR[7:0]
+ECR_RXERR = ECR[15:8]
+ESR1_FLTCONF = ESR1[5:4]
+ESR1_ACKERR, BIT0ERR, BIT1ERR, CRCERR, FRMERR, STFERR
+```
+
+ACK error는 외부 transceiver, CAN_H/CAN_L 배선, 종단저항, 상대 노드 bitrate가 틀렸을 때 가장 먼저 볼 가능성이 높다. 이번 범위에서는 bus-off 자동 복구를 구현하지 않고 진단 출력만 제공한다.
+
+## MD200T CAN frame 결정
+
+MDROBOT 표준 CAN frame 구조:
+
+```text
+CAN ID[10:8] = MID
+CAN ID[7:0]  = driver ID
+DLC = 8
+DATA[0] = PID
+DATA[1..7] = PID data
+```
+
+표준 모드 송신 예제는 `MID=0`을 사용한다. 문서는 드라이버가 표준 모드에서 수신할 때 MID 3 bit를 don't care로 본다고 설명하지만, 구현 상수는 예제값을 따라 `MDROBOT_STANDARD_CMD_MID = 0x00`으로 둔다. 드라이버 응답 frame의 MID는 문서에 `0x07`로 명시되어 있으므로 수신 구현 시 `MDROBOT_STANDARD_RESPONSE_MID = 0x07`로 둔다.
+
+이번 TX-only 구현에 사용할 PID:
+
+| 함수 | CAN ID | DATA |
+| --- | --- | --- |
+| `md200t_set_motor1_rpm(driver_id, rpm)` | `(0x00 << 8) | driver_id` | `PID_TAR_VEL1(117), rpm_lo, rpm_hi, 0, 0, 0, 0, 0` |
+| `md200t_set_motor2_rpm(driver_id, rpm)` | `(0x00 << 8) | driver_id` | `PID_TAR_VEL2(118), rpm_lo, rpm_hi, 0, 0, 0, 0, 0` |
+| `md200t_torque_off(driver_id)` | `(0x00 << 8) | driver_id` | `PID_PNT_TQ_OFF(174), 1, 1, 0, 0, 0, 0, 0` |
+
+RPM은 MDROBOT 문서의 2-byte data 규칙에 따라 little-endian으로 보낸다. 즉 `DATA = D0 | (D1 << 8)`이고, `int16_t rpm`은 `D0 = rpm & 0xFF`, `D1 = (rpm >> 8) & 0xFF`로 보낸다. 듀얼채널 드라이버의 속도 제어는 `PID_PNT_VEL_CMD(207)` 같은 2채널 일괄 PID를 쓰지 않고, 채널별 PID인 `PID_TAR_VEL1(117)`과 `PID_TAR_VEL2(118)`만 사용해 CH1/CH2를 완전히 독립적으로 제어한다.
+
+`PID_PNT_TQ_OFF(174)`는 dual-channel driver에서 motor1/motor2 torque-off condition을 각각 `D0`, `D1` bit로 지정한다. `md200t_torque_off()`는 안전 정지용으로 두 채널 모두 free stop시키는 함수이므로 `D0=1`, `D1=1`, `D2=0(no return data)`로 둔다.
+
+MD200T baudrate 설정은 protocol 문서의 `PID_ECAN_BITRATE(137)`을 따른다. `DATA[0]=0xAA`, `DATA[1]=3`이면 `250 kbit/s` 설정이다. 설정 프레임은 드라이버가 현재 사용하는 baudrate에서 먼저 보내야 하며, 설정 후 실제 드라이버 A/B와 Teensy FlexCAN0가 모두 `250 kbit/s`로 맞아야 한다.
 
 ## 동작 모드
 
@@ -133,10 +299,10 @@ Stop, disable, emergency stop, command timeout 상태에서는 네 개 채널 �
 
 | 드라이버 | CAN ID | CH1 | CH2 | 비고 |
 | --- | --- | --- | --- | --- |
-| MD200T A | TBD | LF | RR | 대각 페어 |
-| MD200T B | TBD | RF | LR | 대각 페어 |
+| MD200T A | `1` | LF | RR | 대각 페어 |
+| MD200T B | `2` | RF | LR | 대각 페어 |
 
-각 채널의 `direction polarity`는 실제 배선 후 검증해야 합니다. CAN bitrate, CAN ID 설정 방식, command/status frame format은 MD200T CAN 매뉴얼 확인 후 확정합니다.
+각 채널의 `direction polarity`는 실제 배선 후 검증해야 합니다. 표준 송신 frame은 `MD200T CAN frame 결정` 섹션의 채널별 PID를 사용합니다.
 
 ## ROS 연동 목표 책임 분리
 
@@ -345,16 +511,13 @@ Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서
 
 구현 시 확정해야 할 항목은 다음과 같습니다.
 
-- MD200T CAN bitrate
-- MD200T A/B CAN ID
-- 속도 command frame format
-- enable/disable 및 stop command frame format
 - MD200T status/fault frame 수신 여부와 error bitfield 매핑
 - 채널별 direction polarity
 
 ## 주의 사항
 
-- MD200T/CAN 상세 프로토콜은 아직 README에서 확정하지 않습니다. 구현 전 MD200T CAN 매뉴얼로 bitrate, CAN ID, frame format을 확인해야 합니다.
+- FlexCAN0 송신 기본 bitrate는 `250 kbit/s`로 설계했습니다. MDROBOT protocol 문서의 드라이버 기본값은 `50 kbit/s`이고, `PID_ECAN_BITRATE(137)`에서 `3`이 `250 kbit/s`로 정의되어 있으므로 실제 MD200T 두 대도 `250 kbit/s`로 설정되어 있어야 합니다.
+- MD200T A/B의 CAN driver ID는 각각 `1`, `2`입니다. 같은 bus에서 두 드라이버 ID가 충돌하면 안 됩니다.
 - MD200T A/B의 CH1/CH2 방향 극성은 실제 배선 후 저속 테스트로 검증해야 합니다.
 - CAN 통신에는 Teensy와 MD200T 사이의 CAN transceiver, CAN_H/CAN_L 배선, 공통 GND, 종단저항 검토가 필요합니다.
 - Auto 모드를 사용하려면 모드 입력 PWM이 `1700 us` 이상이어야 합니다.
