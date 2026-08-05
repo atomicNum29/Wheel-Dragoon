@@ -9,8 +9,8 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 ### 유지되는 기능
 
 - RC PWM 입력 기반 수동 주행
-- ROS-UART 정규화 `int16` command packet 파싱
-- 원형 큐 기반 UART 수신 및 패킷 재동기화
+- ROS-UART 실제 속도 `int16` command packet 파싱
+- 상태머신 기반 USB Serial command packet 수신
 - XOR checksum 검증
 - `flags`의 enable 및 emergency_stop 처리
 - Basic Status Packet 20 Hz 송신
@@ -78,7 +78,7 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 | --- | --- | --- |
 | `< 1300 us` | Stop (`DRIVE_MODE_STOP`) | 좌/우 목표 RPM을 `0`으로 설정 |
 | `1300-1699 us` | Manual (`DRIVE_MODE_MANUAL`) | RC `v`, `w` 입력으로 주행 |
-| `>= 1700 us` | Auto (`DRIVE_MODE_AUTO`) | ROS-UART command packet으로 `v_cmd`, `w_cmd` 수신 |
+| `>= 1700 us` | Auto (`DRIVE_MODE_AUTO`) | ROS-UART command packet으로 `v_milli_mps`, `w_milli_radps` 수신 |
 
 Manual 모드에서 RC PWM은 다음 범위로 변환됩니다.
 
@@ -92,14 +92,14 @@ left_velocity  = v - w * W / 2
 right_velocity = v + w * W / 2
 ```
 
-Auto 모드에서는 ROS 노드가 `/cmd_vel`을 `-1000`부터 `+1000`까지의 정규화 명령으로 변환해 보낸다고 가정합니다. MCU는 현재 이 정규화 명령을 기존 RC 입력 범위와 맞춰 다음처럼 환산합니다.
+Auto 모드에서는 ROS 노드가 `/cmd_vel`의 실제 속도를 milli-unit `int16` 값으로 변환해 보냅니다. MCU는 packet 값을 다음처럼 실제 속도로 환산합니다.
 
 ```text
-v = v_cmd / 1000.0 * 2.0     # m/s
-w = w_cmd / 1000.0 * 5.0     # rad/s
+v = v_milli_mps / 1000.0          # m/s
+w = w_milli_radps / 1000.0        # rad/s
 ```
 
-`v_cmd`, `w_cmd`는 packet의 `int16 LE` 값을 그대로 사용하며 MCU에서 clamp하지 않습니다. 프로토콜 범위를 벗어난 값은 송신 측 오류로 보고 ROS 노드에서 제한해야 합니다.
+MCU는 기본 주행 제한으로 `v_milli_mps`를 `-2000 ~ +2000`, `w_milli_radps`를 `-5000 ~ +5000` 범위로 검증합니다. 프로토콜 범위를 벗어난 값은 송신 측 오류로 보고 `COMMAND_OUT_OF_RANGE`로 반영합니다.
 
 ## 구동 명령 흐름
 
@@ -107,7 +107,7 @@ MD200T/CAN 전환 후의 목표 명령 흐름은 다음과 같습니다.
 
 ```text
 ROS /cmd_vel
-  -> ROS node: v_cmd, w_cmd 정규화 packet 생성
+  -> ROS node: v_milli_mps, w_milli_radps packet 생성
   -> USB Serial(UART)
   -> Teensy 3.2: command packet 파싱
   -> Teensy 3.2: v, w 환산 및 skid-steer 좌/우 RPM 계산
@@ -145,7 +145,7 @@ Stop, disable, emergency stop, command timeout 상태에서는 네 개 채널 �
 ### ROS 노드 책임
 
 - `/cmd_vel` 구독
-- `linear.x`, `angular.z`를 `-1000`부터 `+1000`까지의 정규화된 정수 명령으로 변환
+- `linear.x`, `angular.z`를 milli-unit `int16` 실제 속도 명령으로 변환
 - 고정 주기로 MCU에 명령 패킷 송신
 - MCU 상태 패킷 수신
 - 파싱한 상태를 `~/status`에 `std_msgs/msg/String`으로 발행
@@ -154,7 +154,7 @@ Stop, disable, emergency stop, command timeout 상태에서는 네 개 채널 �
 
 ### MCU 책임
 
-- 정규화된 `v_cmd`, `w_cmd`를 `v`, `w`로 환산
+- `v_milli_mps`, `w_milli_radps`를 `v`, `w` 실제 속도로 환산
 - skid-steer 모터 믹싱으로 좌/우 목표 RPM 계산
 - 좌/우 목표 RPM을 LF/LR/RF/RR 4개 휠 명령으로 분배
 - MD200T A/B의 2채널 CAN 명령 송신
@@ -168,7 +168,7 @@ Stop, disable, emergency stop, command timeout 상태에서는 네 개 채널 �
 
 모든 패킷은 `0xAA 0x55`로 시작합니다. Checksum은 byte 0부터 checksum 직전 byte까지 모든 바이트의 XOR 값입니다.
 
-MCU 수신부는 원형 큐를 사용합니다. loop마다 Serial에서 최대 1바이트를 큐에 넣고, 큐의 앞쪽에서 패킷 후보를 검사합니다. 헤더, length, type, checksum 검증에 실패하면 1바이트만 버려 다음 헤더 후보를 다시 찾습니다.
+MCU 수신부는 USB Serial 내부 RX buffer를 `Serial.available()`이 빌 때까지 읽고, 각 바이트를 command frame 상태머신에 전달합니다. 상태머신은 `0xAA 0x55`, length, type 순서로 packet 후보를 조립합니다. 헤더, length, type, checksum 검증에 실패하면 현재 packet 후보를 버리고 다음 header를 기다립니다. 실패한 packet 내부를 재스캔하지 않으므로, 복구는 다음 정상 command packet 주기에 이루어집니다.
 
 ### Command Packet: ROS to MCU
 
@@ -181,12 +181,12 @@ ROS 노드가 MCU로 보내는 명령 패킷입니다. 현재 MCU 펌웨어는 �
 | 2 | `length` | `uint8` | `7` |
 | 3 | `type` | `uint8` | `0x01` |
 | 4 | `seq` | `uint8` | Sequence counter |
-| 5-6 | `v_cmd` | `int16 LE` | 정규화된 선속도 명령, `-1000` to `+1000` |
-| 7-8 | `w_cmd` | `int16 LE` | 정규화된 각속도 명령, `-1000` to `+1000` |
+| 5-6 | `v_milli_mps` | `int16 LE` | 목표 선속도 `m/s * 1000`, 기본 허용 범위 `-2000` to `+2000` |
+| 7-8 | `w_milli_radps` | `int16 LE` | 목표 각속도 `rad/s * 1000`, 기본 허용 범위 `-5000` to `+5000` |
 | 9 | `flags` | `uint8` | bit 0: enable, bit 1: emergency_stop |
 | 10 | `checksum` | `uint8` | XOR checksum |
 
-Payload는 `type + seq + v_cmd + w_cmd + flags`이며, length는 `7`입니다.
+Payload는 `type + seq + v_milli_mps + w_milli_radps + flags`이며, length는 `7`입니다.
 
 ```text
 AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
@@ -298,19 +298,19 @@ uv sync
 자동 포트 감지로 명령을 보내려면:
 
 ```bash
-uv run python src/control.py 250 0
+uv run python src/control.py 0.5 0
 ```
 
 포트를 직접 지정하려면:
 
 ```bash
-uv run python src/control.py 250 0 --port /dev/ttyACM0
+uv run python src/control.py 0.5 0 --port /dev/ttyACM0
 ```
 
 sequence counter를 지정하려면:
 
 ```bash
-uv run python src/control.py 250 0 --seq 12
+uv run python src/control.py 0.5 0 --seq 12
 ```
 
 disable 또는 emergency stop flag를 보내려면:
@@ -324,8 +324,8 @@ uv run python src/control.py 0 0 --estop
 
 | 명령 | 의미 |
 | --- | --- |
-| `uv run python src/control.py 250 0` | 정규화 명령 기준 약 `0.5 m/s` 전진 |
-| `uv run python src/control.py 0 200` | 정규화 명령 기준 약 `1.0 rad/s` 제자리 회전 |
+| `uv run python src/control.py 0.5 0` | `0.5 m/s` 전진 |
+| `uv run python src/control.py 0 1.0` | `1.0 rad/s` 제자리 회전 |
 | `uv run python src/control.py 0 0` | enable 상태의 정지 명령 |
 
 ## 프로젝트 구조

@@ -13,12 +13,11 @@ const uint8_t CMD_PACKET_SIZE = 11;
 const uint8_t STATUS_PACKET_LENGTH = 7;
 const uint8_t STATUS_PACKET_TYPE = 0x81;
 const uint8_t STATUS_PACKET_SIZE = 11;
-const uint8_t RX_QUEUE_SIZE = 64;
-const int16_t CMD_MIN = -1000;
-const int16_t CMD_MAX = 1000;
-const float CMD_NORMALIZATION_SCALE = 1000.0f;
-const float MAX_LINEAR_MPS = 2.0f;
-const float MAX_ANGULAR_RADPS = 5.0f;
+const int16_t CMD_LINEAR_MILLI_MPS_MIN = -2000;
+const int16_t CMD_LINEAR_MILLI_MPS_MAX = 2000;
+const int16_t CMD_ANGULAR_MILLI_RADPS_MIN = -5000;
+const int16_t CMD_ANGULAR_MILLI_RADPS_MAX = 5000;
+const float CMD_MILLI_UNIT_SCALE = 1000.0f;
 const uint8_t CMD_FLAG_ENABLE = 0x01;
 const uint8_t CMD_FLAG_ESTOP = 0x02;
 const unsigned long COMMAND_TIMEOUT_MS = 500;
@@ -27,17 +26,9 @@ const uint16_t BATTERY_LOW_THRESHOLD_MV = 21000; // 24 V battery placeholder thr
 
 struct CommandPacket
 {
-    int16_t v_cmd;
-    int16_t w_cmd;
+    int16_t v_milli_mps;
+    int16_t w_milli_radps;
     uint8_t flags;
-};
-
-struct ByteQueue
-{
-    unsigned char data[RX_QUEUE_SIZE];
-    uint8_t head;
-    uint8_t tail;
-    uint8_t count;
 };
 
 typedef enum
@@ -57,6 +48,15 @@ typedef enum
     DRIVE_MODE_MANUAL = 1,
     DRIVE_MODE_AUTO = 2
 } DriveMode;
+
+typedef enum
+{
+    CMD_RX_WAIT_HEADER_0 = 0,
+    CMD_RX_WAIT_HEADER_1 = 1,
+    CMD_RX_WAIT_LENGTH = 2,
+    CMD_RX_WAIT_TYPE = 3,
+    CMD_RX_READ_REST = 4
+} CommandRxState;
 
 #define MOTOR_ERR_CHECKSUM_ERROR (1u << 0)
 #define MOTOR_ERR_COMMAND_TIMEOUT (1u << 1)
@@ -94,6 +94,13 @@ struct Md200tDriverCommand
     bool enabled;
 };
 
+struct CommandFrameParser
+{
+    uint8_t packet[CMD_PACKET_SIZE];
+    uint8_t index;
+    CommandRxState state;
+};
+
 // RC linear velocity PWM pulse width decoder ISR.
 void v_decodePWM();
 // RC angular velocity PWM pulse width decoder ISR.
@@ -118,28 +125,28 @@ void motor_set_left_right_rpm(float left_rpm, float right_rpm);
 void motor_stop_all(void);
 // Periodically forward the current wheel targets to the MD200T command layer.
 void motor_send_target_if_due(void);
-// Check whether a normalized command value is inside the supported protocol range.
-static bool command_in_range(int16_t cmd);
+// Check whether command packet velocity fields are inside supported physical limits.
+static bool command_in_range(const CommandPacket &command);
 // Convert linear wheel speed in m/s to wheel RPM.
 static float vel_mps_to_rpm(float v_mps);
 // Decode a little-endian signed 16-bit integer from packet bytes.
 static int16_t read_i16_le(const unsigned char *data);
-// Compute XOR checksum for raw queued command packet bytes.
+// Compute XOR checksum for a command frame candidate.
 static uint8_t xor_checksum(const unsigned char *data, uint8_t len);
-// Convert normalized ROS linear command to m/s.
-static float normalized_linear_to_mps(int16_t cmd);
-// Convert normalized ROS angular command to rad/s.
-static float normalized_angular_to_radps(int16_t cmd);
-// Push one byte into the circular RX queue, dropping the oldest byte if full.
-static void queue_push(ByteQueue &queue, unsigned char value);
-// Read one byte from the circular RX queue without removing it.
-static unsigned char queue_peek(const ByteQueue &queue, uint8_t offset);
-// Remove the oldest byte from the circular RX queue.
-static void queue_pop(ByteQueue &queue);
-// Read at most one Serial byte into the command RX queue.
-static void read_serial_byte_to_queue(ByteQueue &queue);
-// Parse one complete ROS command packet from the RX queue when available.
-static bool try_parse_command_packet(ByteQueue &queue, CommandPacket &command);
+// Convert packet milli-m/s linear velocity to m/s.
+static float milli_mps_to_mps(int16_t milli_mps);
+// Convert packet milli-rad/s angular velocity to rad/s.
+static float milli_radps_to_radps(int16_t milli_radps);
+// Reset command frame parser to wait for the next packet header.
+static void command_parser_reset(CommandFrameParser &parser);
+// Apply a validated ROS command packet to MCU drive state and target RPM.
+static void apply_command_packet(const CommandPacket &command, unsigned long now);
+// Parse a complete command frame buffer and apply it when valid.
+static void parse_complete_command_frame(const uint8_t *packet, unsigned long now);
+// Feed one Serial byte into the command frame state machine.
+static void feed_command_parser(uint8_t byte_in, unsigned long now);
+// Drain all currently buffered USB Serial bytes into the command parser.
+static void serial_drain_command_packets(unsigned long now);
 // Send prepared per-driver commands to MD200T devices over CAN once protocol details are set.
 static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a, const Md200tDriverCommand &driver_b);
 
@@ -164,6 +171,7 @@ static uint8_t status_tx_seq = 0;
 const unsigned long MD200T_COMMAND_PERIOD_MS = 10;
 
 static WheelRpmCommand target_wheel_rpm_cmd = {0.0f, 0.0f, 0.0f, 0.0f};
+static CommandFrameParser command_rx_parser = {{0}, 0, CMD_RX_WAIT_HEADER_0};
 
 void setup()
 {
@@ -228,37 +236,7 @@ void loop()
     }
     else if (mode_state == DRIVE_MODE_AUTO)
     {
-        // Auto mode: receive normalized ROS command packet from UART
-        static ByteQueue rx_queue = {{0}, 0, 0, 0};
-        CommandPacket command;
-
-        read_serial_byte_to_queue(rx_queue);
-
-        if (try_parse_command_packet(rx_queue, command))
-        {
-            last_valid_command_ms = now;
-            command_timeout = false;
-            estop_active = (command.flags & CMD_FLAG_ESTOP) != 0;
-            motor_enabled = ((command.flags & CMD_FLAG_ENABLE) != 0) && !estop_active;
-
-            float v_velocity = normalized_linear_to_mps(command.v_cmd);
-            float w_velocity = normalized_angular_to_radps(command.w_cmd);
-
-            if (!motor_enabled)
-            {
-                v_velocity = 0.0f;
-                w_velocity = 0.0f;
-            }
-
-            float left_velocity = v_velocity - w_velocity * W / 2;
-            float right_velocity = v_velocity + w_velocity * W / 2;
-
-            // --- Target RPM from v/w command ---
-            float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
-            float right_rpm_ref = vel_mps_to_rpm((float)right_velocity);
-
-            motor_set_left_right_rpm(left_rpm_ref, right_rpm_ref);
-        }
+        serial_drain_command_packets(now);
 
         if (command_timeout)
         {
@@ -270,9 +248,12 @@ void loop()
     protocol_send_basic_status_if_due();
 }
 
-static inline bool command_in_range(int16_t cmd)
+static inline bool command_in_range(const CommandPacket &command)
 {
-    return cmd >= CMD_MIN && cmd <= CMD_MAX;
+    return command.v_milli_mps >= CMD_LINEAR_MILLI_MPS_MIN &&
+           command.v_milli_mps <= CMD_LINEAR_MILLI_MPS_MAX &&
+           command.w_milli_radps >= CMD_ANGULAR_MILLI_RADPS_MIN &&
+           command.w_milli_radps <= CMD_ANGULAR_MILLI_RADPS_MAX;
 }
 
 // Helper: m/s -> wheel RPM
@@ -299,116 +280,149 @@ static inline uint8_t xor_checksum(const unsigned char *data, uint8_t len)
     return checksum;
 }
 
-static inline float normalized_linear_to_mps(int16_t cmd)
+static inline float milli_mps_to_mps(int16_t milli_mps)
 {
-    // ROS maps max linear.x to +/-1000. Keep the scale equal to manual mode.
-    return ((float)cmd / CMD_NORMALIZATION_SCALE) * MAX_LINEAR_MPS;
+    return (float)milli_mps / CMD_MILLI_UNIT_SCALE;
 }
 
-static inline float normalized_angular_to_radps(int16_t cmd)
+static inline float milli_radps_to_radps(int16_t milli_radps)
 {
-    // ROS maps max angular.z to +/-1000. Keep the scale equal to manual mode.
-    return ((float)cmd / CMD_NORMALIZATION_SCALE) * MAX_ANGULAR_RADPS;
+    return (float)milli_radps / CMD_MILLI_UNIT_SCALE;
 }
 
-static inline void queue_push(ByteQueue &queue, unsigned char value)
+static void command_parser_reset(CommandFrameParser &parser)
 {
-    if (queue.count >= RX_QUEUE_SIZE)
+    parser.index = 0;
+    parser.state = CMD_RX_WAIT_HEADER_0;
+}
+
+static void apply_command_packet(const CommandPacket &command, unsigned long now)
+{
+    last_valid_command_ms = now;
+    command_timeout = false;
+    estop_active = (command.flags & CMD_FLAG_ESTOP) != 0;
+    motor_enabled = ((command.flags & CMD_FLAG_ENABLE) != 0) && !estop_active;
+
+    float v_velocity = milli_mps_to_mps(command.v_milli_mps);
+    float w_velocity = milli_radps_to_radps(command.w_milli_radps);
+
+    if (!motor_enabled)
     {
-        queue.tail = (queue.tail + 1) % RX_QUEUE_SIZE;
-        queue.count--;
+        v_velocity = 0.0f;
+        w_velocity = 0.0f;
     }
 
-    queue.data[queue.head] = value;
-    queue.head = (queue.head + 1) % RX_QUEUE_SIZE;
-    queue.count++;
+    float left_velocity = v_velocity - w_velocity * W / 2;
+    float right_velocity = v_velocity + w_velocity * W / 2;
+
+    float left_rpm_ref = vel_mps_to_rpm(left_velocity);
+    float right_rpm_ref = vel_mps_to_rpm(right_velocity);
+
+    motor_set_left_right_rpm(left_rpm_ref, right_rpm_ref);
 }
 
-static inline unsigned char queue_peek(const ByteQueue &queue, uint8_t offset)
+static void parse_complete_command_frame(const uint8_t *packet, unsigned long now)
 {
-    return queue.data[(queue.tail + offset) % RX_QUEUE_SIZE];
-}
-
-static inline void queue_pop(ByteQueue &queue)
-{
-    if (queue.count == 0)
-        return;
-
-    queue.tail = (queue.tail + 1) % RX_QUEUE_SIZE;
-    queue.count--;
-}
-
-static void read_serial_byte_to_queue(ByteQueue &queue)
-{
-    if (Serial.available() <= 0)
-        return;
-
-    int byte_in = Serial.read();
-    if (byte_in >= 0)
-        queue_push(queue, (unsigned char)byte_in);
-}
-
-static bool try_parse_command_packet(ByteQueue &queue, CommandPacket &command)
-{
-    if (queue.count < 2)
-        return false;
-
-    if (queue_peek(queue, 0) != PKT_HEADER_0)
-    {
-        serial_framing_error_latched = true;
-        queue_pop(queue);
-        return false;
-    }
-
-    if (queue_peek(queue, 1) != PKT_HEADER_1)
-    {
-        serial_framing_error_latched = true;
-        queue_pop(queue);
-        return false;
-    }
-
-    if (queue.count < 4)
-        return false;
-
-    if (queue_peek(queue, 2) != CMD_PACKET_LENGTH || queue_peek(queue, 3) != CMD_PACKET_TYPE)
-    {
-        serial_framing_error_latched = true;
-        queue_pop(queue);
-        return false;
-    }
-
-    if (queue.count < CMD_PACKET_SIZE)
-        return false;
-
-    unsigned char packet[CMD_PACKET_SIZE];
-    for (uint8_t i = 0; i < CMD_PACKET_SIZE; i++)
-    {
-        packet[i] = queue_peek(queue, i);
-    }
-
     if (xor_checksum(packet, CMD_PACKET_SIZE - 1) != packet[CMD_PACKET_SIZE - 1])
     {
         checksum_error_latched = true;
-        queue_pop(queue);
-        return false;
+        return;
     }
 
-    command.v_cmd = read_i16_le(&packet[5]);
-    command.w_cmd = read_i16_le(&packet[7]);
-    command.flags = packet[9];
+    CommandPacket command = {
+        read_i16_le(&packet[5]),
+        read_i16_le(&packet[7]),
+        packet[9]};
 
-    for (uint8_t i = 0; i < CMD_PACKET_SIZE; i++)
-    {
-        queue_pop(queue);
-    }
-
-    if (!command_in_range(command.v_cmd) || !command_in_range(command.w_cmd))
+    if (!command_in_range(command))
     {
         command_out_of_range_latched = true;
-        return false;
+        return;
     }
 
-    return true;
+    apply_command_packet(command, now);
+}
+
+static void feed_command_parser(uint8_t byte_in, unsigned long now)
+{
+    switch (command_rx_parser.state)
+    {
+    case CMD_RX_WAIT_HEADER_0:
+        if (byte_in == PKT_HEADER_0)
+        {
+            command_rx_parser.packet[0] = byte_in;
+            command_rx_parser.index = 1;
+            command_rx_parser.state = CMD_RX_WAIT_HEADER_1;
+        }
+        else
+        {
+            serial_framing_error_latched = true;
+        }
+        break;
+
+    case CMD_RX_WAIT_HEADER_1:
+        if (byte_in == PKT_HEADER_1)
+        {
+            command_rx_parser.packet[1] = byte_in;
+            command_rx_parser.index = 2;
+            command_rx_parser.state = CMD_RX_WAIT_LENGTH;
+        }
+        else
+        {
+            serial_framing_error_latched = true;
+            command_parser_reset(command_rx_parser);
+        }
+        break;
+
+    case CMD_RX_WAIT_LENGTH:
+        if (byte_in == CMD_PACKET_LENGTH)
+        {
+            command_rx_parser.packet[2] = byte_in;
+            command_rx_parser.index = 3;
+            command_rx_parser.state = CMD_RX_WAIT_TYPE;
+        }
+        else
+        {
+            serial_framing_error_latched = true;
+            command_parser_reset(command_rx_parser);
+        }
+        break;
+
+    case CMD_RX_WAIT_TYPE:
+        if (byte_in == CMD_PACKET_TYPE)
+        {
+            command_rx_parser.packet[3] = byte_in;
+            command_rx_parser.index = 4;
+            command_rx_parser.state = CMD_RX_READ_REST;
+        }
+        else
+        {
+            serial_framing_error_latched = true;
+            command_parser_reset(command_rx_parser);
+        }
+        break;
+
+    case CMD_RX_READ_REST:
+        command_rx_parser.packet[command_rx_parser.index] = byte_in;
+        command_rx_parser.index++;
+
+        if (command_rx_parser.index >= CMD_PACKET_SIZE)
+        {
+            parse_complete_command_frame(command_rx_parser.packet, now);
+            command_parser_reset(command_rx_parser);
+        }
+        break;
+    }
+}
+
+static void serial_drain_command_packets(unsigned long now)
+{
+    while (Serial.available() > 0)
+    {
+        int byte_in = Serial.read();
+        if (byte_in >= 0)
+            feed_command_parser((uint8_t)byte_in, now);
+    }
 }
 
 uint8_t protocol_xor_checksum(const uint8_t *data, size_t len)

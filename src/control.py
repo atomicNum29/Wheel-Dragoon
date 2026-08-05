@@ -12,6 +12,10 @@ COMMAND_LENGTH = 7
 COMMAND_TYPE = 0x01
 FLAG_ENABLE = 0x01
 FLAG_ESTOP = 0x02
+LINEAR_MPS_MIN = -2.0
+LINEAR_MPS_MAX = 2.0
+ANGULAR_RADPS_MIN = -5.0
+ANGULAR_RADPS_MAX = 5.0
 
 
 def xor_checksum(data: bytes) -> int:
@@ -22,8 +26,8 @@ def xor_checksum(data: bytes) -> int:
 
 
 def build_command_packet(
-    v_cmd: int,
-    w_cmd: int,
+    v_mps: float,
+    w_radps: float,
     seq: int = 0,
     enable: bool = True,
     emergency_stop: bool = False,
@@ -34,6 +38,20 @@ def build_command_packet(
     if emergency_stop:
         flags |= FLAG_ESTOP
 
+    if not LINEAR_MPS_MIN <= v_mps <= LINEAR_MPS_MAX:
+        raise ValueError(f"v_mps must be between {LINEAR_MPS_MIN} and {LINEAR_MPS_MAX}")
+    if not ANGULAR_RADPS_MIN <= w_radps <= ANGULAR_RADPS_MAX:
+        raise ValueError(
+            f"w_radps must be between {ANGULAR_RADPS_MIN} and {ANGULAR_RADPS_MAX}"
+        )
+
+    v_milli_mps = round(v_mps * 1000.0)
+    w_milli_radps = round(w_radps * 1000.0)
+    if not -32768 <= v_milli_mps <= 32767:
+        raise ValueError("v_mps is out of int16 milli-m/s range")
+    if not -32768 <= w_milli_radps <= 32767:
+        raise ValueError("w_radps is out of int16 milli-rad/s range")
+
     packet_without_checksum = (
         HEADER
         + struct.pack(
@@ -41,8 +59,8 @@ def build_command_packet(
             COMMAND_LENGTH,
             COMMAND_TYPE,
             seq & 0xFF,
-            int(v_cmd),
-            int(w_cmd),
+            int(v_milli_mps),
+            int(w_milli_radps),
             flags,
         )
     )
@@ -73,8 +91,8 @@ def find_teensy_port() -> Optional[str]:
 
 
 def send_command(
-    v_cmd: int,
-    w_cmd: int,
+    v_mps: float,
+    w_radps: float,
     seq: int = 0,
     enable: bool = True,
     emergency_stop: bool = False,
@@ -92,8 +110,8 @@ def send_command(
             raise RuntimeError("Teensy port not found. Provide port explicitly.")
     with serial.Serial(port, baud, timeout=timeout) as ser:
         payload = build_command_packet(
-            v_cmd=v_cmd,
-            w_cmd=w_cmd,
+            v_mps=v_mps,
+            w_radps=w_radps,
             seq=seq,
             enable=enable,
             emergency_stop=emergency_stop,
@@ -113,14 +131,14 @@ def main(argv):
         description="Send one ROS-MCU command packet to Teensy over USB serial."
     )
     parser.add_argument(
-        "v_cmd",
-        type=int,
-        help="Normalized linear command, typically -1000 to +1000.",
+        "v_mps",
+        type=float,
+        help="Target linear velocity in m/s.",
     )
     parser.add_argument(
-        "w_cmd",
-        type=int,
-        help="Normalized angular command, typically -1000 to +1000.",
+        "w_radps",
+        type=float,
+        help="Target angular velocity in rad/s.",
     )
     parser.add_argument(
         "--seq",
@@ -146,22 +164,23 @@ def main(argv):
 
     try:
         payload = build_command_packet(
-            v_cmd=args.v_cmd,
-            w_cmd=args.w_cmd,
+            v_mps=args.v_mps,
+            w_radps=args.w_radps,
             seq=args.seq,
             enable=not args.disable,
             emergency_stop=args.estop,
         )
         print(
             "Sending "
-            f"v_cmd={args.v_cmd}, w_cmd={args.w_cmd}, seq={args.seq & 0xFF}, "
+            f"v_mps={args.v_mps:.3f}, w_radps={args.w_radps:.3f}, "
+            f"seq={args.seq & 0xFF}, "
             f"enable={not args.disable}, emergency_stop={args.estop}, "
             f"packet={payload.hex(' ')} "
             f"to port={args.port or 'auto-detected'} at {args.baud} baud..."
         )
         resp = send_command(
-            args.v_cmd,
-            args.w_cmd,
+            args.v_mps,
+            args.w_radps,
             seq=args.seq,
             enable=not args.disable,
             emergency_stop=args.estop,
