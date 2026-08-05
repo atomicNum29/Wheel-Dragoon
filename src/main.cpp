@@ -1,8 +1,8 @@
 #include <Arduino.h>
 
 // car width and wheel radius
-const double W = 0.42; // m
-const double R = 0.14; // m
+const float W = 0.42; // m
+const float R = 0.13; // m
 
 // Command packet protocol: AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
 const uint8_t PKT_HEADER_0 = 0xAA;
@@ -205,8 +205,8 @@ void loop()
     }
     else if (mode_state == DRIVE_MODE_MANUAL)
     {
-        double v_velocity = v_pulseWidth;
-        double w_velocity = w_pulseWidth;
+        float v_velocity = v_pulseWidth;
+        float w_velocity = w_pulseWidth;
 
         v_velocity -= 1500; // 양수면 전진
         w_velocity -= 1500; // 양수면 좌선회 (우측 바퀴가 +)
@@ -214,8 +214,8 @@ void loop()
         v_velocity /= 250; // -500~500 범위를 -2~2 범위로 줄임. (m/s)
         w_velocity /= 100; // -500~500 범위를 -5~5 범위로 줄임. (rad/s)
 
-        double left_velocity = 0;
-        double right_velocity = 0;
+        float left_velocity = 0;
+        float right_velocity = 0;
 
         left_velocity = v_velocity - w_velocity * W / 2;
         right_velocity = v_velocity + w_velocity * W / 2;
@@ -250,8 +250,8 @@ void loop()
                 w_velocity = 0.0f;
             }
 
-            double left_velocity = v_velocity - w_velocity * W / 2;
-            double right_velocity = v_velocity + w_velocity * W / 2;
+            float left_velocity = v_velocity - w_velocity * W / 2;
+            float right_velocity = v_velocity + w_velocity * W / 2;
 
             // --- Target RPM from v/w command ---
             float left_rpm_ref = vel_mps_to_rpm((float)left_velocity);
