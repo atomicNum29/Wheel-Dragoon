@@ -1,5 +1,10 @@
 #include <Arduino.h>
 
+#include "flexcan0.hpp"
+#include "md200t_can.hpp"
+
+#define _DEBUG 1
+
 // car width and wheel radius
 const float W = 0.42; // m
 const float R = 0.13; // m
@@ -21,8 +26,9 @@ const float CMD_MILLI_UNIT_SCALE = 1000.0f;
 const uint8_t CMD_FLAG_ENABLE = 0x01;
 const uint8_t CMD_FLAG_ESTOP = 0x02;
 const unsigned long COMMAND_TIMEOUT_MS = 500;
-const unsigned long STATUS_PERIOD_MS = 50;       // 20 Hz
+const unsigned long STATUS_PERIOD_MS = 500;      // 2 Hz
 const uint16_t BATTERY_LOW_THRESHOLD_MV = 21000; // 24 V battery placeholder threshold
+const uint32_t MD200T_CAN_BITRATE = 250000;
 
 struct CommandPacket
 {
@@ -129,6 +135,8 @@ void motor_send_target_if_due(void);
 static bool command_in_range(const CommandPacket &command);
 // Convert linear wheel speed in m/s to wheel RPM.
 static float vel_mps_to_rpm(float v_mps);
+// Convert floating-point target RPM to MD200T int16 command data.
+static int16_t rpm_to_i16(float rpm);
 // Decode a little-endian signed 16-bit integer from packet bytes.
 static int16_t read_i16_le(const unsigned char *data);
 // Compute XOR checksum for a command frame candidate.
@@ -185,6 +193,14 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(mode_control_pin), mode_decodePWM, CHANGE);
 
     pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(100);
+
+    if (!can_begin(MD200T_CAN_BITRATE))
+    {
+        driver_fault = true;
+        digitalWrite(LED_BUILTIN, HIGH);
+    }
 
     booting = false;
 }
@@ -263,6 +279,16 @@ static inline float vel_mps_to_rpm(float v_mps)
     float omega = v_mps / (float)R;
     // RPM = omega * 60 / (2*pi)
     return omega * 60.0f / (2.0f * 3.1415926535f);
+}
+
+static inline int16_t rpm_to_i16(float rpm)
+{
+    if (rpm > 32767.0f)
+        return 32767;
+    if (rpm < -32768.0f)
+        return -32768;
+
+    return (int16_t)(rpm >= 0.0f ? rpm + 0.5f : rpm - 0.5f);
 }
 
 static inline int16_t read_i16_le(const unsigned char *data)
@@ -526,7 +552,31 @@ void protocol_send_basic_status_if_due(void)
     if (now - last_status_tx_ms >= STATUS_PERIOD_MS)
     {
         last_status_tx_ms = now;
+#if _DEBUG
+        Serial.print("DEBUG: ");
+        Serial.print("State: ");
+        Serial.print(motor_get_current_state());
+        Serial.print(", Error: ");
+        Serial.print(motor_build_error_bits(), HEX);
+        Serial.print(", Battery: ");
+        Serial.print(motor_read_battery_mv());
+        Serial.print(", Last Command: ");
+        Serial.print(last_valid_command_ms);
+        Serial.print(", Command Timeout: ");
+        Serial.print(command_timeout);
+        Serial.print(", Estop: ");
+        Serial.print(estop_active);
+        Serial.print(", Motor Enabled: ");
+        Serial.print(motor_enabled);
+        Serial.print(", v_pulseWidth: ");
+        Serial.print(v_pulseWidth);
+        Serial.print(", w_pulseWidth: ");
+        Serial.print(w_pulseWidth);
+        Serial.print(", Mode: ");
+        Serial.println(mode_state);
+#else
         protocol_send_basic_status();
+#endif
     }
 }
 
@@ -545,10 +595,30 @@ void motor_stop_all(void)
 
 static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a, const Md200tDriverCommand &driver_b)
 {
-    (void)driver_a;
-    (void)driver_b;
+    bool ok = true;
 
-    // TODO: Send MD200T CAN frames after bitrate, CAN IDs, and frame formats are confirmed.
+    if (driver_a.enabled)
+    {
+        ok = md200t_set_motor1_rpm(MD200T_DRIVER_A_ID, rpm_to_i16(driver_a.ch1_rpm)) && ok;
+        ok = md200t_set_motor2_rpm(MD200T_DRIVER_A_ID, rpm_to_i16(driver_a.ch2_rpm)) && ok;
+    }
+    else
+    {
+        ok = md200t_torque_off(MD200T_DRIVER_A_ID) && ok;
+    }
+
+    if (driver_b.enabled)
+    {
+        ok = md200t_set_motor1_rpm(MD200T_DRIVER_B_ID, rpm_to_i16(driver_b.ch1_rpm)) && ok;
+        ok = md200t_set_motor2_rpm(MD200T_DRIVER_B_ID, rpm_to_i16(driver_b.ch2_rpm)) && ok;
+    }
+    else
+    {
+        ok = md200t_torque_off(MD200T_DRIVER_B_ID) && ok;
+    }
+
+    driver_fault = !ok;
+    digitalWrite(LED_BUILTIN, !ok);
 }
 
 void motor_send_target_if_due(void)

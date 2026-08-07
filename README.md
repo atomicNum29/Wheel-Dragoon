@@ -29,10 +29,8 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 ### 아직 구현되지 않음
 
 - `seq` 기반 응답/상태 동기화
-- FlexCAN0 직접 레지스터 TX 코드 구현
 - Teensy 3.2 외부 CAN transceiver 배선 검증
 - 채널별 direction polarity 검증
-- 실제 MD200T CAN frame 송신 구현
 - FlexCAN ESR1/ECR diagnostics 출력
 - 실제 배터리 전압 ADC 측정
 - 드라이버 fault, 과전류, 과열, 파라미터 오류 감지 입력
@@ -500,8 +498,13 @@ uv run python src/control.py 0 0 --estop
 .
 ├── platformio.ini          # PlatformIO 보드/프레임워크 설정
 ├── pyproject.toml          # Python 제어 스크립트 의존성
+├── include/
+│   ├── flexcan0.hpp        # FlexCAN0 TX-only API
+│   └── md200t_can.hpp      # MD200T channel command API
 ├── src/
-│   ├── main.cpp            # Teensy 펌웨어
+│   ├── main.cpp            # Teensy 펌웨어 main loop / ROS packet / MD200T scheduling
+│   ├── flexcan0.cpp        # MK20DX256 FlexCAN0 register-level TX implementation
+│   ├── md200t_can.cpp      # MDROBOT standard CAN frame builder
 │   └── control.py          # UART 명령 송신 스크립트
 ```
 
