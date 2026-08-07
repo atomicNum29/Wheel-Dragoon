@@ -3,7 +3,7 @@
 #include "flexcan0.hpp"
 #include "md200t_can.hpp"
 
-#define _DEBUG 1
+#define _DEBUG 0
 
 // car width and wheel radius
 const float W = 0.42; // m
@@ -252,14 +252,13 @@ void loop()
     }
     else if (mode_state == DRIVE_MODE_AUTO)
     {
-        serial_drain_command_packets(now);
-
         if (command_timeout)
         {
             motor_stop_all();
         }
     }
 
+    serial_drain_command_packets(now);
     motor_send_target_if_due();
     protocol_send_basic_status_if_due();
 }
