@@ -6,7 +6,7 @@
 #define _DEBUG 0
 
 // car width and wheel radius
-const float W = 0.42; // m
+const float W = 0.485; // m
 const float R = 0.13; // m
 
 // Command packet protocol: AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
