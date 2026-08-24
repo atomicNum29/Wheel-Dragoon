@@ -80,7 +80,7 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - 확인함: `datasheet/MDROBOT-CAN communication protocol on controllers[EN].pdf`
 - 저장소에서 못 찾음: `datasheet/K20P64M72SF1.pdf`
 
-문서 부재 때문에 MCU 패키지별 핀 멀티플렉싱은 레퍼런스 매뉴얼의 64-pin pinout과 Teensyduino 코어 pin map을 교차 확인했다. MD200T는 별도 전용 매뉴얼 PDF가 없는 것으로 보고, CAN baudrate 설정만 MDROBOT protocol 문서 기준으로 명시한다.
+문서 부재 때문에 MCU 패키지별 핀 멀티플렉싱은 레퍼런스 매뉴얼의 64-pin pinout과 Teensyduino 코어 pin map을 교차 확인했다. MD200T는 별도 전용 매뉴얼 PDF가 없는 것으로 보고, 운용 CAN baudrate가 `250 kbit/s`라는 전제만 명시한다.
 
 ### 구현 파일 구조
 
@@ -224,15 +224,15 @@ DATA[1..7] = PID data
 
 | 함수 | CAN ID | DATA |
 | --- | --- | --- |
-| `md200t_set_motor1_rpm(driver_id, rpm)` | `(0x00 << 8) | driver_id` | `PID_TAR_VEL1(117), rpm_lo, rpm_hi, 0, 0, 0, 0, 0` |
-| `md200t_set_motor2_rpm(driver_id, rpm)` | `(0x00 << 8) | driver_id` | `PID_TAR_VEL2(118), rpm_lo, rpm_hi, 0, 0, 0, 0, 0` |
+| `md200t_set_motor1_rpm(driver_id, rpm)` | `(0x00 << 8) | driver_id` | `PID_TAR_VEL1(130), rpm_lo, rpm_hi, 0, 0, 0, 0, 0` |
+| `md200t_set_motor2_rpm(driver_id, rpm)` | `(0x00 << 8) | driver_id` | `PID_TAR_VEL2(131), rpm_lo, rpm_hi, 0, 0, 0, 0, 0` |
 | `md200t_torque_off(driver_id)` | `(0x00 << 8) | driver_id` | `PID_PNT_TQ_OFF(174), 1, 1, 0, 0, 0, 0, 0` |
 
-RPM은 MDROBOT 문서의 2-byte data 규칙에 따라 little-endian으로 보낸다. 즉 `DATA = D0 | (D1 << 8)`이고, `int16_t rpm`은 `D0 = rpm & 0xFF`, `D1 = (rpm >> 8) & 0xFF`로 보낸다. 듀얼채널 드라이버의 속도 제어는 `PID_PNT_VEL_CMD(207)` 같은 2채널 일괄 PID를 쓰지 않고, 채널별 PID인 `PID_TAR_VEL1(117)`과 `PID_TAR_VEL2(118)`만 사용해 CH1/CH2를 완전히 독립적으로 제어한다.
+RPM은 MDROBOT 문서의 2-byte data 규칙에 따라 little-endian으로 보낸다. 즉 `DATA = D0 | (D1 << 8)`이고, `int16_t rpm`은 `D0 = rpm & 0xFF`, `D1 = (rpm >> 8) & 0xFF`로 보낸다. 듀얼채널 드라이버의 속도 제어는 `PID_PNT_VEL_CMD(207)` 같은 2채널 일괄 PID를 쓰지 않고, 실제 드라이버 매칭으로 확인한 채널별 PID인 `PID_TAR_VEL1(130)`과 `PID_TAR_VEL2(131)`만 사용해 CH1/CH2를 완전히 독립적으로 제어한다.
 
 `PID_PNT_TQ_OFF(174)`는 dual-channel driver에서 motor1/motor2 torque-off condition을 각각 `D0`, `D1` bit로 지정한다. `md200t_torque_off()`는 안전 정지용으로 두 채널 모두 free stop시키는 함수이므로 `D0=1`, `D1=1`, `D2=0(no return data)`로 둔다.
 
-MD200T baudrate 설정은 protocol 문서의 `PID_ECAN_BITRATE(137)`을 따른다. `DATA[0]=0xAA`, `DATA[1]=3`이면 `250 kbit/s` 설정이다. 설정 프레임은 드라이버가 현재 사용하는 baudrate에서 먼저 보내야 하며, 설정 후 실제 드라이버 A/B와 Teensy FlexCAN0가 모두 `250 kbit/s`로 맞아야 한다.
+MD200T A/B는 이미 `250 kbit/s`로 설정된 상태를 전제로 한다. 펌웨어는 baudrate 설정 frame을 보내지 않고, Teensy FlexCAN0를 `250 kbit/s`로 초기화한 뒤 바로 명령 frame을 송신한다.
 
 ## 동작 모드
 
@@ -519,7 +519,7 @@ Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서
 
 ## 주의 사항
 
-- FlexCAN0 송신 기본 bitrate는 `250 kbit/s`로 설계했습니다. MDROBOT protocol 문서의 드라이버 기본값은 `50 kbit/s`이고, `PID_ECAN_BITRATE(137)`에서 `3`이 `250 kbit/s`로 정의되어 있으므로 실제 MD200T 두 대도 `250 kbit/s`로 설정되어 있어야 합니다.
+- FlexCAN0 송신 bitrate는 `250 kbit/s`입니다. MD200T A/B도 이미 `250 kbit/s`로 설정되어 있다는 전제입니다.
 - MD200T A/B의 CAN driver ID는 각각 `1`, `2`입니다. 같은 bus에서 두 드라이버 ID가 충돌하면 안 됩니다.
 - MD200T A/B의 CH1/CH2 방향 극성은 실제 배선 후 저속 테스트로 검증해야 합니다.
 - CAN 통신에는 Teensy와 MD200T 사이의 CAN transceiver, CAN_H/CAN_L 배선, 공통 GND, 종단저항 검토가 필요합니다.
