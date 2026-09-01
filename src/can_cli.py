@@ -22,7 +22,7 @@ BRIDGE_STATUS_NAMES = {
 }
 
 
-def xor_checksum(data: bytes) -> int:
+def xor_checksum(data: bytes | bytearray | memoryview) -> int:
     checksum = 0
     for byte in data:
         checksum ^= byte
