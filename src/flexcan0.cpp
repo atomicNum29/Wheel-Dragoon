@@ -12,6 +12,7 @@ namespace
 constexpr uint32_t kSupportedBitrate = 250000u;
 constexpr uint8_t kMaxMbIndex = 15u;
 constexpr uint8_t kTxMb = 0u;
+constexpr uint8_t kRxMb = 1u;
 constexpr uint32_t kAllMbFlags = 0x0000FFFFu;
 
 constexpr uintptr_t kCan0MbBase = 0x40024080u;
@@ -42,6 +43,9 @@ constexpr uint32_t kMbIdStdShift = 18u;
 constexpr uint8_t kMbCodeTxInactive = 0b1000u;
 constexpr uint8_t kMbCodeTxAbort = 0b1001u;
 constexpr uint8_t kMbCodeTxDataOnce = 0b1100u;
+constexpr uint8_t kMbCodeRxFull = 0b0010u;
+constexpr uint8_t kMbCodeRxEmpty = 0b0100u;
+constexpr uint8_t kMbCodeRxOverrun = 0b0110u;
 
 bool g_can_initialized = false;
 
@@ -119,6 +123,16 @@ uint32_t pack_word(const uint8_t *data, uint8_t start_index, uint8_t dlc)
     return word;
 }
 
+void unpack_word(uint32_t word, uint8_t *data, uint8_t start_index, uint8_t dlc)
+{
+    for (uint8_t i = 0; i < 4u; ++i)
+    {
+        const uint8_t data_index = start_index + i;
+        if (data_index < dlc)
+            data[data_index] = static_cast<uint8_t>(word >> (24u - (8u * i)));
+    }
+}
+
 bool abort_tx_mb(uint32_t timeout_us)
 {
     if (get_mb_code(kTxMb) == kMbCodeTxInactive)
@@ -171,6 +185,9 @@ bool can_begin(uint32_t bitrate)
         return false;
 
     CAN0_CTRL1 = kCtrl1Timing250k;
+    CAN0_RXMGMASK = 0u;
+    CAN0_RX14MASK = 0u;
+    CAN0_RX15MASK = 0u;
     CAN0_IMASK1 = 0u;
     CAN0_IFLAG1 = kAllMbFlags;
 
@@ -183,6 +200,8 @@ bool can_begin(uint32_t bitrate)
     }
 
     mb_cs(kTxMb) = mb_code(kMbCodeTxInactive);
+    mb_id(kRxMb) = 0u;
+    mb_cs(kRxMb) = mb_code(kMbCodeRxEmpty);
 
     CAN0_MCR &= ~kMcrHalt;
     if (!wait_until_clear(CAN0_MCR, kMcrFrzAck, 1000u))
@@ -215,8 +234,43 @@ bool can_transmit(const CanFrame &frame, uint32_t timeout_us)
     return true;
 }
 
+bool can_receive(CanFrame &frame, uint32_t timeout_us)
+{
+    if (!g_can_initialized)
+        return false;
+
+    const uint32_t flag = 1u << kRxMb;
+    if (!wait_until_set(CAN0_IFLAG1, flag, timeout_us))
+        return false;
+
+    const uint32_t cs = mb_cs(kRxMb);
+    const uint8_t code = static_cast<uint8_t>((cs & kMbCodeMask) >> kMbCodeShift);
+    if (code != kMbCodeRxFull && code != kMbCodeRxOverrun)
+    {
+        CAN0_IFLAG1 = flag;
+        mb_cs(kRxMb) = mb_code(kMbCodeRxEmpty);
+        return false;
+    }
+
+    uint8_t dlc = static_cast<uint8_t>((cs >> kMbDlcShift) & 0x0Fu);
+    if (dlc > 8u)
+        dlc = 8u;
+
+    frame.id = static_cast<uint16_t>((mb_id(kRxMb) >> kMbIdStdShift) & 0x7FFu);
+    frame.dlc = dlc;
+    for (uint8_t i = 0u; i < 8u; ++i)
+        frame.data[i] = 0u;
+
+    unpack_word(mb_word0(kRxMb), frame.data, 0u, frame.dlc);
+    unpack_word(mb_word1(kRxMb), frame.data, 4u, frame.dlc);
+
+    (void)CAN0_TIMER;
+    CAN0_IFLAG1 = flag;
+    mb_cs(kRxMb) = mb_code(kMbCodeRxEmpty);
+    return true;
+}
+
 bool can_is_initialized()
 {
     return g_can_initialized;
 }
-

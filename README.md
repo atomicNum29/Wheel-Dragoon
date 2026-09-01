@@ -13,11 +13,12 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - 상태머신 기반 USB Serial command packet 수신
 - XOR checksum 검증
 - `flags`의 enable 및 emergency_stop 처리
-- Basic Status Packet 20 Hz 송신
+- Basic Status Packet 2 Hz 송신
 - command timeout 감지 및 timeout 시 모터 목표 RPM 0 처리
 - state/error bitfield 산출
 - 차동 구동식 기반 좌/우 바퀴 목표 RPM 계산
 - 10 ms 주기 MD200T command 송신 스케줄링
+- USB Serial-CAN bridge를 통한 MD200T PID/data 직접 송수신
 
 ### MD200T/CAN 전환 목표
 
@@ -28,7 +29,7 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 
 ### 아직 구현되지 않음
 
-- `seq` 기반 응답/상태 동기화
+- ROS 주행 command에 대한 `seq` 기반 ack 동기화
 - Teensy 3.2 외부 CAN transceiver 배선 검증
 - 채널별 direction polarity 검증
 - FlexCAN ESR1/ECR diagnostics 출력
@@ -90,6 +91,7 @@ src/flexcan0.cpp
 include/md200t_can.hpp
 src/md200t_can.cpp
 src/main.cpp
+src/can_cli.py
 ```
 
 FlexCAN 계층 API:
@@ -103,6 +105,7 @@ struct CanFrame {
 
 bool can_begin(uint32_t bitrate);
 bool can_transmit(const CanFrame& frame, uint32_t timeout_us);
+bool can_receive(CanFrame& frame, uint32_t timeout_us);
 ```
 
 MD200T 계층 API:
@@ -113,7 +116,7 @@ bool md200t_set_motor2_rpm(uint8_t driver_id, int16_t rpm);
 bool md200t_torque_off(uint8_t driver_id);
 ```
 
-`can_begin()`과 `can_transmit()`의 모든 polling loop는 `micros()` 기반 timeout을 가져야 한다. timeout 대상은 low-power acknowledge 해제, freeze acknowledge 진입/해제, soft reset 완료, TX MB active/abort 대기, TX 완료 `IFLAG1` 대기다. 동적 메모리와 interrupt는 사용하지 않는다. 첫 구현은 검증한 `250000` bitrate만 허용하고, 다른 bitrate는 별도 timing table을 문서로 확인한 뒤 추가한다.
+`can_begin()`, `can_transmit()`, `can_receive()`의 모든 polling loop는 `micros()` 기반 timeout을 가져야 한다. timeout 대상은 low-power acknowledge 해제, freeze acknowledge 진입/해제, soft reset 완료, TX MB active/abort 대기, TX 완료 `IFLAG1` 대기, RX 완료 `IFLAG1` 대기다. 동적 메모리와 interrupt는 사용하지 않는다. 첫 구현은 검증한 `250000` bitrate만 허용하고, 다른 bitrate는 별도 timing table을 문서로 확인한 뒤 추가한다.
 
 ### FlexCAN 클록과 250 kbit/s 비트 타이밍
 
@@ -141,7 +144,7 @@ K20 레퍼런스 매뉴얼은 FlexCAN clock source가 `CANx_CTRL1[CLKSRC]`로 `O
 | Actual bitrate | `16,000,000 / 4 / 16 = 250,000 bit/s` |
 | `CAN0_CTRL1` timing bits | `0x037B0002` before optional non-timing bits |
 
-`CAN0_CTRL1[CLKSRC]`는 Disable mode에서만 쓸 수 있으므로 `MCR[MDIS]`를 clear하기 전에 0으로 둔다. `CAN0_CTRL1`의 timing field는 Freeze mode에서만 쓴다. 이번 TX-only polling 구현에서는 interrupt mask bit를 켜지 않는다. RX FIFO는 사용하지 않으므로 `MCR[RFEN]=0`을 유지한다.
+`CAN0_CTRL1[CLKSRC]`는 Disable mode에서만 쓸 수 있으므로 `MCR[MDIS]`를 clear하기 전에 0으로 둔다. `CAN0_CTRL1`의 timing field는 Freeze mode에서만 쓴다. 이번 polling 구현에서는 interrupt mask bit를 켜지 않는다. RX FIFO는 사용하지 않으므로 `MCR[RFEN]=0`을 유지한다.
 
 ### FlexCAN0 초기화 순서
 
@@ -156,7 +159,7 @@ K20 레퍼런스 매뉴얼은 FlexCAN clock source가 `CANx_CTRL1[CLKSRC]`로 `O
 9. `MCR[MAXMB]=15`, `MCR[SRX_DIS]=1`, `MCR[RFEN]=0`으로 16개 MB, self reception disabled, Rx FIFO disabled를 설정한다.
 10. `CAN0_CTRL1 = 0x037B0002`로 250 kbit/s timing을 설정한다. `CLK_SRC` bit는 0이어야 한다.
 11. `CAN0_IMASK1 = 0`, `CAN0_IFLAG1 = 0xFFFFFFFF`로 interrupt를 끄고 pending flag를 w1c clear한다.
-12. MB0..MB15 RAM을 모두 초기화한다. `CS=0`, `ID=0`, `WORD0=0`, `WORD1=0`으로 지운 뒤 TX로 쓸 MB0만 `CS = CODE_TX_INACTIVE << 24`로 둔다.
+12. MB0..MB15 RAM을 모두 초기화한다. `CS=0`, `ID=0`, `WORD0=0`, `WORD1=0`으로 지운 뒤 TX로 쓸 MB0은 `CS = CODE_TX_INACTIVE << 24`, RX로 쓸 MB1은 `CS = CODE_RX_EMPTY << 24`로 둔다.
 13. `CAN0_MCR &= ~MCR_HALT` 후 `MCR[FRZ_ACK]`가 0이 될 때까지 timeout polling한다.
 
 MK20DX256의 FlexCAN0은 16개 message buffer를 가진다. MB 하나는 16 byte이고, MB memory는 `CAN0` base `0x40024000 + 0x80 + n * 0x10` 위치다. Teensyduino 코어의 `kinetis.h`는 `CAN0_MBn_CS(n)`, `CAN0_MBn_ID(n)`, `CAN0_MBn_WORD0(n)`, `CAN0_MBn_WORD1(n)` macro를 제공하지 않으므로 직접 구현에서는 base offset helper를 로컬 `volatile uint32_t&` 함수로 둔다.
@@ -188,9 +191,27 @@ MK20DX256의 FlexCAN0은 16개 message buffer를 가진다. MB 하나는 16 byte
 6. `IFLAG1` 해당 bit가 set될 때까지 timeout polling한다.
 7. 완료 후 `CAN0_IFLAG1 = mask`로 clear하고 성공을 반환한다.
 
+### RX Message Buffer 수신 규칙
+
+CAN bridge CLI에서 MD200T 응답을 받기 위해 MB1 하나를 polling RX MB로 사용한다. RX FIFO, filter, interrupt는 사용하지 않는다.
+
+| 항목 | 값 |
+| --- | --- |
+| RX MB | `MB1` |
+| RX empty CODE | `0b0100` |
+| RX full CODE | `0b0010` |
+| RX overrun CODE | `0b0110` |
+| Acceptance mask | `CAN0_RXMGMASK = 0`, 모든 standard ID 수신 |
+| Standard ID 위치 | `ID[28:18]`, 즉 `(ID >> 18) & 0x7FF` |
+| Data byte order | TX와 동일하게 `WORD0[31:24]=data[0]` 순서 |
+| RX complete flag | `CAN0_IFLAG1 & (1u << 1)` |
+| RX unlock / clear | MB1 `CS/ID/WORD`를 읽고 `CAN0_TIMER`를 읽은 뒤 `CAN0_IFLAG1 = (1u << 1)` |
+
+`can_receive()`는 `IFLAG1`이 set될 때까지 timeout polling하고, `CODE_RX_FULL` 또는 `CODE_RX_OVERRUN`인 경우 standard ID, DLC, data byte를 복사한다. 처리 후 MB1을 다시 `CODE_RX_EMPTY`로 돌린다. Extended ID, RTR frame, filter 처리는 이번 범위에 넣지 않는다.
+
 ### ESR1/ECR diagnostics 추후 구현
 
-`can_print_diagnostics()`는 이번 TX-only 1차 구현의 우선순위에서 제외한다. 추후 구현 시 최소한 다음 값을 출력한다.
+`can_print_diagnostics()`는 이번 1차 구현의 우선순위에서 제외한다. 추후 구현 시 최소한 다음 값을 출력한다.
 
 ```text
 CAN0_MCR
@@ -220,7 +241,7 @@ DATA[1..7] = PID data
 
 표준 모드 송신 예제는 `MID=0`을 사용한다. 문서는 드라이버가 표준 모드에서 수신할 때 MID 3 bit를 don't care로 본다고 설명하지만, 구현 상수는 예제값을 따라 `MDROBOT_STANDARD_CMD_MID = 0x00`으로 둔다. 드라이버 응답 frame의 MID는 문서에 `0x07`로 명시되어 있으므로 수신 구현 시 `MDROBOT_STANDARD_RESPONSE_MID = 0x07`로 둔다.
 
-이번 TX-only 구현에 사용할 PID:
+현재 속도 제어 구현에 사용할 PID:
 
 | 함수 | CAN ID | DATA |
 | --- | --- | --- |
@@ -358,7 +379,7 @@ AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
 
 ### Status Packet: MCU to ROS
 
-MCU가 ROS 노드로 20 Hz로 보내는 상태 패킷입니다. 명령 수신 여부와 무관하게 disabled, timeout, fault 상태에서도 주기적으로 송신합니다.
+MCU가 ROS 노드로 2 Hz로 보내는 상태 패킷입니다. 명령 수신 여부와 무관하게 disabled, timeout, fault 상태에서도 주기적으로 송신합니다.
 
 | Byte | Field | Type | Description |
 | --- | --- | --- | --- |
@@ -409,6 +430,61 @@ Error bitfield는 다음 매핑을 사용합니다.
 | 10 | `0x0400` | `PARAMETER_ERROR` |
 
 현재 센서가 없는 항목은 내부 상태값이 `false`로 고정되어 있습니다. `CHECKSUM_ERROR`, `SERIAL_FRAMING_ERROR`, `COMMAND_OUT_OF_RANGE`는 발생 후 다음 status packet에 반영되고, 실제 status 송신 후 latch를 clear합니다. `COMMAND_TIMEOUT`은 정상 command packet을 다시 수신하면 해제됩니다. `EMERGENCY_STOP_ACTIVE`는 estop flag가 해제된 정상 command를 수신하면 해제됩니다.
+
+### CAN Bridge Request: PC CLI to MCU
+
+MDAS처럼 PC 터미널에서 MD200T의 PID/data frame을 직접 보내기 위한 요청 패킷입니다. 같은 USB Serial 포트를 공유하므로 기존 ROS command/status packet과 동일한 `AA 55 length type ... checksum` framing을 사용하되, type은 `0x20`으로 분리합니다.
+
+요청을 받은 Teensy는 표준 11-bit CAN data frame을 250 kbit/s CAN bus로 송신하고, 지정한 timeout 동안 MB1에서 응답 frame을 polling합니다. 응답이 있으면 수신 CAN frame을 PC로 돌려주고, 없으면 timeout status를 돌려줍니다.
+
+| Byte | Field | Type | Description |
+| --- | --- | --- | --- |
+| 0 | `header[0]` | `uint8` | `0xAA` |
+| 1 | `header[1]` | `uint8` | `0x55` |
+| 2 | `length` | `uint8` | `15` |
+| 3 | `type` | `uint8` | `0x20` |
+| 4 | `seq` | `uint8` | CLI transaction sequence |
+| 5-6 | `can_id` | `uint16 LE` | Standard 11-bit CAN ID, `0x000..0x7FF` |
+| 7 | `dlc` | `uint8` | `0..8` |
+| 8-15 | `data` | `uint8[8]` | CAN data bytes. `dlc`보다 뒤는 0 padding |
+| 16-17 | `timeout_ms` | `uint16 LE` | CAN 응답 대기 timeout |
+| 18 | `checksum` | `uint8` | XOR checksum |
+
+```text
+AA 55 0F 20 seq id_lo id_hi dlc d0 d1 d2 d3 d4 d5 d6 d7 timeout_lo timeout_hi checksum
+```
+
+MDROBOT PID frame을 보낼 때 CLI는 다음처럼 구성합니다.
+
+```text
+CAN ID = (MID << 8) | driver_id
+DLC = 8
+DATA[0] = PID
+DATA[1..7] = PID data, 남는 byte는 0
+```
+
+기본 MID는 문서 예제와 기존 속도 제어 구현에 맞춰 `0`입니다. MD200T A/B의 driver ID는 각각 `1`, `2`입니다.
+
+### CAN Bridge Response: MCU to PC CLI
+
+Teensy가 CAN bridge 요청 하나에 대해 하나씩 돌려주는 응답 패킷입니다. CLI는 중간에 들어오는 기존 status packet `0x81`을 무시하고, 같은 `seq`의 `0xA0` 응답만 사용합니다.
+
+| Byte | Field | Type | Description |
+| --- | --- | --- | --- |
+| 0 | `header[0]` | `uint8` | `0xAA` |
+| 1 | `header[1]` | `uint8` | `0x55` |
+| 2 | `length` | `uint8` | `14` |
+| 3 | `type` | `uint8` | `0xA0` |
+| 4 | `seq` | `uint8` | 요청 packet의 sequence |
+| 5 | `status` | `uint8` | `0=ok`, `1=can_tx_failed`, `2=can_rx_timeout`, `3=invalid_request` |
+| 6-7 | `can_id` | `uint16 LE` | 수신된 CAN ID. 실패 시 `0` |
+| 8 | `dlc` | `uint8` | 수신 DLC. 실패 시 `0` |
+| 9-16 | `data` | `uint8[8]` | 수신 CAN data. 실패 또는 `dlc` 뒤는 0 |
+| 17 | `checksum` | `uint8` | XOR checksum |
+
+```text
+AA 55 0E A0 seq status id_lo id_hi dlc d0 d1 d2 d3 d4 d5 d6 d7 checksum
+```
 
 ### Checksum 계산
 
@@ -492,6 +568,51 @@ uv run python src/control.py 0 0 --estop
 | `uv run python src/control.py 0 1.0` | `1.0 rad/s` 제자리 회전 |
 | `uv run python src/control.py 0 0` | enable 상태의 정지 명령 |
 
+## Python CAN 설정 CLI
+
+`src/can_cli.py`는 Teensy를 USB Serial-CAN bridge로 사용해 MD200T에 임의의 PID/data frame을 보내고, MD200T의 응답 frame을 터미널에 출력합니다. MD200T A/B는 이미 `250 kbit/s`로 설정된 상태이므로 이 CLI는 CAN baudrate를 변경하지 않습니다.
+
+의존성은 기존 `pyproject.toml`의 `pyserial`을 사용합니다.
+
+```bash
+uv sync
+```
+
+MDROBOT PID frame 전송 형식:
+
+```bash
+uv run python src/can_cli.py pid DRIVER_ID PID [DATA_BYTE ...]
+```
+
+예시:
+
+```bash
+# Driver A(ID 1)에 PID 130, data 0x34 0x12 전송
+uv run python src/can_cli.py pid 1 130 0x34 0x12
+
+# Driver B(ID 2)에 PID 131, data 0x00 0x00 전송
+uv run python src/can_cli.py pid 2 131 0x00 0x00
+
+# 포트를 직접 지정
+uv run python src/can_cli.py pid 1 130 0x34 0x12 --port /dev/ttyACM0
+```
+
+표준 CAN data frame을 직접 보낼 수도 있습니다.
+
+```bash
+uv run python src/can_cli.py frame 0x001 0x82 0x34 0x12 --dlc 8
+```
+
+CLI 출력은 송신 frame과 수신 frame을 그대로 보여줍니다.
+
+```text
+TX id=0x001 dlc=8 data=82 34 12 00 00 00 00 00
+RX status=ok id=0x701 dlc=8 data=82 34 12 00 00 00 00 00
+MDROBOT pid=130 payload=34 12 00 00 00 00 00
+```
+
+`RX status=can_rx_timeout`은 Teensy의 CAN 송신 자체는 끝났지만 지정한 시간 안에 CAN 응답 frame을 받지 못했다는 뜻입니다. 이 경우 PID가 write-only이거나, MD200T가 해당 PID에 응답하지 않거나, 응답 설정/배선/종단/ID가 맞지 않을 수 있습니다. `RX status=can_tx_failed`는 ACK failure 가능성이 높으므로 transceiver, CAN_H/CAN_L, 공통 GND, 종단저항, MD200T 전원 및 250 kbit/s 설정을 먼저 확인합니다.
+
 ## 프로젝트 구조
 
 ```text
@@ -499,13 +620,14 @@ uv run python src/control.py 0 0 --estop
 ├── platformio.ini          # PlatformIO 보드/프레임워크 설정
 ├── pyproject.toml          # Python 제어 스크립트 의존성
 ├── include/
-│   ├── flexcan0.hpp        # FlexCAN0 TX-only API
+│   ├── flexcan0.hpp        # FlexCAN0 polling TX/RX API
 │   └── md200t_can.hpp      # MD200T channel command API
 ├── src/
 │   ├── main.cpp            # Teensy 펌웨어 main loop / ROS packet / MD200T scheduling
-│   ├── flexcan0.cpp        # MK20DX256 FlexCAN0 register-level TX implementation
+│   ├── flexcan0.cpp        # MK20DX256 FlexCAN0 register-level polling TX/RX implementation
 │   ├── md200t_can.cpp      # MDROBOT standard CAN frame builder
-│   └── control.py          # UART 명령 송신 스크립트
+│   ├── control.py          # UART 주행 명령 송신 스크립트
+│   └── can_cli.py          # USB Serial-CAN bridge CLI
 ```
 
 ## 목표 제어 방식
@@ -519,14 +641,15 @@ Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서
 
 ## 주의 사항
 
-- FlexCAN0 송신 bitrate는 `250 kbit/s`입니다. MD200T A/B도 이미 `250 kbit/s`로 설정되어 있다는 전제입니다.
+- FlexCAN0 송수신 bitrate는 `250 kbit/s`입니다. MD200T A/B도 이미 `250 kbit/s`로 설정되어 있다는 전제입니다.
 - MD200T A/B의 CAN driver ID는 각각 `1`, `2`입니다. 같은 bus에서 두 드라이버 ID가 충돌하면 안 됩니다.
 - MD200T A/B의 CH1/CH2 방향 극성은 실제 배선 후 저속 테스트로 검증해야 합니다.
 - CAN 통신에는 Teensy와 MD200T 사이의 CAN transceiver, CAN_H/CAN_L 배선, 공통 GND, 종단저항 검토가 필요합니다.
+- CAN 설정 CLI를 사용할 때도 Teensy FlexCAN0와 MD200T A/B는 모두 `250 kbit/s` 상태여야 합니다. 이 프로젝트는 MD200T baudrate 변경 frame을 보내지 않습니다.
 - Auto 모드를 사용하려면 모드 입력 PWM이 `1700 us` 이상이어야 합니다.
 - RC PWM 입력은 10개 샘플 이동 평균으로 필터링됩니다.
-- 현재 MCU 펌웨어는 ROS command packet 형식의 바이너리 패킷만 인식합니다. 일반 텍스트 `"0.5,0.0"` 형태로 보내면 인식되지 않습니다.
-- status packet과 command packet은 같은 Serial 포트를 공유하므로, ROS 수신부는 binary packet framing을 기준으로 파싱해야 합니다.
+- 현재 MCU 펌웨어는 ROS command packet과 CAN bridge request packet 형식의 바이너리 패킷만 인식합니다. 일반 텍스트 `"0.5,0.0"` 형태로 보내면 인식되지 않습니다.
+- status packet, command packet, CAN bridge packet은 같은 Serial 포트를 공유하므로, PC/ROS 수신부는 binary packet framing을 기준으로 파싱해야 합니다.
 
 ## 참고 자료
 

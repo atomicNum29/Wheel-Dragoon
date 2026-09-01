@@ -15,6 +15,13 @@ const uint8_t PKT_HEADER_1 = 0x55;
 const uint8_t CMD_PACKET_LENGTH = 7;
 const uint8_t CMD_PACKET_TYPE = 0x01;
 const uint8_t CMD_PACKET_SIZE = 11;
+const uint8_t CAN_BRIDGE_PACKET_LENGTH = 15;
+const uint8_t CAN_BRIDGE_PACKET_TYPE = 0x20;
+const uint8_t CAN_BRIDGE_PACKET_SIZE = 19;
+const uint8_t CAN_BRIDGE_RESPONSE_LENGTH = 14;
+const uint8_t CAN_BRIDGE_RESPONSE_TYPE = 0xA0;
+const uint8_t CAN_BRIDGE_RESPONSE_SIZE = 18;
+const uint8_t SERIAL_PACKET_MAX_SIZE = CAN_BRIDGE_PACKET_SIZE;
 const uint8_t STATUS_PACKET_LENGTH = 7;
 const uint8_t STATUS_PACKET_TYPE = 0x81;
 const uint8_t STATUS_PACKET_SIZE = 11;
@@ -25,10 +32,15 @@ const int16_t CMD_ANGULAR_MILLI_RADPS_MAX = 5000;
 const float CMD_MILLI_UNIT_SCALE = 1000.0f;
 const uint8_t CMD_FLAG_ENABLE = 0x01;
 const uint8_t CMD_FLAG_ESTOP = 0x02;
+const uint8_t CAN_BRIDGE_STATUS_OK = 0;
+const uint8_t CAN_BRIDGE_STATUS_TX_FAILED = 1;
+const uint8_t CAN_BRIDGE_STATUS_RX_TIMEOUT = 2;
+const uint8_t CAN_BRIDGE_STATUS_INVALID_REQUEST = 3;
 const unsigned long COMMAND_TIMEOUT_MS = 500;
 const unsigned long STATUS_PERIOD_MS = 500;      // 2 Hz
 const uint16_t BATTERY_LOW_THRESHOLD_MV = 21000; // 24 V battery placeholder threshold
 const uint32_t MD200T_CAN_BITRATE = 250000;
+const uint32_t CAN_BRIDGE_TX_TIMEOUT_US = 2000;
 
 struct CommandPacket
 {
@@ -102,7 +114,7 @@ struct Md200tDriverCommand
 
 struct CommandFrameParser
 {
-    uint8_t packet[CMD_PACKET_SIZE];
+    uint8_t packet[SERIAL_PACKET_MAX_SIZE];
     uint8_t index;
     CommandRxState state;
 };
@@ -123,7 +135,7 @@ uint16_t motor_read_battery_mv(void);
 uint8_t protocol_xor_checksum(const uint8_t *data, size_t len);
 // Send one basic status packet to ROS over USB Serial.
 void protocol_send_basic_status(void);
-// Send the periodic basic status packet when the 20 Hz interval has elapsed.
+// Send the periodic basic status packet when the configured interval has elapsed.
 void protocol_send_basic_status_if_due(void);
 // Convert left/right skid-steer RPM targets into four wheel RPM targets.
 void motor_set_left_right_rpm(float left_rpm, float right_rpm);
@@ -139,6 +151,8 @@ static float vel_mps_to_rpm(float v_mps);
 static int16_t rpm_to_i16(float rpm);
 // Decode a little-endian signed 16-bit integer from packet bytes.
 static int16_t read_i16_le(const unsigned char *data);
+// Decode a little-endian unsigned 16-bit integer from packet bytes.
+static uint16_t read_u16_le(const unsigned char *data);
 // Compute XOR checksum for a command frame candidate.
 static uint8_t xor_checksum(const unsigned char *data, uint8_t len);
 // Convert packet milli-m/s linear velocity to m/s.
@@ -151,6 +165,12 @@ static void command_parser_reset(CommandFrameParser &parser);
 static void apply_command_packet(const CommandPacket &command, unsigned long now);
 // Parse a complete command frame buffer and apply it when valid.
 static void parse_complete_command_frame(const uint8_t *packet, unsigned long now);
+// Send one USB Serial response for a CAN bridge transaction.
+static void send_can_bridge_response(uint8_t seq, uint8_t status, const CanFrame *frame);
+// Parse and execute one USB Serial to CAN bridge request.
+static void parse_complete_can_bridge_frame(const uint8_t *packet);
+// Dispatch a complete USB Serial frame by packet type.
+static void parse_complete_serial_frame(const uint8_t *packet, unsigned long now);
 // Feed one Serial byte into the command frame state machine.
 static void feed_command_parser(uint8_t byte_in, unsigned long now);
 // Drain all currently buffered USB Serial bytes into the command parser.
@@ -295,6 +315,11 @@ static inline int16_t read_i16_le(const unsigned char *data)
     return (int16_t)((uint16_t)data[0] | ((uint16_t)data[1] << 8));
 }
 
+static inline uint16_t read_u16_le(const unsigned char *data)
+{
+    return (uint16_t)data[0] | ((uint16_t)data[1] << 8);
+}
+
 static inline uint8_t xor_checksum(const unsigned char *data, uint8_t len)
 {
     uint8_t checksum = 0;
@@ -368,6 +393,104 @@ static void parse_complete_command_frame(const uint8_t *packet, unsigned long no
     apply_command_packet(command, now);
 }
 
+static void send_can_bridge_response(uint8_t seq, uint8_t status, const CanFrame *frame)
+{
+    uint8_t packet[CAN_BRIDGE_RESPONSE_SIZE];
+    packet[0] = PKT_HEADER_0;
+    packet[1] = PKT_HEADER_1;
+    packet[2] = CAN_BRIDGE_RESPONSE_LENGTH;
+    packet[3] = CAN_BRIDGE_RESPONSE_TYPE;
+    packet[4] = seq;
+    packet[5] = status;
+
+    uint16_t id = 0u;
+    uint8_t dlc = 0u;
+    uint8_t data[8] = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u};
+    if (frame != nullptr)
+    {
+        id = frame->id;
+        dlc = frame->dlc;
+        if (dlc > 8u)
+            dlc = 8u;
+        for (uint8_t i = 0u; i < dlc; ++i)
+            data[i] = frame->data[i];
+    }
+
+    packet[6] = (uint8_t)(id & 0xFFu);
+    packet[7] = (uint8_t)((id >> 8) & 0xFFu);
+    packet[8] = dlc;
+    for (uint8_t i = 0u; i < 8u; ++i)
+        packet[9u + i] = data[i];
+    packet[17] = xor_checksum(packet, CAN_BRIDGE_RESPONSE_SIZE - 1);
+
+    if (Serial.availableForWrite() >= CAN_BRIDGE_RESPONSE_SIZE)
+        Serial.write(packet, CAN_BRIDGE_RESPONSE_SIZE);
+}
+
+static void parse_complete_can_bridge_frame(const uint8_t *packet)
+{
+    const uint8_t seq = packet[4];
+    if (xor_checksum(packet, CAN_BRIDGE_PACKET_SIZE - 1) != packet[CAN_BRIDGE_PACKET_SIZE - 1])
+    {
+        checksum_error_latched = true;
+        send_can_bridge_response(seq, CAN_BRIDGE_STATUS_INVALID_REQUEST, nullptr);
+        return;
+    }
+
+    CanFrame tx = {};
+    tx.id = read_u16_le(&packet[5]);
+    tx.dlc = packet[7];
+    if (tx.id > 0x7FFu || tx.dlc > 8u)
+    {
+        send_can_bridge_response(seq, CAN_BRIDGE_STATUS_INVALID_REQUEST, nullptr);
+        return;
+    }
+
+    for (uint8_t i = 0u; i < 8u; ++i)
+        tx.data[i] = packet[8u + i];
+
+    // Avoid treating an old RX MB frame as the response to this transaction.
+    CanFrame discarded = {};
+    for (uint8_t i = 0u; i < 4u; ++i)
+    {
+        if (!can_receive(discarded, 0u))
+            break;
+    }
+
+    const uint16_t timeout_ms = read_u16_le(&packet[16]);
+    if (!can_transmit(tx, CAN_BRIDGE_TX_TIMEOUT_US))
+    {
+        send_can_bridge_response(seq, CAN_BRIDGE_STATUS_TX_FAILED, nullptr);
+        return;
+    }
+
+    CanFrame rx = {};
+    const uint32_t timeout_us = static_cast<uint32_t>(timeout_ms) * 1000u;
+    if (!can_receive(rx, timeout_us))
+    {
+        send_can_bridge_response(seq, CAN_BRIDGE_STATUS_RX_TIMEOUT, nullptr);
+        return;
+    }
+
+    send_can_bridge_response(seq, CAN_BRIDGE_STATUS_OK, &rx);
+}
+
+static void parse_complete_serial_frame(const uint8_t *packet, unsigned long now)
+{
+    if (packet[2] == CMD_PACKET_LENGTH && packet[3] == CMD_PACKET_TYPE)
+    {
+        parse_complete_command_frame(packet, now);
+    }
+    else if (packet[2] == CAN_BRIDGE_PACKET_LENGTH && packet[3] == CAN_BRIDGE_PACKET_TYPE)
+    {
+        parse_complete_can_bridge_frame(packet);
+    }
+    else
+    {
+        serial_framing_error_latched = true;
+    }
+}
+
 static void feed_command_parser(uint8_t byte_in, unsigned long now)
 {
     switch (command_rx_parser.state)
@@ -400,7 +523,7 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
         break;
 
     case CMD_RX_WAIT_LENGTH:
-        if (byte_in == CMD_PACKET_LENGTH)
+        if (byte_in == CMD_PACKET_LENGTH || byte_in == CAN_BRIDGE_PACKET_LENGTH)
         {
             command_rx_parser.packet[2] = byte_in;
             command_rx_parser.index = 3;
@@ -414,7 +537,8 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
         break;
 
     case CMD_RX_WAIT_TYPE:
-        if (byte_in == CMD_PACKET_TYPE)
+        if ((command_rx_parser.packet[2] == CMD_PACKET_LENGTH && byte_in == CMD_PACKET_TYPE) ||
+            (command_rx_parser.packet[2] == CAN_BRIDGE_PACKET_LENGTH && byte_in == CAN_BRIDGE_PACKET_TYPE))
         {
             command_rx_parser.packet[3] = byte_in;
             command_rx_parser.index = 4;
@@ -431,9 +555,9 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
         command_rx_parser.packet[command_rx_parser.index] = byte_in;
         command_rx_parser.index++;
 
-        if (command_rx_parser.index >= CMD_PACKET_SIZE)
+        if (command_rx_parser.index >= 2u + 1u + command_rx_parser.packet[2] + 1u)
         {
-            parse_complete_command_frame(command_rx_parser.packet, now);
+            parse_complete_serial_frame(command_rx_parser.packet, now);
             command_parser_reset(command_rx_parser);
         }
         break;
