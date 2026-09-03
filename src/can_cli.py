@@ -216,6 +216,7 @@ def print_transaction(
         pid = rx_data[0]
         payload = rx_data[1:rx_dlc]
         print(f"MDROBOT pid={pid} payload={format_data(payload, len(payload))}")
+        print(f"Decimal payload: ", *[byte for byte in payload])
 
 
 def add_common_options(parser: argparse.ArgumentParser) -> None:

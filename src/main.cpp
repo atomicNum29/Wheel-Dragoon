@@ -722,8 +722,9 @@ static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a, con
 
     if (driver_a.enabled)
     {
-        ok = md200t_set_motor1_rpm(MD200T_DRIVER_A_ID, rpm_to_i16(driver_a.ch1_rpm)) && ok;
-        ok = md200t_set_motor2_rpm(MD200T_DRIVER_A_ID, rpm_to_i16(driver_a.ch2_rpm)) && ok;
+        ok = md200t_set_velocity(MD200T_DRIVER_A_ID,
+                                 rpm_to_i16(driver_a.ch1_rpm),
+                                 rpm_to_i16(driver_a.ch2_rpm)) && ok;
     }
     else
     {
@@ -732,8 +733,9 @@ static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a, con
 
     if (driver_b.enabled)
     {
-        ok = md200t_set_motor1_rpm(MD200T_DRIVER_B_ID, rpm_to_i16(driver_b.ch1_rpm)) && ok;
-        ok = md200t_set_motor2_rpm(MD200T_DRIVER_B_ID, rpm_to_i16(driver_b.ch2_rpm)) && ok;
+        ok = md200t_set_velocity(MD200T_DRIVER_B_ID,
+                                 rpm_to_i16(driver_b.ch1_rpm),
+                                 rpm_to_i16(driver_b.ch2_rpm)) && ok;
     }
     else
     {

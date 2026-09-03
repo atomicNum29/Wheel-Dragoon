@@ -111,8 +111,7 @@ bool can_receive(CanFrame& frame, uint32_t timeout_us);
 MD200T 계층 API:
 
 ```cpp
-bool md200t_set_motor1_rpm(uint8_t driver_id, int16_t rpm);
-bool md200t_set_motor2_rpm(uint8_t driver_id, int16_t rpm);
+bool md200t_set_velocity(uint8_t driver_id, int16_t rpm1, int16_t rpm2);
 bool md200t_torque_off(uint8_t driver_id);
 ```
 
@@ -245,11 +244,10 @@ DATA[1..7] = PID data
 
 | 함수 | CAN ID | DATA |
 | --- | --- | --- |
-| `md200t_set_motor1_rpm(driver_id, rpm)` | `(0x00 << 8) | driver_id` | `PID_TAR_VEL1(130), rpm_lo, rpm_hi, 0, 0, 0, 0, 0` |
-| `md200t_set_motor2_rpm(driver_id, rpm)` | `(0x00 << 8) | driver_id` | `PID_TAR_VEL2(131), rpm_lo, rpm_hi, 0, 0, 0, 0, 0` |
+| `md200t_set_velocity(driver_id, rpm1, rpm2)` | `(0x00 << 8) | driver_id` | `PID_PNT_VEL_CMD(207), 1, rpm1_lo, rpm1_hi, 1, rpm2_lo, rpm2_hi, 0` |
 | `md200t_torque_off(driver_id)` | `(0x00 << 8) | driver_id` | `PID_PNT_TQ_OFF(174), 1, 1, 0, 0, 0, 0, 0` |
 
-RPM은 MDROBOT 문서의 2-byte data 규칙에 따라 little-endian으로 보낸다. 즉 `DATA = D0 | (D1 << 8)`이고, `int16_t rpm`은 `D0 = rpm & 0xFF`, `D1 = (rpm >> 8) & 0xFF`로 보낸다. 듀얼채널 드라이버의 속도 제어는 `PID_PNT_VEL_CMD(207)` 같은 2채널 일괄 PID를 쓰지 않고, 실제 드라이버 매칭으로 확인한 채널별 PID인 `PID_TAR_VEL1(130)`과 `PID_TAR_VEL2(131)`만 사용해 CH1/CH2를 완전히 독립적으로 제어한다.
+RPM은 MDROBOT 문서의 2-byte data 규칙에 따라 signed 16-bit little-endian으로 보낸다. `PID_PNT_VEL_CMD(207)` 한 프레임에 CH1/CH2 RPM을 각각 넣으며, 음수는 2의 보수 bit pattern을 그대로 직렬화한다.
 
 `PID_PNT_TQ_OFF(174)`는 dual-channel driver에서 motor1/motor2 torque-off condition을 각각 `D0`, `D1` bit로 지정한다. `md200t_torque_off()`는 안전 정지용으로 두 채널 모두 free stop시키는 함수이므로 `D0=1`, `D1=1`, `D2=0(no return data)`로 둔다.
 
@@ -321,7 +319,7 @@ Stop, disable, emergency stop, command timeout 상태에서는 네 개 채널 �
 | MD200T A | `1` | LF | RR | 대각 페어 |
 | MD200T B | `2` | RF | LR | 대각 페어 |
 
-각 채널의 `direction polarity`는 실제 배선 후 검증해야 합니다. 표준 송신 frame은 `MD200T CAN frame 결정` 섹션의 채널별 PID를 사용합니다.
+각 채널의 `direction polarity`는 실제 배선 후 검증해야 합니다. 표준 송신 frame은 `MD200T CAN frame 결정` 섹션의 듀얼채널 PID를 사용합니다.
 
 ## ROS 연동 목표 책임 분리
 

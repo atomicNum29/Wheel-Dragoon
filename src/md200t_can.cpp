@@ -8,8 +8,7 @@ constexpr uint8_t kMdrobotStandardCmdMid = 0x00u;
 constexpr uint8_t kDlc = 8u;
 constexpr uint32_t kTxTimeoutUs = 2000u;
 
-constexpr uint8_t kPidTarVel1 = 130u;
-constexpr uint8_t kPidTarVel2 = 131u;
+constexpr uint8_t kPidPntVelCmd = 207u;
 constexpr uint8_t kPidPntTqOff = 174u;
 
 uint16_t make_standard_id(uint8_t driver_id)
@@ -18,11 +17,11 @@ uint16_t make_standard_id(uint8_t driver_id)
                                  static_cast<uint16_t>(driver_id));
 }
 
-void put_i16_le(uint8_t *data, int16_t value)
+void put_i16_le(uint8_t *data, uint8_t offset, int16_t value)
 {
     const uint16_t raw = static_cast<uint16_t>(value);
-    data[1] = static_cast<uint8_t>(raw & 0xFFu);
-    data[2] = static_cast<uint8_t>((raw >> 8) & 0xFFu);
+    data[offset] = static_cast<uint8_t>(raw & 0xFFu);
+    data[offset + 1u] = static_cast<uint8_t>((raw >> 8) & 0xFFu);
 }
 
 bool send_frame(const CanFrame &frame)
@@ -30,25 +29,20 @@ bool send_frame(const CanFrame &frame)
     return can_transmit(frame, kTxTimeoutUs);
 }
 
-bool send_rpm(uint8_t driver_id, uint8_t pid, int16_t rpm)
+// }
+
+bool md200t_set_velocity(uint8_t driver_id, int16_t rpm1, int16_t rpm2)
 {
     CanFrame frame = {};
     frame.id = make_standard_id(driver_id);
     frame.dlc = kDlc;
-    frame.data[0] = pid;
-    put_i16_le(frame.data, rpm);
+    frame.data[0] = kPidPntVelCmd;
+    frame.data[1] = 1u;
+    put_i16_le(frame.data, 2u, rpm1);
+    frame.data[4] = 1u;
+    put_i16_le(frame.data, 5u, rpm2);
+    frame.data[7] = 0u;
     return send_frame(frame);
-}
-// }
-
-bool md200t_set_motor1_rpm(uint8_t driver_id, int16_t rpm)
-{
-    return send_rpm(driver_id, kPidTarVel1, rpm);
-}
-
-bool md200t_set_motor2_rpm(uint8_t driver_id, int16_t rpm)
-{
-    return send_rpm(driver_id, kPidTarVel2, rpm);
 }
 
 bool md200t_torque_off(uint8_t driver_id)
@@ -62,4 +56,3 @@ bool md200t_torque_off(uint8_t driver_id)
     frame.data[3] = 0u;
     return send_frame(frame);
 }
-
