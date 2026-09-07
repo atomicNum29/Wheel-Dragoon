@@ -36,6 +36,8 @@ const int16_t CMD_LINEAR_MILLI_MPS_MAX = 2000;
 const int16_t CMD_ANGULAR_MILLI_RADPS_MIN = -5000;
 const int16_t CMD_ANGULAR_MILLI_RADPS_MAX = 5000;
 const float CMD_MILLI_UNIT_SCALE = 1000.0f;
+const int32_t RC_PWM_CENTER_US = 1500;
+const int32_t RC_PWM_DEADBAND_US = 50;
 const uint8_t CMD_FLAG_ENABLE = 0x01;
 const uint8_t CMD_FLAG_ESTOP = 0x02;
 const uint8_t CAN_BRIDGE_STATUS_OK = 0;
@@ -227,6 +229,8 @@ static bool command_in_range(const CommandPacket &command);
 static float vel_mps_to_rpm(float v_mps);
 // Convert floating-point target RPM to MD200T int16 command data.
 static int16_t rpm_to_i16(float rpm);
+// Return the signed RC PWM offset, or zero while inside the neutral deadband.
+static int32_t rc_pwm_offset_with_deadband(unsigned int pulse_width_us);
 // Convert packet milli-m/s linear velocity to m/s.
 static float milli_mps_to_mps(int16_t milli_mps);
 // Convert packet milli-rad/s angular velocity to rad/s.
@@ -379,6 +383,14 @@ static inline int16_t rpm_to_i16(float rpm)
     return (int16_t)(rpm >= 0.0f ? rpm + 0.5f : rpm - 0.5f);
 }
 
+static inline int32_t rc_pwm_offset_with_deadband(unsigned int pulse_width_us)
+{
+    const int32_t offset_us = static_cast<int32_t>(pulse_width_us) - RC_PWM_CENTER_US;
+    if (offset_us >= -RC_PWM_DEADBAND_US && offset_us <= RC_PWM_DEADBAND_US)
+        return 0;
+    return offset_us;
+}
+
 static inline float milli_mps_to_mps(int16_t milli_mps)
 {
     return (float)milli_mps / CMD_MILLI_UNIT_SCALE;
@@ -432,9 +444,10 @@ static void update_effective_motor_command(DriveMode drive_mode,
         estop_active = false;
         motor_enabled = true;
 
-        // Preserve the existing RC scaling and skid-steer direction signs.
-        const float v_velocity = (static_cast<float>(v_pwm) - 1500.0f) / 250.0f;
-        const float w_velocity = (static_cast<float>(w_pwm) - 1500.0f) / 100.0f;
+        // Suppress receiver/joystick noise independently on both axes. Outside
+        // the neutral band, preserve the existing scaling and direction signs.
+        const float v_velocity = static_cast<float>(rc_pwm_offset_with_deadband(v_pwm)) / 250.0f;
+        const float w_velocity = static_cast<float>(rc_pwm_offset_with_deadband(w_pwm)) / 100.0f;
         const float left_velocity = v_velocity - w_velocity * W / 2.0f;
         const float right_velocity = v_velocity + w_velocity * W / 2.0f;
         motor_set_left_right_rpm(vel_mps_to_rpm(left_velocity), vel_mps_to_rpm(right_velocity));
