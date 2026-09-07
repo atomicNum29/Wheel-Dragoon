@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <kinetis.h>
 
 #include "can_tx_schedule.hpp"
 #include "flexcan0.hpp"
@@ -17,6 +18,11 @@ const uint8_t PKT_HEADER_1 = 0x55;
 const uint8_t CMD_PACKET_LENGTH = 7;
 const uint8_t CMD_PACKET_TYPE = 0x01;
 const uint8_t CMD_PACKET_SIZE = 11;
+const uint8_t RESET_PACKET_LENGTH = 4;
+const uint8_t RESET_PACKET_TYPE = 0x02;
+const uint8_t RESET_PACKET_SIZE = 8;
+const uint8_t RESET_MAGIC_0 = 0xA5;
+const uint8_t RESET_MAGIC_1 = 0x5A;
 const uint8_t CAN_BRIDGE_PACKET_LENGTH = 15;
 const uint8_t CAN_BRIDGE_PACKET_TYPE = 0x20;
 const uint8_t CAN_BRIDGE_PACKET_SIZE = 19;
@@ -241,6 +247,9 @@ static void command_parser_reset(CommandFrameParser &parser);
 static void apply_command_packet(const CommandPacket &command, unsigned long now);
 // Parse a complete command frame buffer and apply it when valid.
 static void parse_complete_command_frame(const uint8_t *packet, unsigned long now);
+// Validate the protected reset command and reboot the MCU after motor TQ-OFF.
+static void parse_complete_reset_frame(const uint8_t *packet);
+static void perform_mcu_reset(void);
 // Wrap one CAN frame or bridge status in the existing 0xA0 Serial packet.
 static void send_can_bridge_response(uint8_t seq, uint8_t status, const CanFrame *frame);
 // Parse and execute one USB Serial to CAN bridge request.
@@ -494,6 +503,48 @@ static void parse_complete_command_frame(const uint8_t *packet, unsigned long no
     apply_command_packet(command, now);
 }
 
+static void perform_mcu_reset(void)
+{
+    // Stop periodic traffic before issuing the final safety command pair. The
+    // low-level calls wait for TX completion, so reset cannot interrupt a frame
+    // that was successfully placed on the CAN bus.
+    serial_mode = SERIAL_MODE_BRIDGE;
+    motor_enabled = false;
+    estop_active = false;
+    command_timeout = false;
+    motor_stop_all();
+
+    const Md200tDriverCommand torque_off = {0.0f, 0.0f, false};
+    md200t_send_driver_commands(torque_off, torque_off);
+
+    // Teensy 3.2 / Cortex-M4 system reset request. Disable interrupts after
+    // both CAN transmissions so no ISR can run between the request and reset.
+    __disable_irq();
+    SCB_AIRCR = 0x05FA0004u;
+    while (true)
+    {
+    }
+}
+
+static void parse_complete_reset_frame(const uint8_t *packet)
+{
+    if (protocol_xor_checksum(packet, RESET_PACKET_SIZE - 1u) != packet[RESET_PACKET_SIZE - 1u])
+    {
+        checksum_error_latched = true;
+        return;
+    }
+
+    // The two-byte magic prevents a valid but unintended short packet from
+    // rebooting the controller. Sequence byte 4 is reserved for host tracking.
+    if (packet[5] != RESET_MAGIC_0 || packet[6] != RESET_MAGIC_1)
+    {
+        serial_framing_error_latched = true;
+        return;
+    }
+
+    perform_mcu_reset();
+}
+
 static void send_can_bridge_response(uint8_t seq, uint8_t status, const CanFrame *frame)
 {
     uint8_t packet[CAN_BRIDGE_RESPONSE_SIZE];
@@ -582,6 +633,10 @@ static void parse_complete_serial_frame(const uint8_t *packet, unsigned long now
     {
         parse_complete_command_frame(packet, now);
     }
+    else if (packet[2] == RESET_PACKET_LENGTH && packet[3] == RESET_PACKET_TYPE)
+    {
+        parse_complete_reset_frame(packet);
+    }
     else if (packet[2] == CAN_BRIDGE_PACKET_LENGTH && packet[3] == CAN_BRIDGE_PACKET_TYPE)
     {
         parse_complete_can_bridge_frame(packet);
@@ -624,7 +679,9 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
         break;
 
     case CMD_RX_WAIT_LENGTH:
-        if (byte_in == CMD_PACKET_LENGTH || byte_in == CAN_BRIDGE_PACKET_LENGTH)
+        if (byte_in == CMD_PACKET_LENGTH ||
+            byte_in == RESET_PACKET_LENGTH ||
+            byte_in == CAN_BRIDGE_PACKET_LENGTH)
         {
             command_rx_parser.packet[2] = byte_in;
             command_rx_parser.index = 3;
@@ -639,6 +696,7 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
 
     case CMD_RX_WAIT_TYPE:
         if ((command_rx_parser.packet[2] == CMD_PACKET_LENGTH && byte_in == CMD_PACKET_TYPE) ||
+            (command_rx_parser.packet[2] == RESET_PACKET_LENGTH && byte_in == RESET_PACKET_TYPE) ||
             (command_rx_parser.packet[2] == CAN_BRIDGE_PACKET_LENGTH && byte_in == CAN_BRIDGE_PACKET_TYPE))
         {
             command_rx_parser.packet[3] = byte_in;

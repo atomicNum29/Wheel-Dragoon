@@ -16,6 +16,7 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - System Status v2 (`0x82`) 10 Hz 송신
 - Legacy Basic Status (`0x81`) 생성 코드 유지, 기본 송신 비활성
 - command timeout 감지 및 timeout 시 PID 174 TQ-OFF 처리
+- 보호 magic을 포함한 MCU software reset command
 - state/error bitfield 산출
 - 차동 구동식 기반 좌/우 바퀴 목표 RPM 계산
 - 10 ms 주기 Driver A/B MD200T command pair와 10 Hz/1 Hz telemetry polling 통합 스케줄링
@@ -413,6 +414,7 @@ Polling은 다음 1초 superframe을 반복합니다.
 | 방향 | Type | 기본 동작 | 용도 |
 | --- | --- | --- | --- |
 | ROS → MCU | `0x01` | 활성 | 주행 command 및 control mode 진입 |
+| Host → MCU | `0x02` | 요청 시 | 두 driver TQ-OFF 후 MCU software reset |
 | MCU → ROS | `0x82` | 활성, 10 Hz | canonical MCU/MD200T 통합 상태 |
 | MCU → ROS | `0x81` | 비활성 | 구버전 Basic Status 호환용 serializer |
 | PC → MCU | `0x20` | bridge mode에서 요청 시 | Serial-CAN bridge request |
@@ -441,6 +443,31 @@ Payload는 `type + seq + v_milli_mps + w_milli_radps + flags`이며, length는 `
 ```text
 AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
 ```
+
+### MCU Reset Command: Host to MCU (`0x02`)
+
+Sticky safety fault를 포함한 MCU 상태를 재부팅으로 초기화할 때 사용하는 software reset 명령입니다. 우발적인 짧은 packet이 reset으로 해석되지 않도록 고정 magic `A5 5A`와 정상 XOR checksum을 모두 요구합니다.
+
+| Byte | Field | Type | Description |
+| --- | --- | --- | --- |
+| 0 | `header[0]` | `uint8` | `0xAA` |
+| 1 | `header[1]` | `uint8` | `0x55` |
+| 2 | `length` | `uint8` | `4` |
+| 3 | `type` | `uint8` | `0x02` |
+| 4 | `seq` | `uint8` | Host의 reset 요청 추적용 sequence. MCU 동작에는 영향 없음 |
+| 5 | `magic[0]` | `uint8` | 반드시 `0xA5` |
+| 6 | `magic[1]` | `uint8` | 반드시 `0x5A` |
+| 7 | `checksum` | `uint8` | byte 0~6의 XOR |
+
+```text
+AA 55 04 02 seq A5 5A checksum
+
+seq=0 예시: AA 55 04 02 00 A5 5A 06
+```
+
+정상 reset packet은 `mode_state`와 `serial_mode`에 관계없이 허용됩니다. MCU는 먼저 `serial_mode`를 BRIDGE로 바꿔 periodic CAN TX를 중단하고, Driver A와 B에 PID 174 TQ-OFF를 back-to-back으로 전송한 다음 Cortex-M4 `SCB_AIRCR.SYSRESETREQ`로 재부팅합니다. CAN 초기화 또는 TQ-OFF 송신이 실패하더라도 reset 자체는 계속 수행합니다.
+
+Reset 직후 USB Serial 연결이 끊겼다가 다시 열리므로 별도 ACK packet은 송신하지 않습니다. Host는 포트 재연결을 reset 완료 신호로 사용해야 합니다. 이 reset은 watchdog reset이 아니므로 다음 부팅의 `WATCHDOG_RESET_DETECTED`를 설정하지 않습니다. 별도의 인증 기능은 없으므로 신뢰할 수 있는 USB Serial host에서만 사용해야 합니다.
 
 ### Legacy Basic Status Packet: MCU to ROS (`0x81`, 기본 비활성)
 
@@ -758,6 +785,14 @@ disable 또는 emergency stop flag를 보내려면:
 uv run python src/control.py 0 0 --disable
 uv run python src/control.py 0 0 --estop
 ```
+
+두 MD200T를 TQ-OFF한 뒤 MCU를 software reset하려면:
+
+```bash
+uv run python src/control.py --reset --port /dev/ttyACM0
+```
+
+Reset 명령에는 속도 인자와 `--disable`/`--estop`을 함께 사용하지 않습니다. 명령 전송 후 USB 장치가 재연결될 때까지 기다려야 합니다.
 
 예시:
 

@@ -10,6 +10,9 @@ import serial.tools.list_ports
 HEADER = b"\xaa\x55"
 COMMAND_LENGTH = 7
 COMMAND_TYPE = 0x01
+RESET_LENGTH = 4
+RESET_TYPE = 0x02
+RESET_MAGIC = b"\xa5\x5a"
 FLAG_ENABLE = 0x01
 FLAG_ESTOP = 0x02
 LINEAR_MPS_MIN = -2.0
@@ -67,6 +70,16 @@ def build_command_packet(
     return packet_without_checksum + bytes([xor_checksum(packet_without_checksum)])
 
 
+def build_reset_packet(seq: int = 0) -> bytes:
+    """Build the protected MCU software-reset command packet."""
+    packet_without_checksum = (
+        HEADER
+        + bytes([RESET_LENGTH, RESET_TYPE, seq & 0xFF])
+        + RESET_MAGIC
+    )
+    return packet_without_checksum + bytes([xor_checksum(packet_without_checksum)])
+
+
 def find_teensy_port() -> Optional[str]:
     """
     Try to auto-detect a Teensy/USB-UART device.
@@ -90,6 +103,32 @@ def find_teensy_port() -> Optional[str]:
     return None
 
 
+def send_packet(
+    payload: bytes,
+    port: Optional[str],
+    baud: int,
+    timeout: float,
+    read_response: bool,
+) -> str:
+    if port is None:
+        port = find_teensy_port()
+        if port is None:
+            raise RuntimeError("Teensy port not found. Provide port explicitly.")
+
+    with serial.Serial(port, baud, timeout=timeout) as ser:
+        ser.write(payload)
+        ser.flush()
+        if not read_response:
+            return ""
+
+        # Give the device a short moment to produce a status packet.
+        time.sleep(0.05)
+        try:
+            return ser.readline().decode("utf-8", errors="replace").strip()
+        except Exception:
+            return ""
+
+
 def send_command(
     v_mps: float,
     w_radps: float,
@@ -104,26 +143,25 @@ def send_command(
     Open serial port to Teensy and send one ROS-MCU command packet.
     Returns the first line of response (empty string if none).
     """
-    if port is None:
-        port = find_teensy_port()
-        if port is None:
-            raise RuntimeError("Teensy port not found. Provide port explicitly.")
-    with serial.Serial(port, baud, timeout=timeout) as ser:
-        payload = build_command_packet(
-            v_mps=v_mps,
-            w_radps=w_radps,
-            seq=seq,
-            enable=enable,
-            emergency_stop=emergency_stop,
-        )
-        ser.write(payload)
-        # give device a short moment to respond
-        time.sleep(0.05)
-        try:
-            resp = ser.readline().decode("utf-8", errors="replace").strip()
-        except Exception:
-            resp = ""
-        return resp
+    payload = build_command_packet(
+        v_mps=v_mps,
+        w_radps=w_radps,
+        seq=seq,
+        enable=enable,
+        emergency_stop=emergency_stop,
+    )
+    return send_packet(payload, port, baud, timeout, read_response=True)
+
+
+def send_reset(
+    seq: int = 0,
+    port: Optional[str] = None,
+    baud: int = 115200,
+    timeout: float = 1.0,
+) -> None:
+    # A reset deliberately has no response: USB disconnects as soon as the MCU
+    # completes the two MD200T TQ-OFF transmissions and reboots.
+    send_packet(build_reset_packet(seq), port, baud, timeout, read_response=False)
 
 
 def main(argv):
@@ -133,12 +171,19 @@ def main(argv):
     parser.add_argument(
         "v_mps",
         type=float,
+        nargs="?",
         help="Target linear velocity in m/s.",
     )
     parser.add_argument(
         "w_radps",
         type=float,
+        nargs="?",
         help="Target angular velocity in rad/s.",
+    )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="TQ-OFF both MD200T drivers and software-reset the MCU.",
     )
     parser.add_argument(
         "--seq",
@@ -163,6 +208,24 @@ def main(argv):
     args = parser.parse_args(argv)
 
     try:
+        if args.reset:
+            if args.v_mps is not None or args.w_radps is not None:
+                raise ValueError("v_mps and w_radps must be omitted with --reset")
+            if args.disable or args.estop:
+                raise ValueError("--disable and --estop cannot be used with --reset")
+
+            payload = build_reset_packet(args.seq)
+            print(
+                f"Sending MCU reset, seq={args.seq & 0xFF}, "
+                f"packet={payload.hex(' ')} "
+                f"to port={args.port or 'auto-detected'} at {args.baud} baud..."
+            )
+            send_reset(seq=args.seq, port=args.port, baud=args.baud)
+            return 0
+
+        if args.v_mps is None or args.w_radps is None:
+            raise ValueError("v_mps and w_radps are required unless --reset is used")
+
         payload = build_command_packet(
             v_mps=args.v_mps,
             w_radps=args.w_radps,
