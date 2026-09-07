@@ -1,6 +1,11 @@
 import argparse
+import os
+import select
+import shlex
 import sys
+import termios
 import time
+from dataclasses import dataclass
 from typing import Optional
 
 import serial
@@ -12,7 +17,7 @@ CAN_BRIDGE_REQUEST_LENGTH = 15
 CAN_BRIDGE_REQUEST_TYPE = 0x20
 CAN_BRIDGE_RESPONSE_LENGTH = 14
 CAN_BRIDGE_RESPONSE_TYPE = 0xA0
-STATUS_PACKET_TYPE = 0x81
+MAX_PACKET_LENGTH = 64
 
 BRIDGE_STATUS_NAMES = {
     0: "ok",
@@ -20,6 +25,137 @@ BRIDGE_STATUS_NAMES = {
     2: "can_rx_timeout",
     3: "invalid_request",
 }
+
+EXIT_COMMANDS = {"q", "quit", "exit"}
+HELP_COMMANDS = {"?", "h", "help"}
+
+
+@dataclass(frozen=True)
+class BridgeCommand:
+    can_id: int
+    data: list[int]
+    dlc: int
+    timeout_ms: int
+
+
+class CommandError(ValueError):
+    pass
+
+
+class ExitRequested(Exception):
+    pass
+
+
+class RaisingArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        raise CommandError(message)
+
+
+class PacketStreamParser:
+    """Incrementally split the MCU byte stream into checksum-valid packets."""
+
+    def __init__(self) -> None:
+        self.buffer = bytearray()
+
+    def feed(self, data: bytes) -> list[bytes]:
+        self.buffer.extend(data)
+        packets: list[bytes] = []
+
+        while True:
+            header_index = self.buffer.find(HEADER)
+            if header_index < 0:
+                # Keep a trailing 0xAA because it may be the first header byte.
+                self.buffer[:] = self.buffer[-1:] if self.buffer[-1:] == HEADER[:1] else b""
+                break
+            if header_index > 0:
+                del self.buffer[:header_index]
+            if len(self.buffer) < 3:
+                break
+
+            payload_length = self.buffer[2]
+            if payload_length == 0 or payload_length > MAX_PACKET_LENGTH:
+                del self.buffer[0]
+                continue
+
+            packet_size = payload_length + 4
+            if len(self.buffer) < packet_size:
+                break
+
+            candidate = bytes(self.buffer[:packet_size])
+            if xor_checksum(candidate[:-1]) == candidate[-1]:
+                packets.append(candidate)
+                del self.buffer[:packet_size]
+            else:
+                # Discard only the first header byte so an embedded header can
+                # be found without losing the following valid packet.
+                del self.buffer[0]
+
+        return packets
+
+
+class TerminalUi:
+    PROMPT = "can> "
+
+    def __init__(self) -> None:
+        self.fd = sys.stdin.fileno()
+        self.saved_attributes: Optional[list] = None
+        self.input_buffer = ""
+        self.escape_state = 0
+
+    def __enter__(self) -> "TerminalUi":
+        if not sys.stdin.isatty() or not sys.stdout.isatty():
+            raise RuntimeError("interactive CLI requires a terminal")
+
+        self.saved_attributes = termios.tcgetattr(self.fd)
+        attributes = termios.tcgetattr(self.fd)
+        attributes[3] &= ~(termios.ICANON | termios.ECHO)
+        attributes[6][termios.VMIN] = 0
+        attributes[6][termios.VTIME] = 0
+        termios.tcsetattr(self.fd, termios.TCSANOW, attributes)
+        self.redraw()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        if self.saved_attributes is not None:
+            termios.tcsetattr(self.fd, termios.TCSANOW, self.saved_attributes)
+        sys.stdout.write("\r\x1b[2K")
+        sys.stdout.flush()
+
+    def redraw(self) -> None:
+        sys.stdout.write(f"\r\x1b[2K{self.PROMPT}{self.input_buffer}")
+        sys.stdout.flush()
+
+    def log(self, message: str) -> None:
+        sys.stdout.write(f"\r\x1b[2K{message}\n")
+        self.redraw()
+
+    def read_lines(self) -> list[str]:
+        lines: list[str] = []
+        for byte in os.read(self.fd, 64):
+            if self.escape_state == 1:
+                self.escape_state = 2 if byte == ord("[") else 0
+                continue
+            if self.escape_state == 2:
+                if 0x40 <= byte <= 0x7E:
+                    self.escape_state = 0
+                continue
+            if byte == 0x1B:
+                self.escape_state = 1
+            elif byte in (0x0A, 0x0D):
+                line = self.input_buffer.strip()
+                self.input_buffer = ""
+                if line:
+                    lines.append(line)
+            elif byte in (0x08, 0x7F):
+                self.input_buffer = self.input_buffer[:-1]
+            elif byte == 0x15:  # Ctrl-U
+                self.input_buffer = ""
+            elif byte == 0x04:  # Ctrl-D
+                raise ExitRequested
+            elif 0x20 <= byte <= 0x7E:
+                self.input_buffer += chr(byte)
+        self.redraw()
+        return lines
 
 
 def xor_checksum(data: bytes | bytearray | memoryview) -> int:
@@ -103,93 +239,83 @@ def build_bridge_request(
     return packet_without_checksum + bytes([xor_checksum(packet_without_checksum)])
 
 
-def read_one(ser: serial.Serial, deadline: float) -> int:
-    while time.monotonic() < deadline:
-        remaining = deadline - time.monotonic()
-        ser.timeout = max(0.001, min(0.05, remaining))
-        value = ser.read(1)
-        if value:
-            return value[0]
-    raise TimeoutError("serial response timeout")
+def build_command_parser(prog: str, add_help: bool) -> RaisingArgumentParser:
+    parser = RaisingArgumentParser(prog=prog, add_help=add_help)
+    subparsers = parser.add_subparsers(dest="command")
+
+    pid_parser = subparsers.add_parser("pid", add_help=add_help, help="send an MDROBOT PID frame")
+    pid_parser.add_argument("driver_id", type=parse_byte)
+    pid_parser.add_argument("pid", type=parse_byte)
+    pid_parser.add_argument("data", nargs="*", type=parse_byte)
+    pid_parser.add_argument("--mid", type=parse_byte, default=0)
+    pid_parser.add_argument("--timeout-ms", type=int, default=None)
+
+    frame_parser = subparsers.add_parser("frame", add_help=add_help, help="send a raw CAN frame")
+    frame_parser.add_argument("can_id", type=parse_can_id)
+    frame_parser.add_argument("data", nargs="*", type=parse_byte)
+    frame_parser.add_argument("--dlc", type=int, default=None)
+    frame_parser.add_argument("--timeout-ms", type=int, default=None)
+    return parser
 
 
-def read_packet(ser: serial.Serial, deadline: float) -> bytes:
-    state = 0
-    packet = bytearray()
-    while True:
-        byte = read_one(ser, deadline)
-        if state == 0:
-            if byte == HEADER[0]:
-                packet = bytearray([byte])
-                state = 1
-        elif state == 1:
-            if byte == HEADER[1]:
-                packet.append(byte)
-                state = 2
-            elif byte == HEADER[0]:
-                packet = bytearray([byte])
-            else:
-                packet.clear()
-                state = 0
-        else:
-            packet.append(byte)
-            if len(packet) == 3:
-                length = packet[2]
-                if length == 0 or length > 32:
-                    packet.clear()
-                    state = 0
-            elif len(packet) >= 4 and len(packet) == 2 + 1 + packet[2] + 1:
-                if xor_checksum(packet[:-1]) == packet[-1]:
-                    return bytes(packet)
-                packet.clear()
-                state = 0
+def command_from_namespace(args: argparse.Namespace, default_timeout_ms: int) -> BridgeCommand:
+    timeout_ms = default_timeout_ms if args.timeout_ms is None else args.timeout_ms
+    if not 0 <= timeout_ms <= 0xFFFF:
+        raise CommandError("--timeout-ms must be between 0 and 65535")
+
+    if args.command == "pid":
+        if len(args.data) > 7:
+            raise CommandError("pid data may contain at most 7 bytes")
+        if args.mid > 0x07:
+            raise CommandError("--mid must be between 0 and 7")
+        return BridgeCommand(
+            can_id=((args.mid & 0x07) << 8) | args.driver_id,
+            data=[args.pid] + args.data,
+            dlc=8,
+            timeout_ms=timeout_ms,
+        )
+
+    if args.command == "frame":
+        if len(args.data) > 8:
+            raise CommandError("frame data may contain at most 8 bytes")
+        dlc = len(args.data) if args.dlc is None else args.dlc
+        if not 0 <= dlc <= 8:
+            raise CommandError("--dlc must be between 0 and 8")
+        if len(args.data) > dlc:
+            raise CommandError("data byte count may not exceed --dlc")
+        return BridgeCommand(args.can_id, args.data, dlc, timeout_ms)
+
+    raise CommandError("enter 'pid ...', 'frame ...', 'help', or 'quit'")
 
 
-def read_bridge_response(
-    ser: serial.Serial,
-    seq: int,
-    timeout_s: float,
-) -> tuple[int, int, int, list[int]]:
-    deadline = time.monotonic() + timeout_s
-    while True:
-        packet = read_packet(ser, deadline)
-        packet_type = packet[3]
-        if packet_type == STATUS_PACKET_TYPE:
-            continue
-        if packet_type != CAN_BRIDGE_RESPONSE_TYPE:
-            continue
-        if packet[2] != CAN_BRIDGE_RESPONSE_LENGTH:
-            continue
-        if packet[4] != (seq & 0xFF):
-            continue
+def parse_interactive_command(line: str, default_timeout_ms: int) -> BridgeCommand:
+    try:
+        tokens = shlex.split(line)
+    except ValueError as exc:
+        raise CommandError(str(exc)) from exc
+    if not tokens:
+        raise CommandError("empty command")
 
-        status = packet[5]
-        can_id = packet[6] | (packet[7] << 8)
-        dlc = min(packet[8], 8)
-        data = list(packet[9 : 9 + dlc])
-        return status, can_id, dlc, data
+    keyword = tokens[0].lower()
+    if keyword in EXIT_COMMANDS:
+        if len(tokens) != 1:
+            raise CommandError(f"{keyword} does not take arguments")
+        raise ExitRequested
+    if keyword in HELP_COMMANDS:
+        raise CommandError(interactive_help())
+
+    parser = build_command_parser("", add_help=False)
+    return command_from_namespace(parser.parse_args(tokens), default_timeout_ms)
 
 
-def send_request(
-    port: Optional[str],
-    baud: int,
-    request: bytes,
-    seq: int,
-    timeout_s: float,
-    settle_s: float,
-) -> tuple[int, int, int, list[int]]:
-    if port is None:
-        port = find_teensy_port()
-        if port is None:
-            raise RuntimeError("Teensy port not found. Provide --port explicitly.")
-
-    with serial.Serial(port, baud, timeout=0.05) as ser:
-        if settle_s > 0.0:
-            time.sleep(settle_s)
-        ser.reset_input_buffer()
-        ser.write(request)
-        ser.flush()
-        return read_bridge_response(ser, seq, timeout_s)
+def interactive_help() -> str:
+    return (
+        "commands:\n"
+        "  pid DRIVER_ID PID [DATA_BYTE ...] [--mid MID] [--timeout-ms N]\n"
+        "  frame CAN_ID [DATA_BYTE ...] [--dlc N] [--timeout-ms N]\n"
+        "  help\n"
+        "  quit | exit | q"
+    )
 
 
 def format_data(data: list[int], dlc: int) -> str:
@@ -197,110 +323,147 @@ def format_data(data: list[int], dlc: int) -> str:
     return " ".join(f"{byte:02X}" for byte in padded)
 
 
-def print_transaction(
-    tx_id: int,
-    tx_dlc: int,
-    tx_data: list[int],
-    status: int,
-    rx_id: int,
-    rx_dlc: int,
-    rx_data: list[int],
-) -> None:
-    print(f"TX id=0x{tx_id:03X} dlc={tx_dlc} data={format_data(tx_data, tx_dlc)}")
+def format_packet(packet: bytes) -> str:
+    timestamp = time.strftime("%H:%M:%S")
+    if packet[3] != CAN_BRIDGE_RESPONSE_TYPE or packet[2] != CAN_BRIDGE_RESPONSE_LENGTH:
+        return f"[{timestamp}] MCU type=0x{packet[3]:02X} raw={format_data(list(packet), len(packet))}"
+
+    seq = packet[4]
+    status = packet[5]
     status_name = BRIDGE_STATUS_NAMES.get(status, f"unknown_{status}")
-    print(
-        f"RX status={status_name} id=0x{rx_id:03X} "
-        f"dlc={rx_dlc} data={format_data(rx_data, rx_dlc)}"
+    can_id = packet[6] | (packet[7] << 8)
+    dlc = min(packet[8], 8)
+    data = list(packet[9 : 9 + dlc])
+    if status != 0:
+        return f"[{timestamp}] BRIDGE seq={seq} status={status_name}"
+
+    pid_text = f" pid={data[0]}" if data else ""
+    return (
+        f"[{timestamp}] RX seq={seq} id=0x{can_id:03X} dlc={dlc} "
+        f"data={format_data(data, dlc)}{pid_text}"
     )
-    if status == 0 and rx_dlc > 0:
-        pid = rx_data[0]
-        payload = rx_data[1:rx_dlc]
-        print(f"MDROBOT pid={pid} payload={format_data(payload, len(payload))}")
-        print(f"Decimal payload: ", *[byte for byte in payload])
 
 
-def add_common_options(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--port", "-p", help="Serial port. Auto-detected if omitted.")
-    parser.add_argument("--baud", "-b", type=int, default=115200, help="USB Serial baud rate.")
-    parser.add_argument("--seq", type=int, default=0, help="Bridge sequence byte.")
-    parser.add_argument("--timeout-ms", type=int, default=200, help="CAN response timeout in ms.")
+def send_command(ser: serial.Serial, command: BridgeCommand, seq: int, ui: TerminalUi) -> int:
+    request = build_bridge_request(
+        command.can_id,
+        command.data,
+        command.dlc,
+        seq,
+        command.timeout_ms,
+    )
+    ser.write(request)
+    ser.flush()
+    ui.log(
+        f"TX seq={seq} id=0x{command.can_id:03X} dlc={command.dlc} "
+        f"data={format_data(command.data, command.dlc)}"
+    )
+    return (seq + 1) & 0xFF
+
+
+def monitor(
+    port: str,
+    baud: int,
+    seq: int,
+    default_timeout_ms: int,
+    settle_s: float,
+    initial_command: Optional[BridgeCommand],
+) -> None:
+    stream_parser = PacketStreamParser()
+    with serial.Serial(port, baud, timeout=0) as ser, TerminalUi() as ui:
+        if settle_s > 0.0:
+            time.sleep(settle_s)
+        ui.log(f"Connected to {port} at {baud} baud. Type 'help' for commands.")
+        if initial_command is not None:
+            seq = send_command(ser, initial_command, seq, ui)
+
+        while True:
+            readable, _, _ = select.select([ser.fileno(), sys.stdin.fileno()], [], [], 0.1)
+            if ser.fileno() in readable:
+                received = ser.read(max(1, ser.in_waiting))
+                for packet in stream_parser.feed(received):
+                    ui.log(format_packet(packet))
+
+            if sys.stdin.fileno() in readable:
+                for line in ui.read_lines():
+                    try:
+                        command = parse_interactive_command(line, default_timeout_ms)
+                        seq = send_command(ser, command, seq, ui)
+                    except CommandError as exc:
+                        for message_line in str(exc).splitlines():
+                            ui.log(message_line)
+
+
+def add_connection_options(parser: argparse.ArgumentParser, suppress_defaults: bool) -> None:
+    default = argparse.SUPPRESS if suppress_defaults else None
+    parser.add_argument("--port", "-p", default=default, help="serial port; auto-detected if omitted")
+    parser.add_argument("--baud", "-b", type=int, default=argparse.SUPPRESS if suppress_defaults else 115200)
+    parser.add_argument("--seq", type=parse_byte, default=argparse.SUPPRESS if suppress_defaults else 0)
     parser.add_argument(
-        "--serial-timeout-s",
-        type=float,
-        default=None,
-        help="Overall USB response timeout. Default is derived from --timeout-ms.",
+        "--timeout-ms",
+        type=int,
+        default=argparse.SUPPRESS if suppress_defaults else 100,
+        help="default request wait time; MCU caps it at 100 ms",
     )
     parser.add_argument(
         "--settle-s",
         type=float,
-        default=0.1,
-        help="Delay after opening the USB serial port before sending.",
+        default=argparse.SUPPRESS if suppress_defaults else 0.1,
+        help="delay after opening the serial port",
     )
+
+
+def build_main_parser() -> RaisingArgumentParser:
+    parser = RaisingArgumentParser(
+        description="Continuously monitor and transmit CAN frames through the Teensy 0x20 bridge."
+    )
+    add_connection_options(parser, suppress_defaults=False)
+    subparsers = parser.add_subparsers(dest="command")
+
+    pid_parser = subparsers.add_parser("pid", help="send an initial MDROBOT PID frame")
+    pid_parser.add_argument("driver_id", type=parse_byte)
+    pid_parser.add_argument("pid", type=parse_byte)
+    pid_parser.add_argument("data", nargs="*", type=parse_byte)
+    pid_parser.add_argument("--mid", type=parse_byte, default=0)
+    add_connection_options(pid_parser, suppress_defaults=True)
+
+    frame_parser = subparsers.add_parser("frame", help="send an initial raw CAN frame")
+    frame_parser.add_argument("can_id", type=parse_can_id)
+    frame_parser.add_argument("data", nargs="*", type=parse_byte)
+    frame_parser.add_argument("--dlc", type=int, default=None)
+    add_connection_options(frame_parser, suppress_defaults=True)
+    return parser
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(
-        description="Send MD200T CAN PID/data frames through the Teensy CAN bridge."
-    )
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    parser = build_main_parser()
+    try:
+        args = parser.parse_args(argv)
+        if not 0 <= args.timeout_ms <= 0xFFFF:
+            raise CommandError("--timeout-ms must be between 0 and 65535")
+        if args.settle_s < 0.0:
+            raise CommandError("--settle-s must not be negative")
+        initial_command = (
+            command_from_namespace(args, args.timeout_ms) if args.command is not None else None
+        )
+    except CommandError as exc:
+        parser.print_usage(sys.stderr)
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
 
-    pid_parser = subparsers.add_parser("pid", help="Send an MDROBOT PID frame.")
-    pid_parser.add_argument("driver_id", type=parse_byte, help="MD200T driver ID, for example 1 or 2.")
-    pid_parser.add_argument("pid", type=parse_byte, help="MDROBOT PID byte.")
-    pid_parser.add_argument("data", nargs="*", type=parse_byte, help="PID data bytes, max 7.")
-    pid_parser.add_argument("--mid", type=parse_byte, default=0, help="CAN ID MID field, default 0.")
-    add_common_options(pid_parser)
-
-    frame_parser = subparsers.add_parser("frame", help="Send a raw standard CAN data frame.")
-    frame_parser.add_argument("can_id", type=parse_can_id, help="Standard 11-bit CAN ID.")
-    frame_parser.add_argument("data", nargs="*", type=parse_byte, help="CAN data bytes, max 8.")
-    frame_parser.add_argument("--dlc", type=int, default=None, help="DLC. Default is len(data).")
-    add_common_options(frame_parser)
-
-    args = parser.parse_args(argv)
-
-    if args.timeout_ms < 0 or args.timeout_ms > 0xFFFF:
-        parser.error("--timeout-ms must be between 0 and 65535")
-
-    if args.command == "pid":
-        if len(args.data) > 7:
-            parser.error("pid data may contain at most 7 bytes")
-        if args.mid > 0x07:
-            parser.error("--mid must be between 0 and 7")
-        can_id = ((args.mid & 0x07) << 8) | args.driver_id
-        tx_data = [args.pid] + args.data
-        tx_dlc = 8
-    else:
-        if len(args.data) > 8:
-            parser.error("frame data may contain at most 8 bytes")
-        can_id = args.can_id
-        tx_data = args.data
-        tx_dlc = len(tx_data) if args.dlc is None else args.dlc
-        if not 0 <= tx_dlc <= 8:
-            parser.error("--dlc must be between 0 and 8")
-        if len(tx_data) > tx_dlc:
-            parser.error("data byte count may not exceed --dlc")
-
-    request = build_bridge_request(can_id, tx_data, tx_dlc, args.seq, args.timeout_ms)
-    serial_timeout_s = args.serial_timeout_s
-    if serial_timeout_s is None:
-        serial_timeout_s = max(1.0, (args.timeout_ms / 1000.0) + 0.5)
+    port = args.port or find_teensy_port()
+    if port is None:
+        print("Error: Teensy port not found. Provide --port explicitly.", file=sys.stderr)
+        return 1
 
     try:
-        status, rx_id, rx_dlc, rx_data = send_request(
-            args.port,
-            args.baud,
-            request,
-            args.seq,
-            serial_timeout_s,
-            args.settle_s,
-        )
+        monitor(port, args.baud, args.seq, args.timeout_ms, args.settle_s, initial_command)
+    except (ExitRequested, KeyboardInterrupt):
+        print("CAN bridge monitor stopped.")
     except Exception as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
-
-    print_transaction(can_id, tx_dlc, tx_data, status, rx_id, rx_dlc, rx_data)
-    return 0 if status == 0 else 2
+    return 0
 
 
 if __name__ == "__main__":

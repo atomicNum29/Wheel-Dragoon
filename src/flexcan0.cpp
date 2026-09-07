@@ -48,6 +48,7 @@ constexpr uint8_t kMbCodeRxEmpty = 0b0100u;
 constexpr uint8_t kMbCodeRxOverrun = 0b0110u;
 
 bool g_can_initialized = false;
+bool g_rx_overrun_detected = false;
 
 volatile uint32_t &mb_reg(uint8_t mb, uintptr_t offset)
 {
@@ -153,6 +154,7 @@ bool abort_tx_mb(uint32_t timeout_us)
 bool can_begin(uint32_t bitrate)
 {
     g_can_initialized = false;
+    g_rx_overrun_detected = false;
 
     if (bitrate != kSupportedBitrate)
         return false;
@@ -252,6 +254,9 @@ bool can_receive(CanFrame &frame, uint32_t timeout_us)
         return false;
     }
 
+    if (code == kMbCodeRxOverrun)
+        g_rx_overrun_detected = true;
+
     uint8_t dlc = static_cast<uint8_t>((cs >> kMbDlcShift) & 0x0Fu);
     if (dlc > 8u)
         dlc = 8u;
@@ -268,6 +273,11 @@ bool can_receive(CanFrame &frame, uint32_t timeout_us)
     CAN0_IFLAG1 = flag;
     mb_cs(kRxMb) = mb_code(kMbCodeRxEmpty);
     return true;
+}
+
+bool can_rx_overrun_detected()
+{
+    return g_rx_overrun_detected;
 }
 
 bool can_is_initialized()
