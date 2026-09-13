@@ -84,7 +84,7 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - 확인함: `datasheet/MDROBOT-CAN communication protocol on controllers[EN].pdf`
 - 저장소에서 못 찾음: `datasheet/K20P64M72SF1.pdf`
 
-문서 부재 때문에 MCU 패키지별 핀 멀티플렉싱은 레퍼런스 매뉴얼의 64-pin pinout과 Teensyduino 코어 pin map을 교차 확인했다. MD200T는 별도 전용 매뉴얼 PDF가 없는 것으로 보고, 운용 CAN baudrate가 `250 kbit/s`라는 전제만 명시한다.
+문서 부재 때문에 MCU 패키지별 핀 멀티플렉싱은 레퍼런스 매뉴얼의 64-pin pinout과 Teensyduino 코어 pin map을 교차 확인했다. MD200T는 별도 전용 매뉴얼 PDF가 없는 것으로 보고, 운용 CAN baudrate가 `500 kbit/s`라는 전제만 명시한다.
 
 ### 구현 파일 구조
 
@@ -121,21 +121,21 @@ bool md200t_torque_off(uint8_t driver_id);
 bool md200t_request_pid_data(uint8_t driver_id, uint8_t target_pid);
 ```
 
-`can_begin()`, `can_transmit()`, `can_receive()`의 모든 polling loop는 `micros()` 기반 timeout을 가져야 한다. timeout 대상은 low-power acknowledge 해제, freeze acknowledge 진입/해제, soft reset 완료, TX MB active/abort 대기, TX 완료 `IFLAG1` 대기, RX 완료 `IFLAG1` 대기다. 동적 메모리와 interrupt는 사용하지 않는다. 첫 구현은 검증한 `250000` bitrate만 허용하고, 다른 bitrate는 별도 timing table을 문서로 확인한 뒤 추가한다.
+`can_begin()`, `can_transmit()`, `can_receive()`의 모든 polling loop는 `micros()` 기반 timeout을 가져야 한다. timeout 대상은 low-power acknowledge 해제, freeze acknowledge 진입/해제, soft reset 완료, TX MB active/abort 대기, TX 완료 `IFLAG1` 대기, RX 완료 `IFLAG1` 대기다. 동적 메모리와 interrupt는 사용하지 않는다. 현재 구현은 `500000` bitrate만 허용하고, 다른 bitrate는 별도 timing table을 문서로 확인한 뒤 추가한다.
 
-### FlexCAN 클록과 250 kbit/s 비트 타이밍
+### FlexCAN 클록과 500 kbit/s 비트 타이밍
 
 K20 레퍼런스 매뉴얼은 FlexCAN clock source가 `CANx_CTRL1[CLKSRC]`로 `OSCERCLK` 또는 bus clock 중 선택된다고 설명한다. Teensyduino FlexCAN 초기화 코드는 `OSC0_CR |= OSC_ERCLKEN` 후 `CAN0_CTRL1[CLKSRC]=0`을 사용해 16 MHz crystal clock을 FlexCAN source로 선택한다. 직접 구현도 이 경로를 따른다.
 
-기본 bitrate `250000 bit/s` 설정:
+기본 bitrate `500000 bit/s` 설정:
 
 | 항목 | 값 |
 | --- | --- |
 | FlexCAN source clock | `16,000,000 Hz` (`OSCERCLK`, `CTRL1[CLKSRC]=0`) |
-| PRESDIV register | `3` |
-| Clock divisor | `PRESDIV + 1 = 4` |
-| Time quantum clock | `16,000,000 / 4 = 4,000,000 Hz` |
-| Time quantum | `250 ns` |
+| PRESDIV register | `1` |
+| Clock divisor | `PRESDIV + 1 = 2` |
+| Time quantum clock | `16,000,000 / 2 = 8,000,000 Hz` |
+| Time quantum | `125 ns` |
 | PROPSEG register | `2` |
 | PROPSEG actual | `PROPSEG + 1 = 3 TQ` |
 | PSEG1 register | `7` |
@@ -146,8 +146,8 @@ K20 레퍼런스 매뉴얼은 FlexCAN clock source가 `CANx_CTRL1[CLKSRC]`로 `O
 | RJW actual | `RJW + 1 = 2 TQ` |
 | Total time quanta | `1 sync + 3 prop + 8 pseg1 + 4 pseg2 = 16 TQ` |
 | Sample point | `(1 + 3 + 8) / 16 = 75%` |
-| Actual bitrate | `16,000,000 / 4 / 16 = 250,000 bit/s` |
-| `CAN0_CTRL1` timing bits | `0x037B0002` before optional non-timing bits |
+| Actual bitrate | `16,000,000 / 2 / 16 = 500,000 bit/s` |
+| `CAN0_CTRL1` timing bits | `0x017B0002` before optional non-timing bits |
 
 `CAN0_CTRL1[CLKSRC]`는 Disable mode에서만 쓸 수 있으므로 `MCR[MDIS]`를 clear하기 전에 0으로 둔다. `CAN0_CTRL1`의 timing field는 Freeze mode에서만 쓴다. 이번 polling 구현에서는 interrupt mask bit를 켜지 않는다. RX FIFO는 사용하지 않으므로 `MCR[RFEN]=0`을 유지한다.
 
@@ -162,7 +162,7 @@ K20 레퍼런스 매뉴얼은 FlexCAN clock source가 `CANx_CTRL1[CLKSRC]`로 `O
 7. `CAN0_MCR |= MCR_SOFT_RST` 후 `MCR[SOFT_RST]`가 0이 될 때까지 timeout polling한다.
 8. `CAN0_MCR |= MCR_FRZ | MCR_HALT` 후 `MCR[FRZ_ACK]`가 1이 될 때까지 timeout polling한다.
 9. `MCR[MAXMB]=15`, `MCR[SRX_DIS]=1`, `MCR[RFEN]=0`으로 16개 MB, self reception disabled, Rx FIFO disabled를 설정한다.
-10. `CAN0_CTRL1 = 0x037B0002`로 250 kbit/s timing을 설정한다. `CLK_SRC` bit는 0이어야 한다.
+10. `CAN0_CTRL1 = 0x017B0002`로 500 kbit/s timing을 설정한다. `CLK_SRC` bit는 0이어야 한다.
 11. `CAN0_IMASK1 = 0`, `CAN0_IFLAG1 = 0xFFFFFFFF`로 interrupt를 끄고 pending flag를 w1c clear한다.
 12. MB0..MB15 RAM을 모두 초기화한다. `CS=0`, `ID=0`, `WORD0=0`, `WORD1=0`으로 지운 뒤 TX로 쓸 MB0은 `CS = CODE_TX_INACTIVE << 24`, RX로 쓸 MB1은 `CS = CODE_RX_EMPTY << 24`로 둔다.
 13. `CAN0_MCR &= ~MCR_HALT` 후 `MCR[FRZ_ACK]`가 0이 될 때까지 timeout polling한다.
@@ -260,7 +260,7 @@ RPM은 MDROBOT 문서의 2-byte data 규칙에 따라 signed 16-bit little-endia
 
 `PID_PNT_TQ_OFF(174)`는 dual-channel driver에서 motor1/motor2 torque-off condition을 각각 `D0`, `D1` bit로 지정한다. `md200t_torque_off()`는 안전 정지용으로 두 채널 모두 free stop시키는 함수이므로 `D0=1`, `D1=1`, `D2=0(no return data)`로 둔다.
 
-MD200T A/B는 이미 `250 kbit/s`로 설정된 상태를 전제로 한다. 펌웨어는 baudrate 설정 frame을 보내지 않고, Teensy FlexCAN0를 `250 kbit/s`로 초기화한 뒤 바로 명령 frame을 송신한다.
+MD200T A/B는 이미 `500 kbit/s`로 설정된 상태를 전제로 한다. 펌웨어는 baudrate 설정 frame을 보내지 않고, Teensy FlexCAN0를 `500 kbit/s`로 초기화한 뒤 바로 명령 frame을 송신한다.
 
 ## 동작 모드
 
@@ -657,7 +657,7 @@ RR           = status 0,  +80 rpm, 11.5 A, output 460
 
 MDAS처럼 PC 터미널에서 MD200T의 PID/data frame을 직접 보내기 위한 요청 패킷입니다. 같은 USB Serial 포트를 공유하므로 기존 ROS command/status packet과 동일한 `AA 55 length type ... checksum` framing을 사용하되, type은 `0x20`으로 분리합니다.
 
-요청을 받은 Teensy는 bridge mode로 전환한 뒤 표준 11-bit CAN data frame을 250 kbit/s CAN bus로 송신합니다. `0x20`의 packet layout과 timeout field는 기존 형식을 그대로 유지합니다. Bridge mode로 처음 전환할 때 두 driver에는 PID 174 TQ-OFF를 back-to-back으로 보내고 automatic command/polling scheduler를 중단합니다. Firmware는 broadcasting ON/OFF 명령을 자동으로 보내지 않습니다.
+요청을 받은 Teensy는 bridge mode로 전환한 뒤 표준 11-bit CAN data frame을 500 kbit/s CAN bus로 송신합니다. `0x20`의 packet layout과 timeout field는 기존 형식을 그대로 유지합니다. Bridge mode로 처음 전환할 때 두 driver에는 PID 174 TQ-OFF를 back-to-back으로 보내고 automatic command/polling scheduler를 중단합니다. Firmware는 broadcasting ON/OFF 명령을 자동으로 보내지 않습니다.
 
 지정한 timeout 동안 가장 먼저 들어온 CAN frame은 ID, driver ID, PID를 검사하지 않고 `0xA0`으로 전달합니다. 이후 bridge mode에서 수신하는 모든 standard CAN data frame도 같은 형식으로 계속 전달합니다. 따라서 외부에서 broadcasting을 켰거나 다른 node가 송신 중이면 요청 직후의 첫 `0xA0`이 요청 대상의 응답이라는 보장은 없습니다. 요청-응답 일치를 판단해야 한다면 PC 측에서 CAN ID와 PID를 보고 판단해야 합니다.
 
@@ -804,7 +804,7 @@ Reset 명령에는 속도 인자와 `--disable`/`--estop`을 함께 사용하지
 
 ## Python CAN 설정 CLI
 
-`src/can_cli.py`는 Teensy를 USB Serial-CAN bridge로 사용해 MCU가 전달하는 packet을 계속 표시하고, 같은 화면의 마지막 `can>` 줄에서 CAN 송신 명령을 받는 대화형 도구입니다. 수신 로그가 출력되어도 작성 중인 입력 문자열을 다시 그리므로 입력이 사라지지 않습니다. MD200T A/B는 이미 `250 kbit/s`로 설정된 상태이므로 이 CLI는 CAN bitrate를 변경하지 않습니다.
+`src/can_cli.py`는 Teensy를 USB Serial-CAN bridge로 사용해 MCU가 전달하는 packet을 계속 표시하고, 같은 화면의 마지막 `can>` 줄에서 CAN 송신 명령을 받는 대화형 도구입니다. 수신 로그가 출력되어도 작성 중인 입력 문자열을 다시 그리므로 입력이 사라지지 않습니다. MD200T A/B는 이미 `500 kbit/s`로 설정된 상태이므로 이 CLI는 CAN bitrate를 변경하지 않습니다.
 
 의존성은 기존 `pyproject.toml`의 `pyserial`을 사용합니다.
 
@@ -855,7 +855,7 @@ TX seq=0 id=0x001 dlc=8 data=04 8F 00 00 00 00 00 00
 [14:03:12] RX seq=0 id=0x701 dlc=8 data=8F F0 00 00 00 00 00 00 pid=143
 ```
 
-`BRIDGE status=can_rx_timeout`은 Teensy의 CAN 송신 자체는 끝났지만 지정한 시간 안에 어떤 CAN frame도 받지 못했다는 뜻입니다. monitoring은 계속됩니다. `BRIDGE status=can_tx_failed`는 ACK failure 가능성이 높으므로 transceiver, CAN_H/CAN_L, 공통 GND, 종단저항, MD200T 전원 및 250 kbit/s 설정을 먼저 확인합니다.
+`BRIDGE status=can_rx_timeout`은 Teensy의 CAN 송신 자체는 끝났지만 지정한 시간 안에 어떤 CAN frame도 받지 못했다는 뜻입니다. monitoring은 계속됩니다. `BRIDGE status=can_tx_failed`는 ACK failure 가능성이 높으므로 transceiver, CAN_H/CAN_L, 공통 GND, 종단저항, MD200T 전원 및 500 kbit/s 설정을 먼저 확인합니다.
 
 종료하려면 입력 줄에 `quit`, `exit`, `q` 중 하나를 입력하거나 Ctrl-C/Ctrl-D를 누릅니다. 이 명령은 PC CLI만 종료하며 MCU mode를 바꾸는 별도 packet을 보내지 않습니다. MCU를 control mode로 되돌리려면 정상 `0x01` command를 보내거나 재부팅해야 합니다.
 
@@ -890,14 +890,14 @@ Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서
 
 ## 주의 사항
 
-- FlexCAN0 송수신 bitrate는 `250 kbit/s`입니다. MD200T A/B도 이미 `250 kbit/s`로 설정되어 있다는 전제입니다.
+- FlexCAN0 송수신 bitrate는 `500 kbit/s`입니다. MD200T A/B도 이미 `500 kbit/s`로 설정되어 있다는 전제입니다.
 - MD200T A/B의 CAN driver ID는 각각 `1`, `2`입니다. 같은 bus에서 두 드라이버 ID가 충돌하면 안 됩니다.
 - MD200T A/B의 CH1/CH2 방향 극성은 실제 배선 후 저속 테스트로 검증해야 합니다.
 - CAN 통신에는 Teensy와 MD200T 사이의 CAN transceiver, CAN_H/CAN_L 배선, 공통 GND, 종단저항 검토가 필요합니다.
-- CAN 설정 CLI를 사용할 때도 Teensy FlexCAN0와 MD200T A/B는 모두 `250 kbit/s` 상태여야 합니다. 이 프로젝트는 MD200T baudrate 변경 frame을 보내지 않습니다.
+- CAN 설정 CLI를 사용할 때도 Teensy FlexCAN0와 MD200T A/B는 모두 `500 kbit/s` 상태여야 합니다. 이 프로젝트는 MD200T baudrate 변경 frame을 보내지 않습니다.
 - Auto 모드를 사용하려면 모드 입력 PWM이 `1700 us` 이상이어야 합니다.
 - RC PWM 입력은 10개 샘플 이동 평균으로 필터링됩니다.
-- 현재 MCU 펌웨어는 ROS command packet과 CAN bridge request packet 형식의 바이너리 패킷만 인식합니다. 일반 텍스트 `"0.5,0.0"` 형태로 보내면 인식되지 않습니다.
+- 현재 MCU 펌웨어는 ROS command, MCU reset, CAN bridge request 형식의 바이너리 패킷만 인식합니다. 일반 텍스트 `"0.5,0.0"` 형태로 보내면 인식되지 않습니다.
 - status packet, command packet, CAN bridge packet은 같은 Serial 포트를 공유하므로, PC/ROS 수신부는 binary packet framing을 기준으로 파싱해야 합니다.
 
 ## 참고 자료

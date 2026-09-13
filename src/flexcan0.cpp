@@ -9,7 +9,7 @@
 
 namespace
 {
-constexpr uint32_t kSupportedBitrate = 250000u;
+constexpr uint32_t kSupportedBitrate = 500000u;
 constexpr uint8_t kMaxMbIndex = 15u;
 constexpr uint8_t kTxMb = 0u;
 constexpr uint8_t kRxMb = 1u;
@@ -33,7 +33,9 @@ constexpr uint32_t kMcrFrz = 0x40000000u;
 constexpr uint32_t kMcrMdis = 0x80000000u;
 
 constexpr uint32_t kCtrl1ClkSrc = 0x00002000u;
-constexpr uint32_t kCtrl1Timing250k = 0x037B0002u;
+// 16 MHz OSCERCLK / (PRESDIV + 1 = 2) / 16 TQ = 500 kbit/s.
+// PROPSEG=3 TQ, PSEG1=8 TQ and PSEG2=4 TQ give a 75% sample point.
+constexpr uint32_t kCtrl1Timing500k = 0x017B0002u;
 
 constexpr uint32_t kMbCodeShift = 24u;
 constexpr uint32_t kMbCodeMask = 0x0F000000u;
@@ -186,7 +188,7 @@ bool can_begin(uint32_t bitrate)
     if (!wait_until_set(CAN0_MCR, kMcrFrzAck, 1000u))
         return false;
 
-    CAN0_CTRL1 = kCtrl1Timing250k;
+    CAN0_CTRL1 = kCtrl1Timing500k;
     CAN0_RXMGMASK = 0u;
     CAN0_RX14MASK = 0u;
     CAN0_RX15MASK = 0u;
