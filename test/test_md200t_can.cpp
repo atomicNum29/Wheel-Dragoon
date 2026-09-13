@@ -53,7 +53,6 @@ int main()
     assert_frame(0x002u, main_data2_request);
 
     assert(CAN_TX_COMMAND_PERIOD_US == 10000u);
-    assert(CAN_TX_POLL_PHASE_US == 5000u);
     uint8_t lf_count = 0u;
     uint8_t rf_count = 0u;
     uint8_t lr_count = 0u;
@@ -62,42 +61,59 @@ int main()
     uint8_t voltage_b_count = 0u;
     for (uint8_t cycle = 0u; cycle < CAN_TX_SUPERFRAME_CYCLES; ++cycle)
     {
-        ScheduledPollRequest request = {};
-        if (!scheduled_poll_for_cycle(cycle, request))
-            continue;
+        for (uint8_t index = 0u; index < CAN_TX_MOTOR_POLL_COUNT; ++index)
+        {
+            ScheduledPollRequest request = {};
+            assert(scheduled_motor_poll(index, request));
+            assert(request.phase_us == static_cast<uint32_t>((index + 2u) * 1000u));
 
-        if (request.driver_id == MD200T_DRIVER_A_ID && request.pid == MD200T_PID_MAIN_DATA)
-            ++lf_count;
-        else if (request.driver_id == MD200T_DRIVER_B_ID && request.pid == MD200T_PID_MAIN_DATA)
-            ++rf_count;
-        else if (request.driver_id == MD200T_DRIVER_B_ID && request.pid == MD200T_PID_MAIN_DATA2)
-            ++lr_count;
-        else if (request.driver_id == MD200T_DRIVER_A_ID && request.pid == MD200T_PID_MAIN_DATA2)
-            ++rr_count;
-        else if (request.driver_id == MD200T_DRIVER_A_ID && request.pid == MD200T_PID_VOLT_IN)
-            ++voltage_a_count;
-        else if (request.driver_id == MD200T_DRIVER_B_ID && request.pid == MD200T_PID_VOLT_IN)
-            ++voltage_b_count;
-        else
-            assert(false);
+            if (request.wheel_mask == CAN_TX_WHEEL_LF_MASK)
+                ++lf_count;
+            else if (request.wheel_mask == CAN_TX_WHEEL_RF_MASK)
+                ++rf_count;
+            else if (request.wheel_mask == CAN_TX_WHEEL_LR_MASK)
+                ++lr_count;
+            else if (request.wheel_mask == CAN_TX_WHEEL_RR_MASK)
+                ++rr_count;
+            else
+                assert(false);
+        }
+
+        ScheduledPollRequest voltage = {};
+        if (scheduled_voltage_poll(cycle, voltage))
+        {
+            assert(voltage.phase_us == 1000u && voltage.wheel_mask == 0u);
+            if (voltage.driver_id == MD200T_DRIVER_A_ID)
+                ++voltage_a_count;
+            else if (voltage.driver_id == MD200T_DRIVER_B_ID)
+                ++voltage_b_count;
+            else
+                assert(false);
+        }
     }
-    assert(lf_count == 10u && rf_count == 10u && lr_count == 10u && rr_count == 10u);
+    assert(lf_count == 100u && rf_count == 100u && lr_count == 100u && rr_count == 100u);
     assert(voltage_a_count == 1u && voltage_b_count == 1u);
+    assert(!can_tx_wheel_round_complete(CAN_TX_ALL_WHEELS_MASK,
+                                        CAN_TX_ALL_WHEELS_MASK & ~CAN_TX_WHEEL_RR_MASK));
+    assert(!can_tx_wheel_round_complete(CAN_TX_ALL_WHEELS_MASK & ~CAN_TX_WHEEL_LF_MASK,
+                                        CAN_TX_ALL_WHEELS_MASK));
+    assert(can_tx_wheel_round_complete(CAN_TX_ALL_WHEELS_MASK, CAN_TX_ALL_WHEELS_MASK));
 
     ScheduledPollRequest scheduled = {};
-    assert(scheduled_poll_for_cycle(0u, scheduled));
+    assert(scheduled_voltage_poll(0u, scheduled));
     assert(scheduled.driver_id == MD200T_DRIVER_A_ID && scheduled.pid == MD200T_PID_VOLT_IN);
-    assert(scheduled_poll_for_cycle(1u, scheduled));
-    assert(scheduled.driver_id == MD200T_DRIVER_A_ID && scheduled.pid == MD200T_PID_MAIN_DATA);
-    assert(scheduled_poll_for_cycle(2u, scheduled));
-    assert(scheduled.driver_id == MD200T_DRIVER_B_ID && scheduled.pid == MD200T_PID_MAIN_DATA);
-    assert(scheduled_poll_for_cycle(3u, scheduled));
-    assert(scheduled.driver_id == MD200T_DRIVER_B_ID && scheduled.pid == MD200T_PID_MAIN_DATA2);
-    assert(scheduled_poll_for_cycle(4u, scheduled));
-    assert(scheduled.driver_id == MD200T_DRIVER_A_ID && scheduled.pid == MD200T_PID_MAIN_DATA2);
-    assert(!scheduled_poll_for_cycle(5u, scheduled));
-    assert(scheduled_poll_for_cycle(50u, scheduled));
+    assert(!scheduled_voltage_poll(1u, scheduled));
+    assert(scheduled_voltage_poll(50u, scheduled));
     assert(scheduled.driver_id == MD200T_DRIVER_B_ID && scheduled.pid == MD200T_PID_VOLT_IN);
+    assert(scheduled_motor_poll(0u, scheduled));
+    assert(scheduled.driver_id == MD200T_DRIVER_A_ID && scheduled.pid == MD200T_PID_MAIN_DATA);
+    assert(scheduled_motor_poll(1u, scheduled));
+    assert(scheduled.driver_id == MD200T_DRIVER_B_ID && scheduled.pid == MD200T_PID_MAIN_DATA);
+    assert(scheduled_motor_poll(2u, scheduled));
+    assert(scheduled.driver_id == MD200T_DRIVER_B_ID && scheduled.pid == MD200T_PID_MAIN_DATA2);
+    assert(scheduled_motor_poll(3u, scheduled));
+    assert(scheduled.driver_id == MD200T_DRIVER_A_ID && scheduled.pid == MD200T_PID_MAIN_DATA2);
+    assert(!scheduled_motor_poll(4u, scheduled));
 
     uint8_t driver_id = 0u;
     assert(md200t_decode_response_id(0x701u, driver_id));

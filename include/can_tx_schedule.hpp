@@ -4,48 +4,76 @@
 
 #include "md200t_can.hpp"
 
-// Automatic CAN traffic uses one 10 ms control cycle. The two driver command
-// frames are sent back-to-back at phase 0; at most one poll is sent at phase 5.
+// Every 10 ms cycle starts with the two back-to-back driver commands. Voltage
+// has an optional 1 ms slot, followed by four spaced wheel polling slots. This
+// leaves the main loop time to drain each response from the single RX mailbox.
 constexpr uint32_t CAN_TX_COMMAND_PERIOD_US = 10000u;
-constexpr uint32_t CAN_TX_POLL_PHASE_US = 5000u;
 constexpr uint8_t CAN_TX_SUPERFRAME_CYCLES = 100u;
+constexpr uint8_t CAN_TX_MOTOR_POLL_COUNT = 4u;
+
+constexpr uint8_t CAN_TX_WHEEL_LF_MASK = 1u << 0;
+constexpr uint8_t CAN_TX_WHEEL_RF_MASK = 1u << 1;
+constexpr uint8_t CAN_TX_WHEEL_LR_MASK = 1u << 2;
+constexpr uint8_t CAN_TX_WHEEL_RR_MASK = 1u << 3;
+constexpr uint8_t CAN_TX_ALL_WHEELS_MASK = CAN_TX_WHEEL_LF_MASK |
+                                           CAN_TX_WHEEL_RF_MASK |
+                                           CAN_TX_WHEEL_LR_MASK |
+                                           CAN_TX_WHEEL_RR_MASK;
+
+inline bool can_tx_wheel_round_complete(uint8_t requested_mask, uint8_t received_mask)
+{
+    return (requested_mask & CAN_TX_ALL_WHEELS_MASK) == CAN_TX_ALL_WHEELS_MASK &&
+           (received_mask & CAN_TX_ALL_WHEELS_MASK) == CAN_TX_ALL_WHEELS_MASK;
+}
 
 struct ScheduledPollRequest
 {
     uint8_t driver_id;
     uint8_t pid;
+    uint8_t wheel_mask;
+    uint32_t phase_us;
 };
 
-// Return the optional polling request assigned to one cycle of the 1 s
-// superframe. The diagonal driver/channel mapping stays explicit here.
-inline bool scheduled_poll_for_cycle(uint8_t cycle, ScheduledPollRequest &request)
+// Driver voltages remain 1 Hz and are separated by 500 ms. This optional slot
+// precedes the four motor requests so it does not displace a 100 Hz wheel poll.
+inline bool scheduled_voltage_poll(uint8_t cycle, ScheduledPollRequest &request)
 {
     cycle = static_cast<uint8_t>(cycle % CAN_TX_SUPERFRAME_CYCLES);
 
     if (cycle == 0u)
     {
-        request = ScheduledPollRequest{MD200T_DRIVER_A_ID, MD200T_PID_VOLT_IN};
+        request = ScheduledPollRequest{MD200T_DRIVER_A_ID, MD200T_PID_VOLT_IN, 0u, 1000u};
         return true;
     }
     if (cycle == 50u)
     {
-        request = ScheduledPollRequest{MD200T_DRIVER_B_ID, MD200T_PID_VOLT_IN};
+        request = ScheduledPollRequest{MD200T_DRIVER_B_ID, MD200T_PID_VOLT_IN, 0u, 1000u};
         return true;
     }
+    return false;
+}
 
-    switch (cycle % 10u)
+// Every cycle requests all four wheels in the 0x82 serialization order. The
+// driver/channel mapping remains A/MOT1=LF, B/MOT1=RF, B/MOT2=LR, A/MOT2=RR.
+inline bool scheduled_motor_poll(uint8_t poll_index, ScheduledPollRequest &request)
+{
+    switch (poll_index)
     {
+    case 0u:
+        request = ScheduledPollRequest{
+            MD200T_DRIVER_A_ID, MD200T_PID_MAIN_DATA, CAN_TX_WHEEL_LF_MASK, 2000u};
+        return true;
     case 1u:
-        request = ScheduledPollRequest{MD200T_DRIVER_A_ID, MD200T_PID_MAIN_DATA}; // LF
+        request = ScheduledPollRequest{
+            MD200T_DRIVER_B_ID, MD200T_PID_MAIN_DATA, CAN_TX_WHEEL_RF_MASK, 3000u};
         return true;
     case 2u:
-        request = ScheduledPollRequest{MD200T_DRIVER_B_ID, MD200T_PID_MAIN_DATA}; // RF
+        request = ScheduledPollRequest{
+            MD200T_DRIVER_B_ID, MD200T_PID_MAIN_DATA2, CAN_TX_WHEEL_LR_MASK, 4000u};
         return true;
     case 3u:
-        request = ScheduledPollRequest{MD200T_DRIVER_B_ID, MD200T_PID_MAIN_DATA2}; // LR
-        return true;
-    case 4u:
-        request = ScheduledPollRequest{MD200T_DRIVER_A_ID, MD200T_PID_MAIN_DATA2}; // RR
+        request = ScheduledPollRequest{
+            MD200T_DRIVER_A_ID, MD200T_PID_MAIN_DATA2, CAN_TX_WHEEL_RR_MASK, 5000u};
         return true;
     default:
         return false;

@@ -13,13 +13,13 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - 상태머신 기반 USB Serial command packet 수신
 - XOR checksum 검증
 - `flags`의 enable 및 emergency_stop 처리
-- System Status v2 (`0x82`) 10 Hz 송신
+- System Status v2 (`0x82`) 100 Hz 송신
 - Legacy Basic Status (`0x81`) 생성 코드 유지, 기본 송신 비활성
 - command timeout 감지 및 timeout 시 PID 174 TQ-OFF 처리
 - 보호 magic을 포함한 MCU software reset command
 - state/error bitfield 산출
 - 차동 구동식 기반 좌/우 바퀴 목표 RPM 계산
-- 10 ms 주기 Driver A/B MD200T command pair와 10 Hz/1 Hz telemetry polling 통합 스케줄링
+- 10 ms 주기 Driver A/B command pair와 wheel별 100 Hz/전압 1 Hz polling 통합 스케줄링
 - USB Serial-CAN bridge를 통한 MD200T PID/data 직접 송수신
 
 ### MD200T/CAN 전환 목표
@@ -358,27 +358,33 @@ Stop, disable, emergency stop, command timeout 상태에서는 두 MD200T에 PID
 
 CONTROL mode의 자동 CAN 송신은 `can_transmit_if_due(micros())` 한 함수가 관리합니다. 각 10 ms cycle의 시작에 같은 RPM/enable snapshot으로 Driver A와 Driver B의 PID 207 frame을 가능한 간격 없이 back-to-back 송신합니다. 출력이 금지된 상태에서는 같은 위치에 PID 174 두 장을 back-to-back 송신합니다. CAN은 직렬 bus이므로 두 frame이 물리적으로 동시에 전송되는 것은 아닙니다.
 
-Polling request는 command pair와 겹치지 않도록 각 cycle의 `+5 ms` phase에 최대 한 장만 보냅니다. PID 4 요청을 송신한 뒤 응답을 기다리지 않으며, 정상 loop의 non-blocking CAN RX drain이 나중에 수신한 PID를 decode합니다.
+같은 cycle 안에서 PID 4를 이용해 네 wheel을 모두 요청합니다. 단일 RX mailbox가 연속 응답에 덮어쓰이지 않도록 요청을 `+2/+3/+4/+5 ms`에 1 ms 간격으로 분산하고, scheduler 호출 한 번에는 최대 한 event만 송신합니다. 다음 main loop iteration은 새 TX보다 먼저 CAN RX를 drain하므로 각 요청 사이에 앞선 응답을 처리할 기회를 가집니다. PID 207/174 command pair는 항상 가장 먼저 처리됩니다.
 
 ```text
 cycle +0 ms  Driver A PID 207/174 → 즉시 Driver B PID 207/174
-cycle +5 ms  예약된 PID 4 polling request 한 장 또는 idle
+cycle +1 ms  1초 schedule에 해당하면 Driver A 또는 B PID 143 voltage
+cycle +2 ms  LF = Driver A PID 193
+cycle +3 ms  RF = Driver B PID 193
+cycle +4 ms  LR = Driver B PID 200
+cycle +5 ms  RR = Driver A PID 200
 ```
 
-Polling은 다음 1초 superframe을 반복합니다.
+네 wheel 요청은 매 10 ms cycle마다 모두 실행되므로 각 wheel의 목표 수집률은 100 Hz입니다. 전압은 1초 superframe의 cycle 0에서 Driver A, cycle 50에서 Driver B를 요청하여 각 driver 1 Hz를 유지하고 두 요청을 500 ms 떨어뜨립니다.
 
 ```text
-   5 ms  Driver A PID 143 voltage
-  15 ms  LF  = Driver A PID 193
-  25 ms  RF  = Driver B PID 193
-  35 ms  LR  = Driver B PID 200
-  45 ms  RR  = Driver A PID 200
-
-115/125/135/145 ms부터 같은 wheel pattern을 100 ms마다 반복
-505 ms에 Driver B PID 143 voltage
+  1 ms  Driver A PID 143 voltage
+  2/3/4/5 ms  LF/RF/LR/RR
+ 12/13/14/15 ms  LF/RF/LR/RR
+ ... 매 10 ms 반복 ...
+501 ms  Driver B PID 143 voltage
+502/503/504/505 ms  LF/RF/LR/RR
 ```
 
-따라서 LF/RF/LR/RR는 각각 10 Hz, Driver A/B voltage는 각각 1 Hz로 요청됩니다. Loop가 늦어 지난 cycle을 놓치면 밀린 event를 몰아서 보내지 않고 현재 cycle로 건너뜁니다. Command pair가 `+5 ms` polling phase까지 지연된 경우 motor command를 우선하고 그 cycle의 poll을 생략합니다.
+각 요청은 CAN response를 blocking wait하지 않습니다. 수신된 driver ID/PID를 기존 대각선 wheel mapping으로 반영하고, 현재 cycle에서 요청한 LF/RF/LR/RR 응답 bit가 모두 모이면 즉시 `0x82` 송신을 예약합니다. USB TX 공간이 있으면 같은 main loop에서 전송합니다. 응답 하나가 누락되어 네 bit가 모이지 않더라도 상태 보고 자체가 끊기지 않도록 다음 10 ms cycle 경계에서 현재 validity/stale 상태를 담은 fallback `0x82`를 한 번 예약합니다.
+
+Loop가 늦으면 동일 cycle 안에서 아직 남은 요청을 호출당 하나씩 진행할 수 있지만, 10 ms 경계를 넘긴 이전 cycle의 CAN event는 재생하지 않습니다. 여러 cycle을 놓친 뒤 catch-up burst를 만들지 않으며 새 cycle의 PID 207/174 command pair를 다시 최우선으로 처리합니다.
+
+정상 schedule은 command 200 frame/s, motor request/response 800 frame/s, voltage request/response 4 frame/s로 총 약 1,004 CAN frame/s입니다. 500 kbit/s Standard CAN에서 8-byte frame과 bit stuffing, inter-frame space를 고려한 명목 bus load는 약 23~27%입니다. `0x82` USB 출력은 `43 bytes × 100 Hz × 10 bits/byte = 43,000 bit/s`로 115200 bps 환산 약 37.3%이며, 기존 ROS command 50 Hz를 단순 합산하면 약 42.1%입니다. 실제 장비에서는 response latency, error frame, PID 207 jitter, RX overrun 및 host의 지속 수신 처리율을 함께 측정해야 합니다.
 
 ## ROS 연동 목표 책임 분리
 
@@ -400,14 +406,14 @@ Polling은 다음 1초 superframe을 반복합니다.
 - skid-steer 모터 믹싱으로 좌/우 목표 RPM 계산
 - 좌/우 목표 RPM을 LF/LR/RF/RR 4개 휠 명령으로 분배
 - MD200T A/B의 2채널 CAN 명령 송신
-- System Status v2 Packet 주기 송신 (`0x82`, 10 Hz)
+- 네 wheel 응답 취합 직후 System Status v2 Packet 송신 (`0x82`, 목표 100 Hz)
 - Legacy Basic Status (`0x81`) serializer는 유지하지만 기본 송신은 비활성화
 - command timeout 시 `TIMEOUT_STOP` 및 `COMMAND_TIMEOUT` 송신
 - Stop, disable, estop, timeout 시 두 MD200T의 모든 채널에 PID 174 TQ-OFF 강제
 
 ## ROS Packet Protocol
 
-다음 프로토콜은 ROS 패키지와 MCU 사이의 USB Serial 통신 명세입니다. 기본 운용에서는 ROS가 `0x01` command를 보내고 MCU가 `0x82` System Status v2를 10 Hz로 보냅니다. `0x81` Basic Status 생성 코드는 구버전 호환을 위해 남아 있지만 기본 loop의 호출은 의도적으로 주석 처리되어 있어 송신되지 않습니다.
+다음 프로토콜은 ROS 패키지와 MCU 사이의 USB Serial 통신 명세입니다. 기본 운용에서는 ROS가 `0x01` command를 보내고 MCU가 네 wheel 응답 취합 직후 `0x82` System Status v2를 목표 100 Hz로 보냅니다. `0x81` Basic Status 생성 코드는 구버전 호환을 위해 남아 있지만 기본 loop의 호출은 의도적으로 주석 처리되어 있어 송신되지 않습니다.
 
 모든 패킷은 `0xAA 0x55`로 시작합니다. Byte 2의 `length`는 `type`부터 checksum 직전 마지막 payload byte까지의 바이트 수이며, checksum byte 자체는 포함하지 않습니다. 2-byte 정수는 모두 little-endian이고 signed 값은 2의 보수 bit pattern으로 전송합니다. Checksum은 byte 0부터 checksum 직전 byte까지 모든 바이트의 XOR 값입니다.
 
@@ -415,7 +421,7 @@ Polling은 다음 1초 superframe을 반복합니다.
 | --- | --- | --- | --- |
 | ROS → MCU | `0x01` | 활성 | 주행 command 및 control mode 진입 |
 | Host → MCU | `0x02` | 요청 시 | 두 driver TQ-OFF 후 MCU software reset |
-| MCU → ROS | `0x82` | 활성, 10 Hz | canonical MCU/MD200T 통합 상태 |
+| MCU → ROS | `0x82` | 활성, 목표 100 Hz | canonical MCU/MD200T 통합 상태 |
 | MCU → ROS | `0x81` | 비활성 | 구버전 Basic Status 호환용 serializer |
 | PC → MCU | `0x20` | bridge mode에서 요청 시 | Serial-CAN bridge request |
 | MCU → PC | `0xA0` | bridge mode에서 연속 | 필터링하지 않은 CAN 수신 frame 및 bridge status |
@@ -528,7 +534,7 @@ Legacy `error` bitfield는 다음 매핑을 사용합니다. `0x81`은 상세 MD
 
 ### System Status v2 Packet: MCU to ROS (`0x82`)
 
-MCU의 운용 상태와 두 MD200T에서 수집한 네 wheel telemetry를 한 시점의 snapshot으로 전달하는 canonical 상태 packet입니다. Control mode에서 10 Hz로 송신하며 bridge mode에서는 송신하지 않습니다. 전체 크기는 43 bytes입니다.
+MCU의 운용 상태와 두 MD200T에서 수집한 네 wheel telemetry를 한 시점의 snapshot으로 전달하는 canonical 상태 packet입니다. Control mode에서 매 10 ms polling round의 네 wheel 응답이 모두 모이면 즉시 송신하며 목표 전송률은 100 Hz입니다. 응답 누락 시에는 다음 cycle 경계에 fallback packet을 보내므로 오류 및 validity 보고가 중단되지 않습니다. Bridge mode에서는 송신하지 않습니다. 전체 크기는 43 bytes입니다.
 
 ```text
 AA 55 27 82 version seq state error_lo error_hi validity
@@ -866,7 +872,7 @@ TX seq=0 id=0x001 dlc=8 data=04 8F 00 00 00 00 00 00
 ├── platformio.ini          # PlatformIO 보드/프레임워크 설정
 ├── pyproject.toml          # Python 제어 스크립트 의존성
 ├── include/
-│   ├── can_tx_schedule.hpp # 1초 polling superframe 정의
+│   ├── can_tx_schedule.hpp # 10 ms wheel phase와 1초 voltage schedule 정의
 │   ├── flexcan0.hpp        # FlexCAN0 polling TX/RX API
 │   ├── little_endian.hpp   # signed/unsigned 16-bit little-endian helper
 │   └── md200t_can.hpp      # MD200T channel command API
@@ -884,7 +890,7 @@ Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서
 
 실제 장비 시험에서 확정해야 할 항목은 다음과 같습니다.
 
-- PID 193/200 10 Hz 및 PID 143 1 Hz polling 응답률과 500 ms/3 s freshness timeout의 적정성
+- PID 193/200 wheel별 100 Hz 및 PID 143 driver별 1 Hz polling 응답률과 500 ms/3 s freshness timeout의 적정성
 - RX mailbox overrun 발생 여부와 PID 143 입력전압 단위
 - 채널별 direction polarity
 

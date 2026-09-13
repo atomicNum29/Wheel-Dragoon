@@ -52,7 +52,6 @@ const uint8_t CAN_BRIDGE_STATUS_RX_TIMEOUT = 2;
 const uint8_t CAN_BRIDGE_STATUS_INVALID_REQUEST = 3;
 const unsigned long COMMAND_TIMEOUT_MS = 500;
 const unsigned long STATUS_PERIOD_MS = 500;      // 2 Hz
-const unsigned long SYSTEM_STATUS_PERIOD_MS = 100; // 10 Hz
 const uint16_t BATTERY_LOW_THRESHOLD_MV = 21000; // Configured low-voltage threshold for the 24 V system
 const uint32_t MD200T_CAN_BITRATE = 500000;
 const uint32_t CAN_BRIDGE_TX_TIMEOUT_US = 2000;
@@ -175,7 +174,11 @@ struct CanTxScheduler
     uint8_t superframe_cycle;
     bool initialized;
     bool command_sent;
-    bool poll_handled;
+    bool voltage_poll_handled;
+    uint8_t next_motor_poll;
+    uint8_t requested_wheel_mask;
+    uint8_t received_wheel_mask;
+    bool round_status_queued;
 };
 
 // One side-effect-free view of all live and latched fault sources. Legacy
@@ -222,7 +225,8 @@ uint8_t protocol_xor_checksum(const uint8_t *data, size_t len);
 void protocol_send_basic_status(void);
 // Send the periodic basic status packet when the configured interval has elapsed.
 void protocol_send_basic_status_if_due(void);
-void protocol_send_system_status_if_due(void);
+// Send 0x82 as soon as a four-wheel round completes or its cycle expires.
+void protocol_send_system_status_if_ready(void);
 // Convert left/right skid-steer RPM targets into four wheel RPM targets.
 void motor_set_left_right_rpm(float left_rpm, float right_rpm);
 // Set every wheel target RPM to zero.
@@ -300,16 +304,16 @@ static bool serial_framing_error_latched = false;
 static bool command_out_of_range_latched = false;
 static unsigned long last_valid_command_ms = 0;
 static unsigned long last_status_tx_ms = 0;
-static unsigned long last_system_status_tx_ms = 0;
 static unsigned long control_mode_started_ms = 0;
 static uint8_t status_tx_seq = 0;
 static uint8_t system_status_tx_seq = 0;
 static uint8_t bridge_tunnel_seq = 0;
 static SerialMode serial_mode = SERIAL_MODE_CONTROL;
+static bool system_status_pending = false;
 
 static WheelRpmCommand target_wheel_rpm_cmd = {0.0f, 0.0f, 0.0f, 0.0f};
 static CommandPacket auto_command = {0, 0, 0u};
-static CanTxScheduler can_tx_scheduler = {0u, 0u, false, false, false};
+static CanTxScheduler can_tx_scheduler = {0u, 0u, false, false, false, 0u, 0u, 0u, false};
 static CommandFrameParser command_rx_parser = {{0}, 0, CMD_RX_WAIT_HEADER_0};
 static MotorTelemetry lf_telemetry = {0, 0u, 0u, 0u, 0u, false};
 static MotorTelemetry rf_telemetry = {0, 0u, 0u, 0u, 0u, false};
@@ -338,10 +342,10 @@ void setup()
         latch_safety_can_tx_failure();
         digitalWrite(LED_BUILTIN, HIGH);
     }
-    else
-    {
-        initialize_control_session(millis());
-    }
+
+    // Start the 10 ms reporting timeline even after CAN initialization fails,
+    // so the host continues to receive the latched diagnostic at 100 Hz.
+    initialize_control_session(millis());
 
     booting = false;
 }
@@ -360,7 +364,7 @@ void loop()
     md200t_update_telemetry_health(now);
     update_effective_motor_command(drive_mode, v_pwm, w_pwm, now);
     can_transmit_if_due(micros());
-    protocol_send_system_status_if_due();
+    protocol_send_system_status_if_ready();
     // Legacy 0x81 output is intentionally disabled; 0x82 is canonical.
     // protocol_send_basic_status_if_due();
 }
@@ -751,6 +755,7 @@ static void initialize_control_session(unsigned long now)
     // A poll failure is a session-local, recoverable diagnostic. Do not carry
     // it across BRIDGE -> CONTROL before the new polling timeline starts.
     poll_can_tx_failure_active = false;
+    system_status_pending = false;
     control_mode_started_ms = now;
     reset_can_tx_scheduler(micros());
 }
@@ -780,15 +785,37 @@ static void enter_bridge_mode(void)
         latch_safety_can_tx_failure();
 }
 
-static MotorTelemetry *md200t_find_motor_telemetry(uint8_t driver_id, uint8_t pid)
+static MotorTelemetry *md200t_find_motor_telemetry(uint8_t driver_id,
+                                                   uint8_t pid,
+                                                   uint8_t &wheel_mask)
 {
     // Each controller drives a diagonal pair; keep this mapping explicit.
     if (driver_id == MD200T_DRIVER_A_ID)
-        return pid == MD200T_PID_MAIN_DATA ? &lf_telemetry
-                                          : (pid == MD200T_PID_MAIN_DATA2 ? &rr_telemetry : nullptr);
+    {
+        if (pid == MD200T_PID_MAIN_DATA)
+        {
+            wheel_mask = CAN_TX_WHEEL_LF_MASK;
+            return &lf_telemetry;
+        }
+        if (pid == MD200T_PID_MAIN_DATA2)
+        {
+            wheel_mask = CAN_TX_WHEEL_RR_MASK;
+            return &rr_telemetry;
+        }
+    }
     if (driver_id == MD200T_DRIVER_B_ID)
-        return pid == MD200T_PID_MAIN_DATA ? &rf_telemetry
-                                          : (pid == MD200T_PID_MAIN_DATA2 ? &lr_telemetry : nullptr);
+    {
+        if (pid == MD200T_PID_MAIN_DATA)
+        {
+            wheel_mask = CAN_TX_WHEEL_RF_MASK;
+            return &rf_telemetry;
+        }
+        if (pid == MD200T_PID_MAIN_DATA2)
+        {
+            wheel_mask = CAN_TX_WHEEL_LR_MASK;
+            return &lr_telemetry;
+        }
+    }
     return nullptr;
 }
 
@@ -799,7 +826,8 @@ static void md200t_process_rx_frame(const CanFrame &frame, unsigned long now)
         return;
 
     const uint8_t pid = frame.data[0];
-    MotorTelemetry *motor = md200t_find_motor_telemetry(driver_id, pid);
+    uint8_t wheel_mask = 0u;
+    MotorTelemetry *motor = md200t_find_motor_telemetry(driver_id, pid, wheel_mask);
     if (motor != nullptr)
     {
         if (frame.dlc < 8u)
@@ -813,6 +841,23 @@ static void md200t_process_rx_frame(const CanFrame &frame, unsigned long now)
         motor->valid = true;
         if (motor->status != 0u)
             driver_status_fault_latched = true;
+
+        // A response contributes to this 10 ms round only after its matching
+        // request was transmitted. Once all four bits are present, queue the
+        // combined USB status immediately; duplicates cannot queue it twice.
+        if (serial_mode == SERIAL_MODE_CONTROL &&
+            can_tx_scheduler.initialized &&
+            (can_tx_scheduler.requested_wheel_mask & wheel_mask) != 0u)
+        {
+            can_tx_scheduler.received_wheel_mask |= wheel_mask;
+            if (!can_tx_scheduler.round_status_queued &&
+                can_tx_wheel_round_complete(can_tx_scheduler.requested_wheel_mask,
+                                            can_tx_scheduler.received_wheel_mask))
+            {
+                can_tx_scheduler.round_status_queued = true;
+                system_status_pending = true;
+            }
+        }
         return;
     }
 
@@ -1042,7 +1087,7 @@ static void put_motor_telemetry(uint8_t *packet, uint8_t offset, const MotorTele
     little_endian::write_u16(&packet[offset + 5u], telemetry.controller_output);
 }
 
-static void protocol_send_system_status(void)
+static bool protocol_send_system_status(void)
 {
     uint8_t packet[SYSTEM_STATUS_PACKET_SIZE] = {};
     const unsigned long now = millis();
@@ -1073,7 +1118,9 @@ static void protocol_send_system_status(void)
         checksum_error_latched = false;
         serial_framing_error_latched = false;
         command_out_of_range_latched = false;
+        return true;
     }
+    return false;
 }
 
 void protocol_send_basic_status(void)
@@ -1138,17 +1185,15 @@ void protocol_send_basic_status_if_due(void)
     }
 }
 
-void protocol_send_system_status_if_due(void)
+void protocol_send_system_status_if_ready(void)
 {
-    if (serial_mode != SERIAL_MODE_CONTROL)
+    if (serial_mode != SERIAL_MODE_CONTROL || !system_status_pending)
         return;
 
-    const unsigned long now = millis();
-    if (now - last_system_status_tx_ms < SYSTEM_STATUS_PERIOD_MS)
-        return;
-
-    last_system_status_tx_ms = now;
-    protocol_send_system_status();
+    // Keep the pending flag set if the USB TX buffer is temporarily full. A
+    // later loop sends the newest telemetry snapshot instead of blocking CAN.
+    if (protocol_send_system_status())
+        system_status_pending = false;
 }
 
 void motor_set_left_right_rpm(float left_rpm, float right_rpm)
@@ -1204,7 +1249,11 @@ static void reset_can_tx_scheduler(uint32_t now_us)
     can_tx_scheduler.superframe_cycle = 0u;
     can_tx_scheduler.initialized = true;
     can_tx_scheduler.command_sent = false;
-    can_tx_scheduler.poll_handled = false;
+    can_tx_scheduler.voltage_poll_handled = false;
+    can_tx_scheduler.next_motor_poll = 0u;
+    can_tx_scheduler.requested_wheel_mask = 0u;
+    can_tx_scheduler.received_wheel_mask = 0u;
+    can_tx_scheduler.round_status_queued = false;
 }
 
 void can_transmit_if_due(uint32_t now_us)
@@ -1212,18 +1261,26 @@ void can_transmit_if_due(uint32_t now_us)
     if (serial_mode != SERIAL_MODE_CONTROL || !can_tx_scheduler.initialized)
         return;
 
-    // Advance directly to the current cycle. Missed cycles are not replayed,
-    // which prevents a delayed main loop from producing a CAN burst.
+    // Advance directly to the current cycle. A round that did not collect all
+    // four responses still queues one fallback status so diagnostics remain
+    // visible, but missed CAN events are never replayed across cycle boundaries.
     const uint32_t elapsed_us = static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us);
     if (elapsed_us >= CAN_TX_COMMAND_PERIOD_US)
     {
+        if (!can_tx_scheduler.round_status_queued)
+            system_status_pending = true;
+
         const uint32_t skipped_cycles = elapsed_us / CAN_TX_COMMAND_PERIOD_US;
         can_tx_scheduler.cycle_start_us += skipped_cycles * CAN_TX_COMMAND_PERIOD_US;
         can_tx_scheduler.superframe_cycle = static_cast<uint8_t>(
             (can_tx_scheduler.superframe_cycle + skipped_cycles % CAN_TX_SUPERFRAME_CYCLES) %
             CAN_TX_SUPERFRAME_CYCLES);
         can_tx_scheduler.command_sent = false;
-        can_tx_scheduler.poll_handled = false;
+        can_tx_scheduler.voltage_poll_handled = false;
+        can_tx_scheduler.next_motor_poll = 0u;
+        can_tx_scheduler.requested_wheel_mask = 0u;
+        can_tx_scheduler.received_wheel_mask = 0u;
+        can_tx_scheduler.round_status_queued = false;
     }
 
     const uint32_t cycle_phase_us = static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us);
@@ -1250,26 +1307,48 @@ void can_transmit_if_due(uint32_t now_us)
             command_enabled};
 
         md200t_send_driver_commands(driver_a, driver_b);
-
-        // If the pair occupied the +5 ms phase, discard this cycle's poll
-        // instead of appending it immediately after the motor commands.
-        const uint32_t completed_phase_us = static_cast<uint32_t>(micros() - can_tx_scheduler.cycle_start_us);
-        if (cycle_phase_us >= CAN_TX_POLL_PHASE_US || completed_phase_us >= CAN_TX_POLL_PHASE_US)
-            can_tx_scheduler.poll_handled = true;
         return;
     }
 
-    if (can_tx_scheduler.poll_handled || cycle_phase_us < CAN_TX_POLL_PHASE_US)
+    if (!can_tx_scheduler.voltage_poll_handled)
+    {
+        ScheduledPollRequest voltage_request = {};
+        if (!scheduled_voltage_poll(can_tx_scheduler.superframe_cycle, voltage_request))
+        {
+            can_tx_scheduler.voltage_poll_handled = true;
+        }
+        else
+        {
+            if (cycle_phase_us < voltage_request.phase_us)
+                return;
+
+            can_tx_scheduler.voltage_poll_handled = true;
+            poll_can_tx_failure_active =
+                !md200t_request_pid_data(voltage_request.driver_id, voltage_request.pid);
+            return;
+        }
+    }
+
+    if (can_tx_scheduler.next_motor_poll >= CAN_TX_MOTOR_POLL_COUNT)
         return;
 
-    can_tx_scheduler.poll_handled = true;
-    ScheduledPollRequest request = {};
-    if (!scheduled_poll_for_cycle(can_tx_scheduler.superframe_cycle, request))
+    ScheduledPollRequest motor_request = {};
+    if (!scheduled_motor_poll(can_tx_scheduler.next_motor_poll, motor_request))
+    {
+        can_tx_scheduler.next_motor_poll = CAN_TX_MOTOR_POLL_COUNT;
+        return;
+    }
+
+    if (cycle_phase_us < motor_request.phase_us)
         return;
 
-    // PID 4 only starts the request. Responses are decoded later by the normal
-    // non-blocking RX drain, so this scheduler never waits for telemetry.
-    poll_can_tx_failure_active = !md200t_request_pid_data(request.driver_id, request.pid);
+    // Send at most one request per main-loop invocation. The following loop
+    // iteration drains its response before advancing to the next wheel slot.
+    can_tx_scheduler.next_motor_poll++;
+    const bool poll_ok = md200t_request_pid_data(motor_request.driver_id, motor_request.pid);
+    poll_can_tx_failure_active = !poll_ok;
+    if (poll_ok)
+        can_tx_scheduler.requested_wheel_mask |= motor_request.wheel_mask;
 }
 
 void v_decodePWM()
