@@ -1329,6 +1329,9 @@ void can_transmit_if_due(uint32_t now_us)
         }
     }
 
+    if (!scheduled_motor_poll_cycle(can_tx_scheduler.superframe_cycle))
+        return;
+
     if (can_tx_scheduler.next_motor_poll >= CAN_TX_MOTOR_POLL_COUNT)
         return;
 

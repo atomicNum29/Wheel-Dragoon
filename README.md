@@ -360,6 +360,8 @@ CONTROL mode의 자동 CAN 송신은 `can_transmit_if_due(micros())` 한 함수�
 
 같은 cycle 안에서 PID 4를 이용해 네 wheel을 모두 요청합니다. 단일 RX mailbox가 연속 응답에 덮어쓰이지 않도록 요청을 `+2/+3/+4/+5 ms`에 1 ms 간격으로 분산하고, scheduler 호출 한 번에는 최대 한 event만 송신합니다. 다음 main loop iteration은 새 TX보다 먼저 CAN RX를 drain하므로 각 요청 사이에 앞선 응답을 처리할 기회를 가집니다. PID 207/174 command pair는 항상 가장 먼저 처리됩니다.
 
+Wheel 상태 요청 빈도는 `include/can_tx_schedule.hpp`의 `MD200T_STATUS_REQUEST_HZ` 한 값으로 설정합니다. 범위는 1–100 Hz이며 기본값은 100 Hz입니다. 100의 약수가 아닌 값도 1초 superframe의 100개 control cycle에 가능한 균등하게 분배합니다. 이 값은 PID 193/200 요청 생성 빈도만 바꾸며 PID 207/174의 100 Hz 주기, PID 143 전압의 1 Hz 주기, `0x82`의 기존 100 Hz/fallback 송신 및 telemetry freshness timeout은 바꾸지 않습니다. 낮은 빈도를 사용할 때는 500 ms인 MAIN_DATA freshness timeout보다 충분히 빠르게 설정해야 합니다.
+
 ```text
 cycle +0 ms  Driver A PID 207/174 → 즉시 Driver B PID 207/174
 cycle +1 ms  1초 schedule에 해당하면 Driver A 또는 B PID 143 voltage
@@ -369,7 +371,7 @@ cycle +4 ms  LR = Driver B PID 200
 cycle +5 ms  RR = Driver A PID 200
 ```
 
-네 wheel 요청은 매 10 ms cycle마다 모두 실행되므로 각 wheel의 목표 수집률은 100 Hz입니다. 전압은 1초 superframe의 cycle 0에서 Driver A, cycle 50에서 Driver B를 요청하여 각 driver 1 Hz를 유지하고 두 요청을 500 ms 떨어뜨립니다.
+기본값 100 Hz에서는 네 wheel 요청이 매 10 ms cycle마다 모두 실행됩니다. 전압은 1초 superframe의 cycle 0에서 Driver A, cycle 50에서 Driver B를 요청하여 각 driver 1 Hz를 유지하고 두 요청을 500 ms 떨어뜨립니다.
 
 ```text
   1 ms  Driver A PID 143 voltage
@@ -384,7 +386,7 @@ cycle +5 ms  RR = Driver A PID 200
 
 Loop가 늦으면 동일 cycle 안에서 아직 남은 요청을 호출당 하나씩 진행할 수 있지만, 10 ms 경계를 넘긴 이전 cycle의 CAN event는 재생하지 않습니다. 여러 cycle을 놓친 뒤 catch-up burst를 만들지 않으며 새 cycle의 PID 207/174 command pair를 다시 최우선으로 처리합니다.
 
-정상 schedule은 command 200 frame/s, motor request/response 800 frame/s, voltage request/response 4 frame/s로 총 약 1,004 CAN frame/s입니다. 500 kbit/s Standard CAN에서 8-byte frame과 bit stuffing, inter-frame space를 고려한 명목 bus load는 약 23~27%입니다. `0x82` USB 출력은 `43 bytes × 100 Hz × 10 bits/byte = 43,000 bit/s`로 115200 bps 환산 약 37.3%이며, 기존 ROS command 50 Hz를 단순 합산하면 약 42.1%입니다. 실제 장비에서는 response latency, error frame, PID 207 jitter, RX overrun 및 host의 지속 수신 처리율을 함께 측정해야 합니다.
+기본 100 Hz schedule은 command 200 frame/s, motor request/response 800 frame/s, voltage request/response 4 frame/s로 총 약 1,004 CAN frame/s입니다. 500 kbit/s Standard CAN에서 8-byte frame과 bit stuffing, inter-frame space를 고려한 명목 bus load는 약 23~27%입니다. `0x82` USB 출력은 `43 bytes × 100 Hz × 10 bits/byte = 43,000 bit/s`로 115200 bps 환산 약 37.3%이며, 기존 ROS command 50 Hz를 단순 합산하면 약 42.1%입니다. 실제 장비에서는 response latency, error frame, PID 207 jitter, RX overrun 및 host의 지속 수신 처리율을 함께 측정해야 합니다.
 
 ## ROS 연동 목표 책임 분리
 
@@ -890,7 +892,7 @@ Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서
 
 실제 장비 시험에서 확정해야 할 항목은 다음과 같습니다.
 
-- PID 193/200 wheel별 100 Hz 및 PID 143 driver별 1 Hz polling 응답률과 500 ms/3 s freshness timeout의 적정성
+- 설정한 PID 193/200 wheel별 polling 빈도(기본 100 Hz), PID 143 driver별 1 Hz 응답률과 500 ms/3 s freshness timeout의 적정성
 - RX mailbox overrun 발생 여부와 PID 143 입력전압 단위
 - 채널별 direction polarity
 

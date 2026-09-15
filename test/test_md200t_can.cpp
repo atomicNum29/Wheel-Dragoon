@@ -61,22 +61,25 @@ int main()
     uint8_t voltage_b_count = 0u;
     for (uint8_t cycle = 0u; cycle < CAN_TX_SUPERFRAME_CYCLES; ++cycle)
     {
-        for (uint8_t index = 0u; index < CAN_TX_MOTOR_POLL_COUNT; ++index)
+        if (scheduled_motor_poll_cycle(cycle))
         {
-            ScheduledPollRequest request = {};
-            assert(scheduled_motor_poll(index, request));
-            assert(request.phase_us == static_cast<uint32_t>((index + 2u) * 1000u));
+            for (uint8_t index = 0u; index < CAN_TX_MOTOR_POLL_COUNT; ++index)
+            {
+                ScheduledPollRequest request = {};
+                assert(scheduled_motor_poll(index, request));
+                assert(request.phase_us == static_cast<uint32_t>((index + 2u) * 1000u));
 
-            if (request.wheel_mask == CAN_TX_WHEEL_LF_MASK)
-                ++lf_count;
-            else if (request.wheel_mask == CAN_TX_WHEEL_RF_MASK)
-                ++rf_count;
-            else if (request.wheel_mask == CAN_TX_WHEEL_LR_MASK)
-                ++lr_count;
-            else if (request.wheel_mask == CAN_TX_WHEEL_RR_MASK)
-                ++rr_count;
-            else
-                assert(false);
+                if (request.wheel_mask == CAN_TX_WHEEL_LF_MASK)
+                    ++lf_count;
+                else if (request.wheel_mask == CAN_TX_WHEEL_RF_MASK)
+                    ++rf_count;
+                else if (request.wheel_mask == CAN_TX_WHEEL_LR_MASK)
+                    ++lr_count;
+                else if (request.wheel_mask == CAN_TX_WHEEL_RR_MASK)
+                    ++rr_count;
+                else
+                    assert(false);
+            }
         }
 
         ScheduledPollRequest voltage = {};
@@ -91,7 +94,8 @@ int main()
                 assert(false);
         }
     }
-    assert(lf_count == 100u && rf_count == 100u && lr_count == 100u && rr_count == 100u);
+    assert(lf_count == MD200T_STATUS_REQUEST_HZ && rf_count == MD200T_STATUS_REQUEST_HZ);
+    assert(lr_count == MD200T_STATUS_REQUEST_HZ && rr_count == MD200T_STATUS_REQUEST_HZ);
     assert(voltage_a_count == 1u && voltage_b_count == 1u);
     assert(!can_tx_wheel_round_complete(CAN_TX_ALL_WHEELS_MASK,
                                         CAN_TX_ALL_WHEELS_MASK & ~CAN_TX_WHEEL_RR_MASK));

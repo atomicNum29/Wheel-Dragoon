@@ -11,6 +11,12 @@ constexpr uint32_t CAN_TX_COMMAND_PERIOD_US = 10000u;
 constexpr uint8_t CAN_TX_SUPERFRAME_CYCLES = 100u;
 constexpr uint8_t CAN_TX_MOTOR_POLL_COUNT = 4u;
 
+// Change this one value to select how many four-wheel status polling rounds
+// are generated per second. PID 207/174 remains fixed at 100 Hz.
+constexpr uint8_t MD200T_STATUS_REQUEST_HZ = 100u;
+static_assert(MD200T_STATUS_REQUEST_HZ >= 1u && MD200T_STATUS_REQUEST_HZ <= 100u,
+              "MD200T_STATUS_REQUEST_HZ must be in the 1..100 Hz range");
+
 constexpr uint8_t CAN_TX_WHEEL_LF_MASK = 1u << 0;
 constexpr uint8_t CAN_TX_WHEEL_RF_MASK = 1u << 1;
 constexpr uint8_t CAN_TX_WHEEL_LR_MASK = 1u << 2;
@@ -26,6 +32,15 @@ inline bool can_tx_wheel_round_complete(uint8_t requested_mask, uint8_t received
            (received_mask & CAN_TX_ALL_WHEELS_MASK) == CAN_TX_ALL_WHEELS_MASK;
 }
 
+// Distribute the requested number of rounds across the 100-cycle superframe.
+// Cycle 0 is always selected, so control-mode startup obtains telemetry early.
+inline bool scheduled_motor_poll_cycle(uint8_t cycle)
+{
+    cycle = static_cast<uint8_t>(cycle % CAN_TX_SUPERFRAME_CYCLES);
+    const uint16_t phase = static_cast<uint16_t>(cycle) * MD200T_STATUS_REQUEST_HZ;
+    return (phase % CAN_TX_SUPERFRAME_CYCLES) < MD200T_STATUS_REQUEST_HZ;
+}
+
 struct ScheduledPollRequest
 {
     uint8_t driver_id;
@@ -35,7 +50,7 @@ struct ScheduledPollRequest
 };
 
 // Driver voltages remain 1 Hz and are separated by 500 ms. This optional slot
-// precedes the four motor requests so it does not displace a 100 Hz wheel poll.
+// precedes the four motor requests in a selected wheel polling cycle.
 inline bool scheduled_voltage_poll(uint8_t cycle, ScheduledPollRequest &request)
 {
     cycle = static_cast<uint8_t>(cycle % CAN_TX_SUPERFRAME_CYCLES);
@@ -53,8 +68,8 @@ inline bool scheduled_voltage_poll(uint8_t cycle, ScheduledPollRequest &request)
     return false;
 }
 
-// Every cycle requests all four wheels in the 0x82 serialization order. The
-// driver/channel mapping remains A/MOT1=LF, B/MOT1=RF, B/MOT2=LR, A/MOT2=RR.
+// Every selected cycle requests all four wheels in the 0x82 serialization
+// order. Mapping remains A/MOT1=LF, B/MOT1=RF, B/MOT2=LR, A/MOT2=RR.
 inline bool scheduled_motor_poll(uint8_t poll_index, ScheduledPollRequest &request)
 {
     switch (poll_index)
