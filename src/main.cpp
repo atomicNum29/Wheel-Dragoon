@@ -29,7 +29,13 @@ const uint8_t CAN_BRIDGE_PACKET_SIZE = 19;
 const uint8_t CAN_BRIDGE_RESPONSE_LENGTH = 14;
 const uint8_t CAN_BRIDGE_RESPONSE_TYPE = 0xA0;
 const uint8_t CAN_BRIDGE_RESPONSE_SIZE = 18;
-const uint8_t SERIAL_PACKET_MAX_SIZE = CAN_BRIDGE_PACKET_SIZE;
+const uint8_t CAN_BENCHMARK_PACKET_LENGTH = 22;
+const uint8_t CAN_BENCHMARK_PACKET_TYPE = 0x21;
+const uint8_t CAN_BENCHMARK_PACKET_SIZE = 26;
+const uint8_t CAN_BENCHMARK_RESULT_LENGTH = 33;
+const uint8_t CAN_BENCHMARK_RESULT_TYPE = 0xA1;
+const uint8_t CAN_BENCHMARK_RESULT_SIZE = 37;
+const uint8_t SERIAL_PACKET_MAX_SIZE = CAN_BENCHMARK_PACKET_SIZE;
 const uint8_t STATUS_PACKET_LENGTH = 7;
 const uint8_t STATUS_PACKET_TYPE = 0x81;
 const uint8_t STATUS_PACKET_SIZE = 11;
@@ -50,6 +56,11 @@ const uint8_t CAN_BRIDGE_STATUS_OK = 0;
 const uint8_t CAN_BRIDGE_STATUS_TX_FAILED = 1;
 const uint8_t CAN_BRIDGE_STATUS_RX_TIMEOUT = 2;
 const uint8_t CAN_BRIDGE_STATUS_INVALID_REQUEST = 3;
+const uint8_t CAN_BENCHMARK_STATUS_RESPONSE = 0;
+const uint8_t CAN_BENCHMARK_STATUS_TX_FAILED = 1;
+const uint8_t CAN_BENCHMARK_STATUS_RX_TIMEOUT = 2;
+const uint8_t CAN_BENCHMARK_STATUS_INVALID_REQUEST = 3;
+const uint8_t CAN_BENCHMARK_FLAG_FINAL = 0x01;
 const unsigned long COMMAND_TIMEOUT_MS = 500;
 const unsigned long STATUS_PERIOD_MS = 500;      // 2 Hz
 const uint16_t BATTERY_LOW_THRESHOLD_MV = 21000; // Configured low-voltage threshold for the 24 V system
@@ -181,6 +192,39 @@ struct CanTxScheduler
     bool round_status_queued;
 };
 
+struct CanBenchmarkState
+{
+    CanFrame request;
+    uint16_t response_can_id;
+    uint8_t response_pid;
+    uint16_t repeat_count;
+    uint16_t iteration;
+    uint16_t timeout_count;
+    uint16_t tx_failure_count;
+    uint32_t period_us;
+    uint32_t timeout_us;
+    uint32_t next_tx_us;
+    uint32_t tx_timestamp_us;
+    uint8_t seq;
+    bool active;
+    bool waiting_for_response;
+};
+
+struct CanBenchmarkResult
+{
+    CanFrame response;
+    uint32_t tx_timestamp_us;
+    uint32_t rx_timestamp_us;
+    uint32_t rtt_us;
+    uint16_t iteration;
+    uint16_t timeout_count;
+    uint16_t tx_failure_count;
+    uint8_t seq;
+    uint8_t status;
+    uint8_t flags;
+    bool pending;
+};
+
 // One side-effect-free view of all live and latched fault sources. Legacy
 // 0x81 and System Status v2 map this same view to their own wire bitfields.
 struct FaultSnapshot
@@ -258,6 +302,16 @@ static void perform_mcu_reset(void);
 static void send_can_bridge_response(uint8_t seq, uint8_t status, const CanFrame *frame);
 // Parse and execute one USB Serial to CAN bridge request.
 static void parse_complete_can_bridge_frame(const uint8_t *packet);
+// Validate and start one asynchronous CAN request/response benchmark session.
+static void parse_complete_can_benchmark_frame(const uint8_t *packet);
+// Advance the benchmark TX/timeout state machine without blocking CAN RX.
+static void can_benchmark_update(uint32_t now_us);
+// Consume a matching benchmark response and queue its timing result.
+static bool can_benchmark_consume_rx(const CanFrame &frame, uint32_t rx_timestamp_us);
+// Write a queued benchmark result when the USB Serial TX buffer has room.
+static void can_benchmark_flush_result(void);
+// Cancel the active benchmark and discard a result that has not been sent.
+static void cancel_can_benchmark(void);
 // Dispatch a complete USB Serial frame by packet type.
 static void parse_complete_serial_frame(const uint8_t *packet, unsigned long now);
 // Feed one Serial byte into the command frame state machine.
@@ -314,6 +368,8 @@ static bool system_status_pending = false;
 static WheelRpmCommand target_wheel_rpm_cmd = {0.0f, 0.0f, 0.0f, 0.0f};
 static CommandPacket auto_command = {0, 0, 0u};
 static CanTxScheduler can_tx_scheduler = {0u, 0u, false, false, false, 0u, 0u, 0u, false};
+static CanBenchmarkState can_benchmark = {{0u, 0u, {0u}}, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, false, false};
+static CanBenchmarkResult can_benchmark_result = {{0u, 0u, {0u}}, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, false};
 static CommandFrameParser command_rx_parser = {{0}, 0, CMD_RX_WAIT_HEADER_0};
 static MotorTelemetry lf_telemetry = {0, 0u, 0u, 0u, 0u, false};
 static MotorTelemetry rf_telemetry = {0, 0u, 0u, 0u, 0u, false};
@@ -360,7 +416,10 @@ void loop()
     const unsigned int w_pwm = w_pulseWidth;
 
     serial_drain_command_packets(now);
+    can_benchmark_flush_result();
     md200t_drain_rx(now);
+    can_benchmark_update(micros());
+    can_benchmark_flush_result();
     md200t_update_telemetry_health(now);
     update_effective_motor_command(drive_mode, v_pwm, w_pwm, now);
     can_transmit_if_due(micros());
@@ -512,6 +571,7 @@ static void perform_mcu_reset(void)
     // Stop periodic traffic before issuing the final safety command pair. The
     // low-level calls wait for TX completion, so reset cannot interrupt a frame
     // that was successfully placed on the CAN bus.
+    cancel_can_benchmark();
     serial_mode = SERIAL_MODE_BRIDGE;
     motor_enabled = false;
     estop_active = false;
@@ -582,6 +642,188 @@ static void send_can_bridge_response(uint8_t seq, uint8_t status, const CanFrame
         Serial.write(packet, CAN_BRIDGE_RESPONSE_SIZE);
 }
 
+static void queue_invalid_can_benchmark_result(uint8_t seq)
+{
+    can_benchmark_result = CanBenchmarkResult{{0u, 0u, {0u}},
+                                              0u,
+                                              0u,
+                                              0u,
+                                              0u,
+                                              0u,
+                                              0u,
+                                              seq,
+                                              CAN_BENCHMARK_STATUS_INVALID_REQUEST,
+                                              CAN_BENCHMARK_FLAG_FINAL,
+                                              true};
+}
+
+static void complete_can_benchmark_attempt(uint8_t status,
+                                           const CanFrame *response,
+                                           uint32_t rx_timestamp_us)
+{
+    CanFrame result_frame = {};
+    uint32_t rtt_us = 0u;
+    if (response != nullptr)
+    {
+        result_frame = *response;
+        rtt_us = static_cast<uint32_t>(rx_timestamp_us - can_benchmark.tx_timestamp_us);
+    }
+
+    const bool final = can_benchmark.iteration >= can_benchmark.repeat_count;
+    can_benchmark_result.response = result_frame;
+    can_benchmark_result.tx_timestamp_us = can_benchmark.tx_timestamp_us;
+    can_benchmark_result.rx_timestamp_us = response != nullptr ? rx_timestamp_us : 0u;
+    can_benchmark_result.rtt_us = rtt_us;
+    can_benchmark_result.iteration = can_benchmark.iteration;
+    can_benchmark_result.timeout_count = can_benchmark.timeout_count;
+    can_benchmark_result.tx_failure_count = can_benchmark.tx_failure_count;
+    can_benchmark_result.seq = can_benchmark.seq;
+    can_benchmark_result.status = status;
+    can_benchmark_result.flags = final ? CAN_BENCHMARK_FLAG_FINAL : 0u;
+    can_benchmark_result.pending = true;
+
+    can_benchmark.waiting_for_response = false;
+    if (final)
+        can_benchmark.active = false;
+}
+
+static void can_benchmark_flush_result(void)
+{
+    if (!can_benchmark_result.pending || Serial.availableForWrite() < CAN_BENCHMARK_RESULT_SIZE)
+        return;
+
+    uint8_t packet[CAN_BENCHMARK_RESULT_SIZE] = {};
+    packet[0] = PKT_HEADER_0;
+    packet[1] = PKT_HEADER_1;
+    packet[2] = CAN_BENCHMARK_RESULT_LENGTH;
+    packet[3] = CAN_BENCHMARK_RESULT_TYPE;
+    packet[4] = can_benchmark_result.seq;
+    little_endian::write_u16(&packet[5], can_benchmark_result.iteration);
+    packet[7] = can_benchmark_result.status;
+    packet[8] = can_benchmark_result.flags;
+    little_endian::write_u32(&packet[9], can_benchmark_result.tx_timestamp_us);
+    little_endian::write_u32(&packet[13], can_benchmark_result.rx_timestamp_us);
+    little_endian::write_u32(&packet[17], can_benchmark_result.rtt_us);
+    little_endian::write_u16(&packet[21], can_benchmark_result.timeout_count);
+    little_endian::write_u16(&packet[23], can_benchmark_result.tx_failure_count);
+    little_endian::write_u16(&packet[25], can_benchmark_result.response.id);
+    packet[27] = can_benchmark_result.response.dlc > 8u ? 8u : can_benchmark_result.response.dlc;
+    for (uint8_t i = 0u; i < packet[27]; ++i)
+        packet[28u + i] = can_benchmark_result.response.data[i];
+    packet[36] = protocol_xor_checksum(packet, CAN_BENCHMARK_RESULT_SIZE - 1u);
+
+    Serial.write(packet, CAN_BENCHMARK_RESULT_SIZE);
+    can_benchmark_result.pending = false;
+}
+
+static void cancel_can_benchmark(void)
+{
+    can_benchmark.active = false;
+    can_benchmark.waiting_for_response = false;
+    can_benchmark_result.pending = false;
+}
+
+static bool can_benchmark_consume_rx(const CanFrame &frame, uint32_t rx_timestamp_us)
+{
+    if (!can_benchmark.active || !can_benchmark.waiting_for_response ||
+        frame.id != can_benchmark.response_can_id || frame.dlc == 0u ||
+        frame.data[0] != can_benchmark.response_pid)
+        return false;
+
+    if (static_cast<uint32_t>(rx_timestamp_us - can_benchmark.tx_timestamp_us) >= can_benchmark.timeout_us)
+    {
+        ++can_benchmark.timeout_count;
+        complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RX_TIMEOUT, nullptr, 0u);
+        return false;
+    }
+
+    complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RESPONSE, &frame, rx_timestamp_us);
+    return true;
+}
+
+static void can_benchmark_update(uint32_t now_us)
+{
+    if (!can_benchmark.active || can_benchmark_result.pending)
+        return;
+
+    if (can_benchmark.waiting_for_response)
+    {
+        if (static_cast<uint32_t>(now_us - can_benchmark.tx_timestamp_us) >= can_benchmark.timeout_us)
+        {
+            ++can_benchmark.timeout_count;
+            complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RX_TIMEOUT, nullptr, 0u);
+        }
+        return;
+    }
+
+    if (static_cast<int32_t>(now_us - can_benchmark.next_tx_us) < 0)
+        return;
+
+    ++can_benchmark.iteration;
+    can_benchmark.tx_timestamp_us = now_us;
+    can_benchmark.next_tx_us = now_us + can_benchmark.period_us;
+
+    if (!can_transmit(can_benchmark.request, CAN_BRIDGE_TX_TIMEOUT_US))
+    {
+        ++can_benchmark.tx_failure_count;
+        latch_safety_can_tx_failure();
+        complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_TX_FAILED, nullptr, 0u);
+        return;
+    }
+
+    can_benchmark.waiting_for_response = true;
+}
+
+static void parse_complete_can_benchmark_frame(const uint8_t *packet)
+{
+    const uint8_t seq = packet[4];
+    cancel_can_benchmark();
+
+    if (protocol_xor_checksum(packet, CAN_BENCHMARK_PACKET_SIZE - 1u) != packet[CAN_BENCHMARK_PACKET_SIZE - 1u])
+    {
+        checksum_error_latched = true;
+        queue_invalid_can_benchmark_result(seq);
+        return;
+    }
+
+    CanFrame request = {};
+    request.id = little_endian::read_u16(&packet[5]);
+    request.dlc = packet[7];
+    for (uint8_t i = 0u; i < 8u; ++i)
+        request.data[i] = packet[8u + i];
+
+    const uint16_t response_can_id = little_endian::read_u16(&packet[16]);
+    const uint8_t response_pid = packet[18];
+    const uint16_t repeat_count = little_endian::read_u16(&packet[19]);
+    const uint16_t period_ms = little_endian::read_u16(&packet[21]);
+    const uint16_t timeout_ms = little_endian::read_u16(&packet[23]);
+
+    if (request.id > 0x7FFu || request.dlc > 8u || response_can_id > 0x7FFu ||
+        repeat_count == 0u || period_ms == 0u || timeout_ms == 0u ||
+        timeout_ms > period_ms || static_cast<uint32_t>(timeout_ms) * 1000u > CAN_BRIDGE_MAX_RX_TIMEOUT_US)
+    {
+        queue_invalid_can_benchmark_result(seq);
+        return;
+    }
+
+    enter_bridge_mode();
+    bridge_tunnel_seq = seq;
+    can_benchmark.request = request;
+    can_benchmark.response_can_id = response_can_id;
+    can_benchmark.response_pid = response_pid;
+    can_benchmark.repeat_count = repeat_count;
+    can_benchmark.iteration = 0u;
+    can_benchmark.timeout_count = 0u;
+    can_benchmark.tx_failure_count = 0u;
+    can_benchmark.period_us = static_cast<uint32_t>(period_ms) * 1000u;
+    can_benchmark.timeout_us = static_cast<uint32_t>(timeout_ms) * 1000u;
+    can_benchmark.next_tx_us = micros();
+    can_benchmark.tx_timestamp_us = 0u;
+    can_benchmark.seq = seq;
+    can_benchmark.active = true;
+    can_benchmark.waiting_for_response = false;
+}
+
 static void parse_complete_can_bridge_frame(const uint8_t *packet)
 {
     const uint8_t seq = packet[4];
@@ -604,6 +846,7 @@ static void parse_complete_can_bridge_frame(const uint8_t *packet)
     for (uint8_t i = 0u; i < 8u; ++i)
         tx.data[i] = packet[8u + i];
 
+    cancel_can_benchmark();
     enter_bridge_mode();
     bridge_tunnel_seq = seq;
 
@@ -645,6 +888,10 @@ static void parse_complete_serial_frame(const uint8_t *packet, unsigned long now
     {
         parse_complete_can_bridge_frame(packet);
     }
+    else if (packet[2] == CAN_BENCHMARK_PACKET_LENGTH && packet[3] == CAN_BENCHMARK_PACKET_TYPE)
+    {
+        parse_complete_can_benchmark_frame(packet);
+    }
     else
     {
         serial_framing_error_latched = true;
@@ -685,7 +932,8 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
     case CMD_RX_WAIT_LENGTH:
         if (byte_in == CMD_PACKET_LENGTH ||
             byte_in == RESET_PACKET_LENGTH ||
-            byte_in == CAN_BRIDGE_PACKET_LENGTH)
+            byte_in == CAN_BRIDGE_PACKET_LENGTH ||
+            byte_in == CAN_BENCHMARK_PACKET_LENGTH)
         {
             command_rx_parser.packet[2] = byte_in;
             command_rx_parser.index = 3;
@@ -701,7 +949,8 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
     case CMD_RX_WAIT_TYPE:
         if ((command_rx_parser.packet[2] == CMD_PACKET_LENGTH && byte_in == CMD_PACKET_TYPE) ||
             (command_rx_parser.packet[2] == RESET_PACKET_LENGTH && byte_in == RESET_PACKET_TYPE) ||
-            (command_rx_parser.packet[2] == CAN_BRIDGE_PACKET_LENGTH && byte_in == CAN_BRIDGE_PACKET_TYPE))
+            (command_rx_parser.packet[2] == CAN_BRIDGE_PACKET_LENGTH && byte_in == CAN_BRIDGE_PACKET_TYPE) ||
+            (command_rx_parser.packet[2] == CAN_BENCHMARK_PACKET_LENGTH && byte_in == CAN_BENCHMARK_PACKET_TYPE))
         {
             command_rx_parser.packet[3] = byte_in;
             command_rx_parser.index = 4;
@@ -762,6 +1011,7 @@ static void initialize_control_session(unsigned long now)
 
 static void enter_control_mode(unsigned long now)
 {
+    cancel_can_benchmark();
     if (serial_mode == SERIAL_MODE_CONTROL)
         return;
 
@@ -893,9 +1143,12 @@ static void md200t_drain_rx(unsigned long now)
 
         if (serial_mode == SERIAL_MODE_BRIDGE)
         {
-            // Forward every CAN frame without MDROBOT ID/PID filtering. The
-            // latest 0x20 sequence identifies the active tunnel session.
-            send_can_bridge_response(bridge_tunnel_seq, CAN_BRIDGE_STATUS_OK, &frame);
+            const uint32_t rx_timestamp_us = micros();
+            if (!can_benchmark_consume_rx(frame, rx_timestamp_us))
+            {
+                // Non-matching traffic remains visible through the raw tunnel.
+                send_can_bridge_response(bridge_tunnel_seq, CAN_BRIDGE_STATUS_OK, &frame);
+            }
         }
         else
         {

@@ -131,5 +131,11 @@ int main()
     little_endian::write_i16(bytes, -80);
     assert(bytes[0] == 0xB0u && bytes[1] == 0xFFu);
     assert(little_endian::read_i16(bytes) == -80);
+
+    uint8_t word_bytes[4] = {};
+    little_endian::write_u32(word_bytes, 0x89ABCDEFu);
+    assert(word_bytes[0] == 0xEFu && word_bytes[1] == 0xCDu);
+    assert(word_bytes[2] == 0xABu && word_bytes[3] == 0x89u);
+    assert(little_endian::read_u32(word_bytes) == 0x89ABCDEFu);
     return 0;
 }

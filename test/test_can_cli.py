@@ -33,6 +33,55 @@ class BridgeRequestTests(unittest.TestCase):
         self.assertEqual(request[-1], can_cli.xor_checksum(request[:-1]))
 
 
+class BenchmarkRequestTests(unittest.TestCase):
+    def test_benchmark_layout_and_md200t_matcher(self) -> None:
+        command = can_cli.parse_interactive_command(
+            "benchmark 1 4 143 --dlc 8 --count 3 --period-ms 10 --timeout-ms 5", 100
+        )
+
+        self.assertIsInstance(command, can_cli.BenchmarkCommand)
+        self.assertEqual(command.response_can_id, 0x701)
+        self.assertEqual(command.response_pid, 143)
+        request = can_cli.build_benchmark_request(command, 7)
+        self.assertEqual(len(request), 26)
+        self.assertEqual(
+            request[:-1],
+            bytes.fromhex(
+                "AA 55 16 21 07 01 00 08 04 8F 00 00 00 00 00 00 "
+                "01 07 8F 03 00 0A 00 05 00"
+            ),
+        )
+        self.assertEqual(request[-1], can_cli.xor_checksum(request[:-1]))
+
+    def test_timeout_must_fit_period(self) -> None:
+        with self.assertRaisesRegex(can_cli.CommandError, "no greater than"):
+            can_cli.parse_interactive_command(
+                "benchmark 1 4 193 --period-ms 5 --timeout-ms 6", 100
+            )
+
+    def test_explicit_matcher_supports_raw_request(self) -> None:
+        command = can_cli.parse_interactive_command(
+            "benchmark 0x123 --response-id 0x456 --response-pid 9 --count 1", 10
+        )
+
+        self.assertEqual(command.response_can_id, 0x456)
+        self.assertEqual(command.response_pid, 9)
+
+    def test_interactive_default_timeout_is_clamped_to_period(self) -> None:
+        command = can_cli.parse_interactive_command("benchmark 1 4 193", 100)
+
+        self.assertEqual(command.period_ms, 10)
+        self.assertEqual(command.timeout_ms, 10)
+
+    def test_initial_benchmark_has_usable_timeout_default(self) -> None:
+        args = can_cli.build_main_parser().parse_args(
+            ["benchmark", "1", "4", "193", "--port", "/dev/ttyACM0"]
+        )
+        command = can_cli.command_from_namespace(args, args.timeout_ms)
+
+        self.assertEqual(command.timeout_ms, 10)
+
+
 class PacketStreamParserTests(unittest.TestCase):
     def test_fragmented_and_back_to_back_packets(self) -> None:
         first = make_packet(bytes.fromhex("A0 01 00 01 07 02 C1 00 00 00 00 00 00 00"))
@@ -58,6 +107,26 @@ class PacketStreamParserTests(unittest.TestCase):
         self.assertEqual(parser.feed(first + second), [first, second])
         self.assertIn("seq=17 id=0x701", can_cli.format_packet(first))
         self.assertIn("seq=254 id=0x123", can_cli.format_packet(second))
+
+    def test_benchmark_result_format(self) -> None:
+        payload = (
+            bytes([0xA1, 7])
+            + (2).to_bytes(2, "little")
+            + bytes([0, 1])
+            + (100).to_bytes(4, "little")
+            + (145).to_bytes(4, "little")
+            + (45).to_bytes(4, "little")
+            + (1).to_bytes(2, "little")
+            + (0).to_bytes(2, "little")
+            + (0x701).to_bytes(2, "little")
+            + bytes([2, 0x8F, 0x12, 0, 0, 0, 0, 0, 0])
+        )
+        packet = make_packet(payload)
+
+        formatted = can_cli.format_packet(packet)
+        self.assertIn("BENCH seq=7 iter=2 status=response final", formatted)
+        self.assertIn("rtt_us=45 timeouts=1 tx_failures=0", formatted)
+        self.assertIn("id=0x701 dlc=2 data=8F 12", formatted)
 
 
 class InteractiveCommandTests(unittest.TestCase):

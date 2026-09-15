@@ -17,12 +17,23 @@ CAN_BRIDGE_REQUEST_LENGTH = 15
 CAN_BRIDGE_REQUEST_TYPE = 0x20
 CAN_BRIDGE_RESPONSE_LENGTH = 14
 CAN_BRIDGE_RESPONSE_TYPE = 0xA0
+CAN_BENCHMARK_REQUEST_LENGTH = 22
+CAN_BENCHMARK_REQUEST_TYPE = 0x21
+CAN_BENCHMARK_RESULT_LENGTH = 33
+CAN_BENCHMARK_RESULT_TYPE = 0xA1
 MAX_PACKET_LENGTH = 64
 
 BRIDGE_STATUS_NAMES = {
     0: "ok",
     1: "can_tx_failed",
     2: "can_rx_timeout",
+    3: "invalid_request",
+}
+
+BENCHMARK_STATUS_NAMES = {
+    0: "response",
+    1: "can_tx_failed",
+    2: "response_timeout",
     3: "invalid_request",
 }
 
@@ -35,6 +46,18 @@ class BridgeCommand:
     can_id: int
     data: list[int]
     dlc: int
+    timeout_ms: int
+
+
+@dataclass(frozen=True)
+class BenchmarkCommand:
+    request_can_id: int
+    request_data: list[int]
+    request_dlc: int
+    response_can_id: int
+    response_pid: int
+    repeat_count: int
+    period_ms: int
     timeout_ms: int
 
 
@@ -239,6 +262,57 @@ def build_bridge_request(
     return packet_without_checksum + bytes([xor_checksum(packet_without_checksum)])
 
 
+def build_benchmark_request(command: BenchmarkCommand, seq: int) -> bytes:
+    if not 0 <= command.request_can_id <= 0x7FF:
+        raise ValueError("request_can_id must be a standard 11-bit CAN ID")
+    if not 0 <= command.request_dlc <= 8:
+        raise ValueError("request_dlc must be between 0 and 8")
+    if len(command.request_data) > 8 or len(command.request_data) > command.request_dlc:
+        raise ValueError("request data byte count must fit the DLC and 8-byte CAN limit")
+    if not 0 <= command.response_can_id <= 0x7FF:
+        raise ValueError("response_can_id must be a standard 11-bit CAN ID")
+    if not 0 <= command.response_pid <= 0xFF:
+        raise ValueError("response_pid must be a byte")
+    if not 1 <= command.repeat_count <= 0xFFFF:
+        raise ValueError("repeat_count must be between 1 and 65535")
+    if not 1 <= command.period_ms <= 0xFFFF:
+        raise ValueError("period_ms must be between 1 and 65535")
+    if not 1 <= command.timeout_ms <= 100:
+        raise ValueError("timeout_ms must be between 1 and 100")
+    if command.timeout_ms > command.period_ms:
+        raise ValueError("timeout_ms must not exceed period_ms")
+
+    padded_data = bytes(command.request_data + [0] * (8 - len(command.request_data)))
+    packet_without_checksum = (
+        HEADER
+        + bytes(
+            [
+                CAN_BENCHMARK_REQUEST_LENGTH,
+                CAN_BENCHMARK_REQUEST_TYPE,
+                seq & 0xFF,
+                command.request_can_id & 0xFF,
+                (command.request_can_id >> 8) & 0xFF,
+                command.request_dlc,
+            ]
+        )
+        + padded_data
+        + bytes(
+            [
+                command.response_can_id & 0xFF,
+                (command.response_can_id >> 8) & 0xFF,
+                command.response_pid,
+                command.repeat_count & 0xFF,
+                (command.repeat_count >> 8) & 0xFF,
+                command.period_ms & 0xFF,
+                (command.period_ms >> 8) & 0xFF,
+                command.timeout_ms & 0xFF,
+                (command.timeout_ms >> 8) & 0xFF,
+            ]
+        )
+    )
+    return packet_without_checksum + bytes([xor_checksum(packet_without_checksum)])
+
+
 def build_command_parser(prog: str, add_help: bool) -> RaisingArgumentParser:
     parser = RaisingArgumentParser(prog=prog, add_help=add_help)
     subparsers = parser.add_subparsers(dest="command")
@@ -255,10 +329,24 @@ def build_command_parser(prog: str, add_help: bool) -> RaisingArgumentParser:
     frame_parser.add_argument("data", nargs="*", type=parse_byte)
     frame_parser.add_argument("--dlc", type=int, default=None)
     frame_parser.add_argument("--timeout-ms", type=int, default=None)
+
+    benchmark_parser = subparsers.add_parser(
+        "benchmark", add_help=add_help, help="repeat a CAN request and measure matching response RTT"
+    )
+    benchmark_parser.add_argument("can_id", type=parse_can_id)
+    benchmark_parser.add_argument("data", nargs="*", type=parse_byte)
+    benchmark_parser.add_argument("--dlc", type=int, default=None)
+    benchmark_parser.add_argument("--response-id", type=parse_can_id, default=None)
+    benchmark_parser.add_argument("--response-pid", type=parse_byte, default=None)
+    benchmark_parser.add_argument("--count", type=int, default=100)
+    benchmark_parser.add_argument("--period-ms", type=int, default=10)
+    benchmark_parser.add_argument("--timeout-ms", type=int, default=None)
     return parser
 
 
-def command_from_namespace(args: argparse.Namespace, default_timeout_ms: int) -> BridgeCommand:
+def command_from_namespace(
+    args: argparse.Namespace, default_timeout_ms: int
+) -> BridgeCommand | BenchmarkCommand:
     timeout_ms = default_timeout_ms if args.timeout_ms is None else args.timeout_ms
     if not 0 <= timeout_ms <= 0xFFFF:
         raise CommandError("--timeout-ms must be between 0 and 65535")
@@ -285,10 +373,55 @@ def command_from_namespace(args: argparse.Namespace, default_timeout_ms: int) ->
             raise CommandError("data byte count may not exceed --dlc")
         return BridgeCommand(args.can_id, args.data, dlc, timeout_ms)
 
-    raise CommandError("enter 'pid ...', 'frame ...', 'help', or 'quit'")
+    if args.command == "benchmark":
+        timeout_ms = (
+            min(default_timeout_ms, args.period_ms)
+            if args.timeout_ms is None
+            else args.timeout_ms
+        )
+        if len(args.data) > 8:
+            raise CommandError("benchmark request data may contain at most 8 bytes")
+        dlc = len(args.data) if args.dlc is None else args.dlc
+        if not 0 <= dlc <= 8 or len(args.data) > dlc:
+            raise CommandError("benchmark request data must fit --dlc in range 0..8")
+        if not 1 <= args.count <= 0xFFFF:
+            raise CommandError("--count must be between 1 and 65535")
+        if not 1 <= args.period_ms <= 0xFFFF:
+            raise CommandError("--period-ms must be between 1 and 65535")
+        if not 1 <= timeout_ms <= 100 or timeout_ms > args.period_ms:
+            raise CommandError("--timeout-ms must be 1..100 and no greater than --period-ms")
+
+        response_can_id = (
+            ((7 << 8) | (args.can_id & 0xFF))
+            if args.response_id is None
+            else args.response_id
+        )
+        response_pid = args.response_pid
+        if response_pid is None:
+            if len(args.data) >= 2 and args.data[0] == 4:
+                response_pid = args.data[1]
+            elif args.data:
+                response_pid = args.data[0]
+            else:
+                raise CommandError("--response-pid is required when request data is empty")
+
+        return BenchmarkCommand(
+            args.can_id,
+            args.data,
+            dlc,
+            response_can_id,
+            response_pid,
+            args.count,
+            args.period_ms,
+            timeout_ms,
+        )
+
+    raise CommandError("enter 'pid ...', 'frame ...', 'benchmark ...', 'help', or 'quit'")
 
 
-def parse_interactive_command(line: str, default_timeout_ms: int) -> BridgeCommand:
+def parse_interactive_command(
+    line: str, default_timeout_ms: int
+) -> BridgeCommand | BenchmarkCommand:
     try:
         tokens = shlex.split(line)
     except ValueError as exc:
@@ -313,6 +446,8 @@ def interactive_help() -> str:
         "commands:\n"
         "  pid DRIVER_ID PID [DATA_BYTE ...] [--mid MID] [--timeout-ms N]\n"
         "  frame CAN_ID [DATA_BYTE ...] [--dlc N] [--timeout-ms N]\n"
+        "  benchmark CAN_ID [DATA_BYTE ...] [--dlc N] [--response-id ID]\n"
+        "            [--response-pid PID] [--count N] [--period-ms N] [--timeout-ms N]\n"
         "  help\n"
         "  quit | exit | q"
     )
@@ -325,6 +460,32 @@ def format_data(data: list[int], dlc: int) -> str:
 
 def format_packet(packet: bytes) -> str:
     timestamp = time.strftime("%H:%M:%S")
+    if packet[3] == CAN_BENCHMARK_RESULT_TYPE and packet[2] == CAN_BENCHMARK_RESULT_LENGTH:
+        seq = packet[4]
+        iteration = int.from_bytes(packet[5:7], "little")
+        status = packet[7]
+        status_name = BENCHMARK_STATUS_NAMES.get(status, f"unknown_{status}")
+        final = bool(packet[8] & 0x01)
+        tx_us = int.from_bytes(packet[9:13], "little")
+        rx_us = int.from_bytes(packet[13:17], "little")
+        rtt_us = int.from_bytes(packet[17:21], "little")
+        timeout_count = int.from_bytes(packet[21:23], "little")
+        tx_failure_count = int.from_bytes(packet[23:25], "little")
+        can_id = int.from_bytes(packet[25:27], "little")
+        dlc = min(packet[27], 8)
+        data = list(packet[28 : 28 + dlc])
+        final_text = " final" if final else ""
+        response_text = (
+            f" id=0x{can_id:03X} dlc={dlc} data={format_data(data, dlc)}"
+            if status == 0
+            else ""
+        )
+        return (
+            f"[{timestamp}] BENCH seq={seq} iter={iteration} status={status_name}{final_text} "
+            f"tx_us={tx_us} rx_us={rx_us} rtt_us={rtt_us} "
+            f"timeouts={timeout_count} tx_failures={tx_failure_count}{response_text}"
+        )
+
     if packet[3] != CAN_BRIDGE_RESPONSE_TYPE or packet[2] != CAN_BRIDGE_RESPONSE_LENGTH:
         return f"[{timestamp}] MCU type=0x{packet[3]:02X} raw={format_data(list(packet), len(packet))}"
 
@@ -344,7 +505,21 @@ def format_packet(packet: bytes) -> str:
     )
 
 
-def send_command(ser: serial.Serial, command: BridgeCommand, seq: int, ui: TerminalUi) -> int:
+def send_command(
+    ser: serial.Serial, command: BridgeCommand | BenchmarkCommand, seq: int, ui: TerminalUi
+) -> int:
+    if isinstance(command, BenchmarkCommand):
+        request = build_benchmark_request(command, seq)
+        ser.write(request)
+        ser.flush()
+        ui.log(
+            f"BENCH TX seq={seq} id=0x{command.request_can_id:03X} "
+            f"dlc={command.request_dlc} data={format_data(command.request_data, command.request_dlc)} "
+            f"response_id=0x{command.response_can_id:03X} response_pid={command.response_pid} "
+            f"count={command.repeat_count} period_ms={command.period_ms} timeout_ms={command.timeout_ms}"
+        )
+        return (seq + 1) & 0xFF
+
     request = build_bridge_request(
         command.can_id,
         command.data,
@@ -367,7 +542,7 @@ def monitor(
     seq: int,
     default_timeout_ms: int,
     settle_s: float,
-    initial_command: Optional[BridgeCommand],
+    initial_command: Optional[BridgeCommand | BenchmarkCommand],
 ) -> None:
     stream_parser = PacketStreamParser()
     with serial.Serial(port, baud, timeout=0) as ser, TerminalUi() as ui:
@@ -394,17 +569,22 @@ def monitor(
                             ui.log(message_line)
 
 
-def add_connection_options(parser: argparse.ArgumentParser, suppress_defaults: bool) -> None:
+def add_connection_options(
+    parser: argparse.ArgumentParser,
+    suppress_defaults: bool,
+    include_timeout: bool = True,
+) -> None:
     default = argparse.SUPPRESS if suppress_defaults else None
     parser.add_argument("--port", "-p", default=default, help="serial port; auto-detected if omitted")
     parser.add_argument("--baud", "-b", type=int, default=argparse.SUPPRESS if suppress_defaults else 115200)
     parser.add_argument("--seq", type=parse_byte, default=argparse.SUPPRESS if suppress_defaults else 0)
-    parser.add_argument(
-        "--timeout-ms",
-        type=int,
-        default=argparse.SUPPRESS if suppress_defaults else 100,
-        help="default request wait time; MCU caps it at 100 ms",
-    )
+    if include_timeout:
+        parser.add_argument(
+            "--timeout-ms",
+            type=int,
+            default=argparse.SUPPRESS if suppress_defaults else 100,
+            help="default request wait time; MCU caps it at 100 ms",
+        )
     parser.add_argument(
         "--settle-s",
         type=float,
@@ -432,6 +612,19 @@ def build_main_parser() -> RaisingArgumentParser:
     frame_parser.add_argument("data", nargs="*", type=parse_byte)
     frame_parser.add_argument("--dlc", type=int, default=None)
     add_connection_options(frame_parser, suppress_defaults=True)
+
+    benchmark_parser = subparsers.add_parser("benchmark", help="start a CAN RTT benchmark")
+    benchmark_parser.add_argument("can_id", type=parse_can_id)
+    benchmark_parser.add_argument("data", nargs="*", type=parse_byte)
+    benchmark_parser.add_argument("--dlc", type=int, default=None)
+    benchmark_parser.add_argument("--response-id", type=parse_can_id, default=None)
+    benchmark_parser.add_argument("--response-pid", type=parse_byte, default=None)
+    benchmark_parser.add_argument("--count", type=int, default=100)
+    benchmark_parser.add_argument("--period-ms", type=int, default=10)
+    benchmark_parser.add_argument(
+        "--timeout-ms", type=int, default=10, help="per-sample response timeout; maximum 100 ms"
+    )
+    add_connection_options(benchmark_parser, suppress_defaults=True, include_timeout=False)
     return parser
 
 

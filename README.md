@@ -21,6 +21,7 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - 차동 구동식 기반 좌/우 바퀴 목표 RPM 계산
 - 10 ms 주기 Driver A/B command pair와 wheel별 100 Hz/전압 1 Hz polling 통합 스케줄링
 - USB Serial-CAN bridge를 통한 MD200T PID/data 직접 송수신
+- Bridge mode에서 request/response CAN RTT 반복 benchmark 및 sample별 통계 반환
 
 ### MD200T/CAN 전환 목표
 
@@ -283,10 +284,11 @@ serial_mode
 └── BRIDGE
     ├── mode_state와 관계없이 automatic PID 207/174 및 telemetry polling 중단
     ├── unsolicited 0x81/0x82 송신 중단
-    └── 0x20 raw CAN 송신과 0xA0 CAN 수신 tunnel만 처리
+    ├── 0x20 raw CAN 송신과 0xA0 CAN 수신 tunnel 처리
+    └── 0x21 반복 benchmark와 0xA1 sample 결과 처리
 ```
 
-BRIDGE 진입은 `mode_state == AUTO`로 제한되지 않습니다. STOP, MANUAL, AUTO 어느 위치에서도 유효한 `0x20` packet을 받으면 BRIDGE로 전환합니다. BRIDGE에서는 RC mode switch가 계속 갱신되더라도 그 값에 따라 CAN 자동 출력이 다시 시작되거나 CONTROL로 복귀하지 않습니다. 유효한 `0x01` command를 받아야 CONTROL로 복귀하며, 복귀 직후 실제 출력은 그때의 `mode_state`가 결정합니다. 따라서 STOP이면 TQ-OFF, MANUAL이면 RC 명령, AUTO이면 수신한 `0x01` 명령을 적용합니다.
+BRIDGE 진입은 `mode_state == AUTO`로 제한되지 않습니다. STOP, MANUAL, AUTO 어느 위치에서도 유효한 `0x20` 또는 `0x21` packet을 받으면 BRIDGE로 전환합니다. BRIDGE에서는 RC mode switch가 계속 갱신되더라도 그 값에 따라 CAN 자동 출력이 다시 시작되거나 CONTROL로 복귀하지 않습니다. 유효한 `0x01` command를 받아야 CONTROL로 복귀하며, 복귀 직후 실제 출력은 그때의 `mode_state`가 결정합니다. 따라서 STOP이면 TQ-OFF, MANUAL이면 RC 명령, AUTO이면 수신한 `0x01` 명령을 적용합니다.
 
 CONTROL이라고 항상 ROS target을 사용하는 것은 아닙니다. `mode_state == AUTO`일 때만 저장된 ROS command가 모터 출력에 적용됩니다. STOP과 MANUAL에서도 유효한 `0x01`은 AUTO용 command로 저장되고 BRIDGE 상태였다면 CONTROL 복귀를 일으키지만, 현재 CAN 출력에는 ROS target이 섞이지 않습니다.
 
@@ -427,6 +429,8 @@ Loop가 늦으면 동일 cycle 안에서 아직 남은 요청을 호출당 하�
 | MCU → ROS | `0x81` | 비활성 | 구버전 Basic Status 호환용 serializer |
 | PC → MCU | `0x20` | bridge mode에서 요청 시 | Serial-CAN bridge request |
 | MCU → PC | `0xA0` | bridge mode에서 연속 | 필터링하지 않은 CAN 수신 frame 및 bridge status |
+| PC → MCU | `0x21` | bridge mode에서 요청 시 | 반복 CAN request/response benchmark 시작 |
+| MCU → PC | `0xA1` | benchmark 반복마다 | RTT, 타임스탬프, 누적 timeout과 response frame |
 
 MCU 수신부는 USB Serial 내부 RX buffer를 `Serial.available()`이 빌 때까지 읽고, 각 바이트를 command frame 상태머신에 전달합니다. 상태머신은 `0xAA 0x55`, length, type 순서로 packet 후보를 조립합니다. 헤더, length, type, checksum 검증에 실패하면 현재 packet 후보를 버리고 다음 header를 기다립니다. 실패한 packet 내부를 재스캔하지 않으므로, 복구는 다음 정상 command packet 주기에 이루어집니다.
 
@@ -719,6 +723,74 @@ AA 55 0E A0 seq status id_lo id_hi dlc d0 d1 d2 d3 d4 d5 d6 d7 checksum
 ```
 
 `status=0`은 CAN frame이 포함되어 있음을 뜻합니다. `status=2 (can_rx_timeout)`은 해당 `0x20` 송신 후 timeout 안에 frame이 없었다는 요청 단위 알림일 뿐이며 monitoring을 종료하지 않습니다. 이후 CAN frame이 들어오면 다시 `status=0` packet으로 전달됩니다. Serial TX buffer에 한 packet을 쓸 공간이 없을 때에는 control loop를 block하지 않기 위해 해당 tunnel packet을 생략할 수 있으므로, CLI는 안전 제어용 recorder가 아니라 raw CAN monitoring과 진단 용도로 사용합니다.
+
+### CAN Benchmark Start: PC CLI to MCU (`0x21`)
+
+Bridge mode에서 MD200T request/response RTT를 MCU의 `micros()` 시계로 반복 측정하는 요청입니다. 동시에 하나의 benchmark session과 하나의 outstanding CAN request만 허용합니다. 각 반복의 시작 시각 간격은 `period_ms`를 기준으로 하며, 응답을 일찍 받아도 다음 기준 시각까지 기다립니다. loop 지연이나 Serial backpressure로 기준 시각을 놓친 경우 밀린 request를 burst로 재생하지 않고 가능한 다음 시점에 한 번만 송신합니다.
+
+응답 matcher는 `response_can_id`와 CAN `DATA[0] == response_pid`가 모두 일치해야 합니다. MD200T PID 4 request의 CLI 기본값은 `response_can_id = (7 << 8) | driver_id`, `response_pid = request DATA[1]`입니다. 다른 CAN frame은 benchmark 응답으로 소비하지 않고 기존 `0xA0` raw tunnel로 전달합니다.
+
+| Byte | Field | Type | Description |
+| --- | --- | --- | --- |
+| 0-1 | `header` | `uint8[2]` | `AA 55` |
+| 2 | `length` | `uint8` | `22 (0x16)` |
+| 3 | `type` | `uint8` | `0x21` |
+| 4 | `seq` | `uint8` | benchmark session sequence |
+| 5-6 | `request_can_id` | `uint16 LE` | 송신할 standard 11-bit CAN ID |
+| 7 | `request_dlc` | `uint8` | `0..8` |
+| 8-15 | `request_data` | `uint8[8]` | 송신 data, DLC 뒤는 0 padding |
+| 16-17 | `response_can_id` | `uint16 LE` | 기대하는 standard 11-bit response ID |
+| 18 | `response_pid` | `uint8` | 기대하는 response `DATA[0]` |
+| 19-20 | `repeat_count` | `uint16 LE` | `1..65535` |
+| 21-22 | `period_ms` | `uint16 LE` | request start-to-start 주기, `1..65535 ms` |
+| 23-24 | `timeout_ms` | `uint16 LE` | 반복별 응답 제한, `1..100 ms`이며 period 이하 |
+| 25 | `checksum` | `uint8` | XOR checksum |
+
+```text
+AA 55 16 21 seq req_id_lo req_id_hi dlc d0 d1 d2 d3 d4 d5 d6 d7
+rsp_id_lo rsp_id_hi rsp_pid count_lo count_hi period_lo period_hi timeout_lo timeout_hi checksum
+```
+
+정상 `0x21`은 BRIDGE mode로 진입하고 첫 request를 가능한 즉시 시작합니다. 새 `0x21`은 진행 중 session을 교체합니다. `0x20` raw bridge request, `0x01` control command, `0x02` reset은 진행 중 benchmark를 취소합니다. 유효하지 않은 `0x21`에는 반복 index 0인 `0xA1 status=3`을 반환합니다.
+
+### CAN Benchmark Result: MCU to PC CLI (`0xA1`)
+
+각 반복이 response, timeout 또는 TX failure로 끝날 때 한 packet을 반환합니다. Serial TX 공간이 부족하면 결과를 한 개 pending slot에 보관하고 다음 반복을 시작하지 않으므로 benchmark result는 의도적으로 버리지 않습니다. 따라서 host가 충분히 빠르게 읽지 않으면 실제 request 주기가 늘어날 수 있습니다.
+
+| Byte | Field | Type | Description |
+| --- | --- | --- | --- |
+| 0-1 | `header` | `uint8[2]` | `AA 55` |
+| 2 | `length` | `uint8` | `33 (0x21)` |
+| 3 | `type` | `uint8` | `0xA1` |
+| 4 | `seq` | `uint8` | `0x21` session sequence |
+| 5-6 | `iteration` | `uint16 LE` | 1부터 시작하는 현재 반복 번호. invalid request는 0 |
+| 7 | `status` | `uint8` | `0=response`, `1=can_tx_failed`, `2=response_timeout`, `3=invalid_request` |
+| 8 | `flags` | `uint8` | bit 0: 마지막 반복 결과 (`final`) |
+| 9-12 | `tx_timestamp_us` | `uint32 LE` | `can_transmit()` 호출 직전의 MCU `micros()` 값 |
+| 13-16 | `rx_timestamp_us` | `uint32 LE` | 일치 response 수신 직후 `micros()` 값. 실패/timeout은 0 |
+| 17-20 | `rtt_us` | `uint32 LE` | unsigned `rx - tx`. 실패/timeout은 0 |
+| 21-22 | `timeout_count` | `uint16 LE` | session 누적 response timeout 횟수 |
+| 23-24 | `tx_failure_count` | `uint16 LE` | session 누적 CAN TX failure 횟수 |
+| 25-26 | `response_can_id` | `uint16 LE` | 실제 일치 response ID. 실패/timeout은 0 |
+| 27 | `response_dlc` | `uint8` | 실제 response DLC. 실패/timeout은 0 |
+| 28-35 | `response_data` | `uint8[8]` | 실제 response data, DLC 뒤는 0 |
+| 36 | `checksum` | `uint8` | XOR checksum |
+
+```text
+AA 55 21 A1 seq iter_lo iter_hi status flags
+tx_us[4] rx_us[4] rtt_us[4] timeout_count[2] tx_failure_count[2]
+rsp_id[2] dlc d0 d1 d2 d3 d4 d5 d6 d7 checksum
+```
+
+`micros()`는 약 71.6분마다 wrap하지만 차이는 unsigned 32-bit 뺄셈으로 계산하므로 각 timeout/RTT가 `2^32 us`보다 짧은 현재 범위에서는 정상입니다. 타임스탬프는 MCU 부팅 이후 상대 시간이며 PC wall-clock이 아닙니다. 측정 구간에는 firmware가 CAN TX를 요청하고 완료를 기다리는 시간부터 polling RX mailbox에서 response를 회수하는 시점까지가 포함됩니다.
+
+PID 4로 Driver A의 PID 143 입력전압을 10 ms 주기, 5 ms timeout으로 100회 측정하는 CLI 예시는 다음과 같습니다. `--response-id`와 `--response-pid`를 생략하면 MD200T 규칙으로 각각 `0x701`, `143`을 계산합니다.
+
+```bash
+uv run python src/can_cli.py benchmark 1 4 143 --dlc 8 --count 100 --period-ms 10 --timeout-ms 5
+```
+
+이미 monitor가 열린 interactive prompt에서도 `benchmark` 이후 부분을 같은 형식으로 입력할 수 있습니다. 결과는 `BENCH seq=... iter=... tx_us=... rx_us=... rtt_us=... timeouts=...` 형태로 출력됩니다.
 
 ### Checksum 계산
 
