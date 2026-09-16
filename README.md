@@ -787,10 +787,23 @@ rsp_id[2] dlc d0 d1 d2 d3 d4 d5 d6 d7 checksum
 PID 4로 Driver A의 PID 143 입력전압을 10 ms 주기, 5 ms timeout으로 100회 측정하는 CLI 예시는 다음과 같습니다. `--response-id`와 `--response-pid`를 생략하면 MD200T 규칙으로 각각 `0x701`, `143`을 계산합니다.
 
 ```bash
-uv run python src/can_cli.py benchmark 1 4 143 --dlc 8 --count 100 --period-ms 10 --timeout-ms 5
+uv run python src/can_cli.py benchmark 1 4 193 --dlc 8 --count 100 --period-ms 10 --timeout-ms 5
 ```
 
 이미 monitor가 열린 interactive prompt에서도 `benchmark` 이후 부분을 같은 형식으로 입력할 수 있습니다. 결과는 `BENCH seq=... iter=... tx_us=... rx_us=... rtt_us=... timeouts=...` 형태로 출력됩니다.
+
+CLI는 새 benchmark 명령을 보낼 때 해당 sequence의 통계를 초기화하고, `0xA1`의 MCU timestamp로 RTT와 실제 TX/RX 간격을 누적합니다. `tx_interval_us`는 모든 연속 iteration의 `tx_timestamp_us` 차이이고, `rx_interval_us`는 정상 응답끼리의 `rx_timestamp_us` 차이입니다. 따라서 중간에 timeout/TX failure가 있으면 TX 간격은 계속 측정되지만 RX 간격은 직전 정상 응답부터 다음 정상 응답까지의 공백을 포함합니다. `micros()` wrap은 unsigned 32-bit 차이로 처리합니다.
+
+`final` 결과를 받으면 MCU가 보고한 누적 timeout/TX failure와 수집한 sample로 다음과 같은 요약을 한 번 출력합니다. 모든 분포의 `p50/p95/p99`는 정렬된 sample 사이를 선형 보간하며 `stddev`는 모집단 표준편차입니다. 중간에 새 benchmark를 시작하면 이전 통계는 버리고 새 session으로 초기화하며, raw `pid`/`frame` 명령은 MCU benchmark를 취소하므로 CLI 통계도 함께 초기화합니다.
+
+```text
+BENCH SUMMARY seq=0 attempts=100/100 responses=98 timeouts=2 tx_failures=0 success_rate=98.00%
+  rtt_us[n=98 min=312 avg=428.6 p50=417.0 p95=561.4 p99=603.2 max=619 stddev=54.8]
+  tx_interval_us[n=99 min=9960 avg=10001.2 p50=10000.0 p95=10018.0 p99=10031.4 max=10042 stddev=12.1]
+  rx_interval_us[n=97 min=9821 avg=10207.5 p50=10003.0 p95=10114.2 p99=19891.4 max=20043 stddev=1410.8]
+```
+
+`attempts`의 앞 값은 마지막 `0xA1`의 iteration이고 뒤 값은 CLI가 요청한 count입니다. `responses`와 성공률은 MCU의 최종 누적 timeout/TX failure를 기준으로 계산합니다. 정상적으로 모든 결과를 수집했다면 RTT sample 수는 `responses`, TX interval sample 수는 `attempts - 1`, RX interval sample 수는 `responses - 1`입니다.
 
 ### Checksum 계산
 

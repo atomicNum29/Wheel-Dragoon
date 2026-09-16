@@ -2,10 +2,11 @@ import argparse
 import os
 import select
 import shlex
+import statistics
 import sys
 import termios
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 import serial
@@ -59,6 +60,130 @@ class BenchmarkCommand:
     repeat_count: int
     period_ms: int
     timeout_ms: int
+
+
+@dataclass
+class BenchmarkStatistics:
+    """Collect RTT samples for the benchmark session started by this CLI."""
+
+    seq: Optional[int] = None
+    expected_count: int = 0
+    last_iteration: int = 0
+    timeout_count: int = 0
+    tx_failure_count: int = 0
+    rtt_samples_us: list[int] = field(default_factory=list)
+    tx_interval_samples_us: list[int] = field(default_factory=list)
+    rx_interval_samples_us: list[int] = field(default_factory=list)
+    previous_tx_timestamp_us: Optional[int] = None
+    previous_rx_timestamp_us: Optional[int] = None
+
+    def start(self, seq: int, expected_count: int) -> None:
+        self.seq = seq & 0xFF
+        self.expected_count = expected_count
+        self.last_iteration = 0
+        self.timeout_count = 0
+        self.tx_failure_count = 0
+        self.rtt_samples_us.clear()
+        self.tx_interval_samples_us.clear()
+        self.rx_interval_samples_us.clear()
+        self.previous_tx_timestamp_us = None
+        self.previous_rx_timestamp_us = None
+
+    def cancel(self) -> None:
+        self.seq = None
+        self.expected_count = 0
+        self.last_iteration = 0
+        self.timeout_count = 0
+        self.tx_failure_count = 0
+        self.rtt_samples_us.clear()
+        self.tx_interval_samples_us.clear()
+        self.rx_interval_samples_us.clear()
+        self.previous_tx_timestamp_us = None
+        self.previous_rx_timestamp_us = None
+
+    @staticmethod
+    def _percentile(sorted_samples: list[int], percentile: float) -> float:
+        if len(sorted_samples) == 1:
+            return float(sorted_samples[0])
+
+        position = (len(sorted_samples) - 1) * percentile
+        lower = int(position)
+        upper = min(lower + 1, len(sorted_samples) - 1)
+        fraction = position - lower
+        return sorted_samples[lower] + (sorted_samples[upper] - sorted_samples[lower]) * fraction
+
+    @classmethod
+    def _format_distribution(cls, name: str, samples: list[int]) -> str:
+        if not samples:
+            return f"{name}[n=0]"
+
+        sorted_samples = sorted(samples)
+        return (
+            f"{name}[n={len(sorted_samples)} min={sorted_samples[0]} "
+            f"avg={statistics.fmean(sorted_samples):.1f} "
+            f"p50={cls._percentile(sorted_samples, 0.50):.1f} "
+            f"p95={cls._percentile(sorted_samples, 0.95):.1f} "
+            f"p99={cls._percentile(sorted_samples, 0.99):.1f} "
+            f"max={sorted_samples[-1]} stddev={statistics.pstdev(sorted_samples):.1f}]"
+        )
+
+    def consume(self, packet: bytes) -> Optional[str]:
+        if (
+            self.seq is None
+            or packet[2] != CAN_BENCHMARK_RESULT_LENGTH
+            or packet[3] != CAN_BENCHMARK_RESULT_TYPE
+            or packet[4] != self.seq
+        ):
+            return None
+
+        iteration = int.from_bytes(packet[5:7], "little")
+        status = packet[7]
+        final = bool(packet[8] & 0x01)
+
+        # Serial is ordered, but ignore a duplicate result if one is ever
+        # observed so it cannot bias the RTT distribution.
+        if iteration > self.last_iteration:
+            self.last_iteration = iteration
+            tx_timestamp_us = int.from_bytes(packet[9:13], "little")
+            if self.previous_tx_timestamp_us is not None:
+                self.tx_interval_samples_us.append(
+                    (tx_timestamp_us - self.previous_tx_timestamp_us) & 0xFFFFFFFF
+                )
+            self.previous_tx_timestamp_us = tx_timestamp_us
+
+            if status == 0:
+                rx_timestamp_us = int.from_bytes(packet[13:17], "little")
+                if self.previous_rx_timestamp_us is not None:
+                    self.rx_interval_samples_us.append(
+                        (rx_timestamp_us - self.previous_rx_timestamp_us) & 0xFFFFFFFF
+                    )
+                self.previous_rx_timestamp_us = rx_timestamp_us
+                self.rtt_samples_us.append(int.from_bytes(packet[17:21], "little"))
+
+        self.timeout_count = int.from_bytes(packet[21:23], "little")
+        self.tx_failure_count = int.from_bytes(packet[23:25], "little")
+        if not final:
+            return None
+
+        attempts = iteration
+        responses = max(0, attempts - self.timeout_count - self.tx_failure_count)
+        success_rate = (100.0 * responses / attempts) if attempts else 0.0
+        prefix = (
+            f"BENCH SUMMARY seq={self.seq} attempts={attempts}/{self.expected_count} "
+            f"responses={responses} timeouts={self.timeout_count} "
+            f"tx_failures={self.tx_failure_count} success_rate={success_rate:.2f}%"
+        )
+        summary = "\n  ".join(
+            (
+                prefix,
+                self._format_distribution("rtt_us", self.rtt_samples_us),
+                self._format_distribution("tx_interval_us", self.tx_interval_samples_us),
+                self._format_distribution("rx_interval_us", self.rx_interval_samples_us),
+            )
+        )
+
+        self.cancel()
+        return summary
 
 
 class CommandError(ValueError):
@@ -545,12 +670,27 @@ def monitor(
     initial_command: Optional[BridgeCommand | BenchmarkCommand],
 ) -> None:
     stream_parser = PacketStreamParser()
+    benchmark_statistics = BenchmarkStatistics()
+
+    def send_and_track(
+        ser: serial.Serial,
+        command: BridgeCommand | BenchmarkCommand,
+        current_seq: int,
+        ui: TerminalUi,
+    ) -> int:
+        if isinstance(command, BenchmarkCommand):
+            benchmark_statistics.start(current_seq, command.repeat_count)
+        else:
+            # A raw 0x20 request cancels the MCU benchmark session.
+            benchmark_statistics.cancel()
+        return send_command(ser, command, current_seq, ui)
+
     with serial.Serial(port, baud, timeout=0) as ser, TerminalUi() as ui:
         if settle_s > 0.0:
             time.sleep(settle_s)
         ui.log(f"Connected to {port} at {baud} baud. Type 'help' for commands.")
         if initial_command is not None:
-            seq = send_command(ser, initial_command, seq, ui)
+            seq = send_and_track(ser, initial_command, seq, ui)
 
         while True:
             readable, _, _ = select.select([ser.fileno(), sys.stdin.fileno()], [], [], 0.1)
@@ -558,12 +698,15 @@ def monitor(
                 received = ser.read(max(1, ser.in_waiting))
                 for packet in stream_parser.feed(received):
                     ui.log(format_packet(packet))
+                    summary = benchmark_statistics.consume(packet)
+                    if summary is not None:
+                        ui.log(summary)
 
             if sys.stdin.fileno() in readable:
                 for line in ui.read_lines():
                     try:
                         command = parse_interactive_command(line, default_timeout_ms)
-                        seq = send_command(ser, command, seq, ui)
+                        seq = send_and_track(ser, command, seq, ui)
                     except CommandError as exc:
                         for message_line in str(exc).splitlines():
                             ui.log(message_line)

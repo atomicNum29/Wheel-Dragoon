@@ -13,6 +13,32 @@ def make_packet(payload: bytes) -> bytes:
     return packet + bytes([can_cli.xor_checksum(packet)])
 
 
+def make_benchmark_result(
+    seq: int,
+    iteration: int,
+    status: int,
+    final: bool,
+    rtt_us: int,
+    timeout_count: int = 0,
+    tx_failure_count: int = 0,
+    tx_timestamp_us: int = 100,
+) -> bytes:
+    rx_timestamp_us = ((tx_timestamp_us + rtt_us) & 0xFFFFFFFF) if status == 0 else 0
+    payload = (
+        bytes([can_cli.CAN_BENCHMARK_RESULT_TYPE, seq])
+        + iteration.to_bytes(2, "little")
+        + bytes([status, int(final)])
+        + tx_timestamp_us.to_bytes(4, "little")
+        + rx_timestamp_us.to_bytes(4, "little")
+        + (rtt_us if status == 0 else 0).to_bytes(4, "little")
+        + timeout_count.to_bytes(2, "little")
+        + tx_failure_count.to_bytes(2, "little")
+        + (0x701 if status == 0 else 0).to_bytes(2, "little")
+        + bytes([1 if status == 0 else 0, 0xC1, 0, 0, 0, 0, 0, 0, 0])
+    )
+    return make_packet(payload)
+
+
 class BridgeRequestTests(unittest.TestCase):
     def test_existing_0x20_layout_is_preserved(self) -> None:
         request = can_cli.build_bridge_request(
@@ -81,6 +107,68 @@ class BenchmarkRequestTests(unittest.TestCase):
 
         self.assertEqual(command.timeout_ms, 10)
 
+
+class BenchmarkStatisticsTests(unittest.TestCase):
+    def test_final_result_prints_session_rtt_statistics(self) -> None:
+        stats = can_cli.BenchmarkStatistics()
+        stats.start(seq=7, expected_count=3)
+
+        self.assertIsNone(
+            stats.consume(make_benchmark_result(7, 1, 0, False, 100, tx_timestamp_us=100))
+        )
+        self.assertIsNone(
+            stats.consume(
+                make_benchmark_result(
+                    7, 2, 2, False, 0, timeout_count=1, tx_timestamp_us=1100
+                )
+            )
+        )
+        summary = stats.consume(
+            make_benchmark_result(
+                7, 3, 0, True, 300, timeout_count=1, tx_timestamp_us=2100
+            )
+        )
+
+        self.assertIsNotNone(summary)
+        self.assertIn("attempts=3/3 responses=2 timeouts=1 tx_failures=0", summary)
+        self.assertIn("success_rate=66.67%", summary)
+        self.assertIn("rtt_us[n=2 min=100 avg=200.0 p50=200.0", summary)
+        self.assertIn("p95=290.0 p99=298.0 max=300 stddev=100.0]", summary)
+        self.assertIn(
+            "tx_interval_us[n=2 min=1000 avg=1000.0 p50=1000.0", summary
+        )
+        self.assertIn(
+            "rx_interval_us[n=1 min=2200 avg=2200.0 p50=2200.0", summary
+        )
+        self.assertIsNone(stats.seq)
+
+    def test_new_session_resets_samples_and_other_sequence_is_ignored(self) -> None:
+        stats = can_cli.BenchmarkStatistics()
+        stats.start(seq=1, expected_count=2)
+        stats.consume(make_benchmark_result(1, 1, 0, False, 500))
+
+        stats.start(seq=2, expected_count=1)
+        self.assertEqual(stats.rtt_samples_us, [])
+        self.assertIsNone(stats.consume(make_benchmark_result(1, 2, 0, True, 900)))
+        summary = stats.consume(make_benchmark_result(2, 1, 1, True, 0, tx_failure_count=1))
+
+        self.assertIn("attempts=1/1 responses=0 timeouts=0 tx_failures=1", summary)
+        self.assertIn("rtt_us[n=0]", summary)
+        self.assertIn("tx_interval_us[n=0]", summary)
+        self.assertIn("rx_interval_us[n=0]", summary)
+
+    def test_timestamp_intervals_handle_micros_wrap(self) -> None:
+        stats = can_cli.BenchmarkStatistics()
+        stats.start(seq=3, expected_count=2)
+        stats.consume(
+            make_benchmark_result(3, 1, 0, False, 100, tx_timestamp_us=0xFFFFFF00)
+        )
+        summary = stats.consume(
+            make_benchmark_result(3, 2, 0, True, 200, tx_timestamp_us=0x000002E8)
+        )
+
+        self.assertIn("tx_interval_us[n=1 min=1000", summary)
+        self.assertIn("rx_interval_us[n=1 min=1100", summary)
 
 class PacketStreamParserTests(unittest.TestCase):
     def test_fragmented_and_back_to_back_packets(self) -> None:

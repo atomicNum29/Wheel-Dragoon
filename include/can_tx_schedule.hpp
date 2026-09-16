@@ -80,15 +80,15 @@ inline bool scheduled_motor_poll(uint8_t poll_index, ScheduledPollRequest &reque
         return true;
     case 1u:
         request = ScheduledPollRequest{
-            MD200T_DRIVER_B_ID, MD200T_PID_MAIN_DATA, CAN_TX_WHEEL_RF_MASK, 3000u};
+            MD200T_DRIVER_B_ID, MD200T_PID_MAIN_DATA, CAN_TX_WHEEL_RF_MASK, 4000u};
         return true;
     case 2u:
         request = ScheduledPollRequest{
-            MD200T_DRIVER_B_ID, MD200T_PID_MAIN_DATA2, CAN_TX_WHEEL_LR_MASK, 4000u};
+            MD200T_DRIVER_B_ID, MD200T_PID_MAIN_DATA2, CAN_TX_WHEEL_LR_MASK, 6000u};
         return true;
     case 3u:
         request = ScheduledPollRequest{
-            MD200T_DRIVER_A_ID, MD200T_PID_MAIN_DATA2, CAN_TX_WHEEL_RR_MASK, 5000u};
+            MD200T_DRIVER_A_ID, MD200T_PID_MAIN_DATA2, CAN_TX_WHEEL_RR_MASK, 8000u};
         return true;
     default:
         return false;
