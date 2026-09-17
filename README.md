@@ -19,7 +19,8 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - 보호 magic을 포함한 MCU software reset command
 - state/error bitfield 산출
 - 차동 구동식 기반 좌/우 바퀴 목표 RPM 계산
-- 10 ms 주기 Driver A/B command pair와 wheel별 100 Hz/전압 1 Hz polling 통합 스케줄링
+- 10 ms 주기 Driver A/B command pair와 command-triggered wheel telemetry 수신
+- Driver A/B 입력전압 PID 143의 1 Hz polling
 - USB Serial-CAN bridge를 통한 MD200T PID/data 직접 송수신
 - Bridge mode에서 request/response CAN RTT 반복 benchmark 및 sample별 통계 반환
 
@@ -199,7 +200,7 @@ MK20DX256의 FlexCAN0은 16개 message buffer를 가진다. MB 하나는 16 byte
 
 ### RX Message Buffer 수신 규칙
 
-MD200T polling response와 CAN bridge traffic을 받기 위해 MB1 하나를 polling RX MB로 사용한다. RX FIFO와 interrupt는 사용하지 않는다.
+MD200T의 command-triggered PID 193/200, PID 143 응답 및 CAN bridge traffic을 받기 위해 MB1 하나를 polling RX MB로 사용한다. 여기서 polling RX는 FlexCAN register를 MCU loop가 확인하는 방식을 뜻하며, wheel telemetry를 PID 4로 요청한다는 의미가 아니다. RX FIFO와 interrupt는 사용하지 않는다.
 
 | 항목 | 값 |
 | --- | --- |
@@ -257,9 +258,11 @@ DATA[1..7] = PID data
 | `md200t_request_pid_data(driver_id, 200)` | `(0x00 << 8) | driver_id` | `PID_REQ_PID_DATA(4), PID_MAIN_DATA2(200), 0, 0, 0, 0, 0, 0` |
 | `md200t_request_pid_data(driver_id, 143)` | `(0x00 << 8) | driver_id` | `PID_REQ_PID_DATA(4), PID_VOLT_IN(143), 0, 0, 0, 0, 0, 0` |
 
+PID 193/200 요청 함수는 bridge/진단용 저수준 API로 유지하지만 CONTROL mode의 자동 scheduler에서는 호출하지 않는다. MD200T A/B는 PID 207 또는 PID 174를 받으면 각 채널의 PID 193과 PID 200을 반환하도록 사전 설정되어 있다. PID 143은 이 command response에 포함되지 않으므로 firmware가 driver별 1 Hz로 계속 요청한다.
+
 RPM은 MDROBOT 문서의 2-byte data 규칙에 따라 signed 16-bit little-endian으로 보낸다. `PID_PNT_VEL_CMD(207)` 한 프레임에 CH1/CH2 RPM을 각각 넣으며, 음수는 2의 보수 bit pattern을 그대로 직렬화한다.
 
-`PID_PNT_TQ_OFF(174)`는 dual-channel driver에서 motor1/motor2 torque-off condition을 각각 `D0`, `D1` bit로 지정한다. `md200t_torque_off()`는 안전 정지용으로 두 채널 모두 free stop시키는 함수이므로 `D0=1`, `D1=1`, `D2=0(no return data)`로 둔다.
+`PID_PNT_TQ_OFF(174)`는 dual-channel driver에서 motor1/motor2 torque-off condition을 각각 `D0`, `D1` bit로 지정한다. `md200t_torque_off()`는 안전 정지용으로 두 채널 모두 free stop시키는 함수이므로 `D0=1`, `D1=1`, payload의 나머지는 0으로 둔다. 별도로 설정된 MD200T command response 기능에 의해 이 명령 뒤에도 PID 193/200이 반환된다.
 
 MD200T A/B는 이미 `500 kbit/s`로 설정된 상태를 전제로 한다. 펌웨어는 baudrate 설정 frame을 보내지 않고, Teensy FlexCAN0를 `500 kbit/s`로 초기화한 뒤 바로 명령 frame을 송신한다.
 
@@ -356,39 +359,23 @@ Stop, disable, emergency stop, command timeout 상태에서는 두 MD200T에 PID
 
 각 채널의 `direction polarity`는 실제 배선 후 검증해야 합니다. 표준 송신 frame은 `MD200T CAN frame 결정` 섹션의 듀얼채널 PID를 사용합니다.
 
-## CAN TX scheduler와 polling 주기
+## CAN TX scheduler와 command response
 
 CONTROL mode의 자동 CAN 송신은 `can_transmit_if_due(micros())` 한 함수가 관리합니다. 각 10 ms cycle의 시작에 같은 RPM/enable snapshot으로 Driver A와 Driver B의 PID 207 frame을 가능한 간격 없이 back-to-back 송신합니다. 출력이 금지된 상태에서는 같은 위치에 PID 174 두 장을 back-to-back 송신합니다. CAN은 직렬 bus이므로 두 frame이 물리적으로 동시에 전송되는 것은 아닙니다.
 
-같은 cycle 안에서 PID 4를 이용해 네 wheel을 모두 요청합니다. 단일 RX mailbox가 연속 응답에 덮어쓰이지 않도록 요청을 `+2/+3/+4/+5 ms`에 1 ms 간격으로 분산하고, scheduler 호출 한 번에는 최대 한 event만 송신합니다. 다음 main loop iteration은 새 TX보다 먼저 CAN RX를 drain하므로 각 요청 사이에 앞선 응답을 처리할 기회를 가집니다. PID 207/174 command pair는 항상 가장 먼저 처리됩니다.
+MD200T A/B는 PID 207 또는 PID 174를 수신하면 별도 PID 4 요청 없이 각각 PID 193(MOT1 MAIN_DATA)과 PID 200(MOT2 MAIN_DATA)을 반환하도록 설정되어 있습니다. 따라서 firmware는 wheel 상태용 PID 4 frame을 생성하지 않고 들어오는 네 response만 처리합니다. 응답의 driver ID/PID는 기존 대각선 mapping `A/MOT1=LF`, `A/MOT2=RR`, `B/MOT1=RF`, `B/MOT2=LR`에 그대로 반영합니다.
 
-Wheel 상태 요청 빈도는 `include/can_tx_schedule.hpp`의 `MD200T_STATUS_REQUEST_HZ` 한 값으로 설정합니다. 범위는 1–100 Hz이며 기본값은 100 Hz입니다. 100의 약수가 아닌 값도 1초 superframe의 100개 control cycle에 가능한 균등하게 분배합니다. 이 값은 PID 193/200 요청 생성 빈도만 바꾸며 PID 207/174의 100 Hz 주기, PID 143 전압의 1 Hz 주기, `0x82`의 기존 100 Hz/fallback 송신 및 telemetry freshness timeout은 바꾸지 않습니다. 낮은 빈도를 사용할 때는 500 ms인 MAIN_DATA freshness timeout보다 충분히 빠르게 설정해야 합니다.
+PID 143 입력전압은 command response에 포함되지 않으므로 기존 driver별 1 Hz 요청을 유지합니다. 1초 superframe의 cycle 0에서 Driver A, cycle 50에서 Driver B를 `+1 ms` 이후 요청하여 두 요청을 500 ms 떨어뜨립니다.
 
 ```text
 cycle +0 ms  Driver A PID 207/174 → 즉시 Driver B PID 207/174
+             Driver A/B가 PID 193과 PID 200 response 반환
 cycle +1 ms  1초 schedule에 해당하면 Driver A 또는 B PID 143 voltage
-cycle +2 ms  LF = Driver A PID 193
-cycle +3 ms  RF = Driver B PID 193
-cycle +4 ms  LR = Driver B PID 200
-cycle +5 ms  RR = Driver A PID 200
 ```
 
-기본값 100 Hz에서는 네 wheel 요청이 매 10 ms cycle마다 모두 실행됩니다. 전압은 1초 superframe의 cycle 0에서 Driver A, cycle 50에서 Driver B를 요청하여 각 driver 1 Hz를 유지하고 두 요청을 500 ms 떨어뜨립니다.
+CAN RX는 blocking wait하지 않습니다. 현재 command cycle의 PID 193/200 네 종류가 모두 모이면 즉시 `0x82` 송신을 예약하고, USB TX 공간이 있으면 같은 main loop에서 전송합니다. 응답 하나가 누락되더라도 상태 보고가 끊기지 않도록 다음 10 ms cycle 경계에서 현재 validity/stale 상태를 담은 fallback `0x82`를 예약합니다. Loop가 여러 cycle 늦어져도 놓친 PID 207/174를 burst로 재생하지 않고 현재 cycle의 command pair를 다시 최우선으로 처리합니다.
 
-```text
-  1 ms  Driver A PID 143 voltage
-  2/3/4/5 ms  LF/RF/LR/RR
- 12/13/14/15 ms  LF/RF/LR/RR
- ... 매 10 ms 반복 ...
-501 ms  Driver B PID 143 voltage
-502/503/504/505 ms  LF/RF/LR/RR
-```
-
-각 요청은 CAN response를 blocking wait하지 않습니다. 수신된 driver ID/PID를 기존 대각선 wheel mapping으로 반영하고, 현재 cycle에서 요청한 LF/RF/LR/RR 응답 bit가 모두 모이면 즉시 `0x82` 송신을 예약합니다. USB TX 공간이 있으면 같은 main loop에서 전송합니다. 응답 하나가 누락되어 네 bit가 모이지 않더라도 상태 보고 자체가 끊기지 않도록 다음 10 ms cycle 경계에서 현재 validity/stale 상태를 담은 fallback `0x82`를 한 번 예약합니다.
-
-Loop가 늦으면 동일 cycle 안에서 아직 남은 요청을 호출당 하나씩 진행할 수 있지만, 10 ms 경계를 넘긴 이전 cycle의 CAN event는 재생하지 않습니다. 여러 cycle을 놓친 뒤 catch-up burst를 만들지 않으며 새 cycle의 PID 207/174 command pair를 다시 최우선으로 처리합니다.
-
-기본 100 Hz schedule은 command 200 frame/s, motor request/response 800 frame/s, voltage request/response 4 frame/s로 총 약 1,004 CAN frame/s입니다. 500 kbit/s Standard CAN에서 8-byte frame과 bit stuffing, inter-frame space를 고려한 명목 bus load는 약 23~27%입니다. `0x82` USB 출력은 `43 bytes × 100 Hz × 10 bits/byte = 43,000 bit/s`로 115200 bps 환산 약 37.3%이며, 기존 ROS command 50 Hz를 단순 합산하면 약 42.1%입니다. 실제 장비에서는 response latency, error frame, PID 207 jitter, RX overrun 및 host의 지속 수신 처리율을 함께 측정해야 합니다.
+기본 100 Hz 동작은 command 200 frame/s, command-triggered PID 193/200 response 400 frame/s, voltage request/response 4 frame/s로 총 약 604 CAN frame/s입니다. 500 kbit/s Standard CAN에서 명목 bus load는 frame 길이와 bit stuffing에 따라 대략 14~17%입니다. `0x82` USB 출력은 `43 bytes × 100 Hz × 10 bits/byte = 43,000 bit/s`로 115200 bps 환산 약 37.3%이며, 기존 ROS command 50 Hz를 단순 합산하면 약 42.1%입니다. 실제 장비에서는 네 command response의 수신률, response burst에 따른 RX overrun, PID 207 jitter 및 host의 지속 수신 처리율을 함께 측정해야 합니다.
 
 ## ROS 연동 목표 책임 분리
 
@@ -430,7 +417,7 @@ Loop가 늦으면 동일 cycle 안에서 아직 남은 요청을 호출당 하�
 | PC → MCU | `0x20` | bridge mode에서 요청 시 | Serial-CAN bridge request |
 | MCU → PC | `0xA0` | bridge mode에서 연속 | 필터링하지 않은 CAN 수신 frame 및 bridge status |
 | PC → MCU | `0x21` | bridge mode에서 요청 시 | 반복 CAN request/response benchmark 시작 |
-| MCU → PC | `0xA1` | benchmark 반복마다 | RTT, 타임스탬프, 누적 timeout과 response frame |
+| MCU → PC | `0xA1` | benchmark 반복마다 | PID별 RTT, 타임스탬프, 누적 timeout과 최대 두 response frame |
 
 MCU 수신부는 USB Serial 내부 RX buffer를 `Serial.available()`이 빌 때까지 읽고, 각 바이트를 command frame 상태머신에 전달합니다. 상태머신은 `0xAA 0x55`, length, type 순서로 packet 후보를 조립합니다. 헤더, length, type, checksum 검증에 실패하면 현재 packet 후보를 버리고 다음 header를 기다립니다. 실패한 packet 내부를 재스캔하지 않으므로, 복구는 다음 정상 command packet 주기에 이루어집니다.
 
@@ -588,9 +575,9 @@ LF[7] RF[7] LR[7] RR[7] checksum
 | 12 | `0x1000` | Reserved | 이전 BC 초기화 오류 위치. 현재 사용하지 않음 | 없음 | 항상 0 |
 | 13-15 | `0xE000` | Reserved | 사용하지 않음 | 없음 | 항상 0 |
 
-`FAULT`를 만드는 안전 fault는 구동/안전 경로의 `CAN_TX_FAILURE`, `BATTERY_LOW`, `DRIVER_STATUS_FAULT_PRESENT`, `MAIN_DATA_STALE`입니다. PID 193/200/143 polling request 한 건의 TX 실패도 같은 `CAN_TX_FAILURE` bit로 보이지만 즉시 `FAULT`로 승격하지 않고, 다음 poll TX가 성공하면 해제합니다. 내부에서는 sticky safety TX failure와 recoverable poll TX failure를 분리합니다. 안전 fault에는 runtime reset이 없으며 디버깅 후 MCU를 재부팅해야 해제됩니다. Fault가 있으면 state 우선순위에 따라 E-stop이나 timeout보다 `FAULT`가 먼저 표시됩니다.
+`FAULT`를 만드는 안전 fault는 구동/안전 경로의 `CAN_TX_FAILURE`, `BATTERY_LOW`, `DRIVER_STATUS_FAULT_PRESENT`, `MAIN_DATA_STALE`입니다. PID 143 전압 요청 한 건의 TX 실패도 같은 `CAN_TX_FAILURE` bit로 보이지만 즉시 `FAULT`로 승격하지 않고, 다음 전압 요청 TX가 성공하면 해제합니다. 내부에서는 sticky safety TX failure와 recoverable voltage-request TX failure를 분리합니다. 안전 fault에는 runtime reset이 없으며 디버깅 후 MCU를 재부팅해야 해제됩니다. Fault가 있으면 state 우선순위에 따라 E-stop이나 timeout보다 `FAULT`가 먼저 표시됩니다.
 
-Control mode에서는 PID 193/200/143을 모두 PID 4로 polling하며 firmware가 CMD 5/6/50/51을 자동 생성하지 않습니다. Bridge mode 진입 시 두 driver를 PID 174로 TQ-OFF하고 PID 207/174의 주기 송신, 모든 telemetry polling, `0x82` 송신을 중단합니다. `0x81`은 어느 mode에서도 기본 송신하지 않습니다.
+Control mode에서는 PID 207/174에 대한 driver의 PID 193/200 command response를 수신하고 PID 143만 1 Hz로 요청합니다. Firmware는 PID 193/200용 PID 4와 CMD 5/6/50/51을 자동 생성하지 않습니다. Bridge mode 진입 시 두 driver를 PID 174로 TQ-OFF하고 PID 207/174 주기 송신, PID 143 polling, `0x82` 송신을 중단합니다. `0x81`은 어느 mode에서도 기본 송신하지 않습니다.
 
 #### Telemetry validity (Byte 9)
 
@@ -726,84 +713,110 @@ AA 55 0E A0 seq status id_lo id_hi dlc d0 d1 d2 d3 d4 d5 d6 d7 checksum
 
 ### CAN Benchmark Start: PC CLI to MCU (`0x21`)
 
-Bridge mode에서 MD200T request/response RTT를 MCU의 `micros()` 시계로 반복 측정하는 요청입니다. 동시에 하나의 benchmark session과 하나의 outstanding CAN request만 허용합니다. 각 반복의 시작 시각 간격은 `period_ms`를 기준으로 하며, 응답을 일찍 받아도 다음 기준 시각까지 기다립니다. loop 지연이나 Serial backpressure로 기준 시각을 놓친 경우 밀린 request를 burst로 재생하지 않고 가능한 다음 시점에 한 번만 송신합니다.
+Bridge mode에서 MD200T request/response RTT를 MCU의 `micros()` 시계로 반복 측정하는 요청입니다. 동시에 하나의 benchmark session과 하나의 outstanding CAN request만 허용합니다. 한 request에서 서로 다른 PID response를 한 개 또는 두 개까지 기다릴 수 있습니다. 각 반복의 시작 시각 간격은 `period_ms`를 기준으로 하며, 필요한 response를 모두 일찍 받아도 다음 기준 시각까지 기다립니다. loop 지연이나 Serial backpressure로 기준 시각을 놓친 경우 밀린 request를 burst로 재생하지 않고 가능한 다음 시점에 한 번만 송신합니다.
 
-응답 matcher는 `response_can_id`와 CAN `DATA[0] == response_pid`가 모두 일치해야 합니다. MD200T PID 4 request의 CLI 기본값은 `response_can_id = (7 << 8) | driver_id`, `response_pid = request DATA[1]`입니다. 다른 CAN frame은 benchmark 응답으로 소비하지 않고 기존 `0xA0` raw tunnel로 전달합니다.
+듀얼 응답 필드를 추가하면서 `0x21`/`0xA1` 길이와 layout이 변경되었으므로 MCU firmware와 CLI는 같은 revision을 사용해야 합니다. 기존 `0x20`/`0xA0` bridge layout은 변경하지 않았습니다.
+
+각 응답 matcher는 공통 `response_can_id`와 CAN `DATA[0] == response_pid_N`이 모두 일치해야 합니다. 두 PID를 기다릴 때는 둘 다 도착해야 해당 반복이 성공합니다. 한 PID만 도착하고 timeout되면 partial response가 포함된 `status=2` 결과를 반환합니다. 중복 PID나 관련 없는 CAN frame은 benchmark 응답으로 소비하지 않고 기존 `0xA0` raw tunnel로 전달합니다.
+
+CLI 기본 matcher는 request에 따라 자동 선택됩니다.
+
+- PID 207 또는 PID 174 command: `(PID 193, PID 200)` 두 response
+- PID 4 request: `request DATA[1]` 한 response
+- 그 외 PID: request `DATA[0]` 한 response
 
 | Byte | Field | Type | Description |
 | --- | --- | --- | --- |
 | 0-1 | `header` | `uint8[2]` | `AA 55` |
-| 2 | `length` | `uint8` | `22 (0x16)` |
+| 2 | `length` | `uint8` | `24 (0x18)` |
 | 3 | `type` | `uint8` | `0x21` |
 | 4 | `seq` | `uint8` | benchmark session sequence |
 | 5-6 | `request_can_id` | `uint16 LE` | 송신할 standard 11-bit CAN ID |
 | 7 | `request_dlc` | `uint8` | `0..8` |
 | 8-15 | `request_data` | `uint8[8]` | 송신 data, DLC 뒤는 0 padding |
 | 16-17 | `response_can_id` | `uint16 LE` | 기대하는 standard 11-bit response ID |
-| 18 | `response_pid` | `uint8` | 기대하는 response `DATA[0]` |
+| 18 | `response_pid_1` | `uint8` | 첫 번째로 기대하는 response `DATA[0]` |
 | 19-20 | `repeat_count` | `uint16 LE` | `1..65535` |
 | 21-22 | `period_ms` | `uint16 LE` | request start-to-start 주기, `1..65535 ms` |
 | 23-24 | `timeout_ms` | `uint16 LE` | 반복별 응답 제한, `1..100 ms`이며 period 이하 |
-| 25 | `checksum` | `uint8` | XOR checksum |
+| 25 | `response_count` | `uint8` | 기대 response 수, `1` 또는 `2` |
+| 26 | `response_pid_2` | `uint8` | 두 번째 기대 PID. `response_count=1`이면 0 |
+| 27 | `checksum` | `uint8` | XOR checksum |
 
 ```text
-AA 55 16 21 seq req_id_lo req_id_hi dlc d0 d1 d2 d3 d4 d5 d6 d7
-rsp_id_lo rsp_id_hi rsp_pid count_lo count_hi period_lo period_hi timeout_lo timeout_hi checksum
+AA 55 18 21 seq req_id_lo req_id_hi dlc d0 d1 d2 d3 d4 d5 d6 d7
+rsp_id_lo rsp_id_hi rsp_pid1 count_lo count_hi period_lo period_hi timeout_lo timeout_hi
+rsp_count rsp_pid2 checksum
 ```
 
-정상 `0x21`은 BRIDGE mode로 진입하고 첫 request를 가능한 즉시 시작합니다. 새 `0x21`은 진행 중 session을 교체합니다. `0x20` raw bridge request, `0x01` control command, `0x02` reset은 진행 중 benchmark를 취소합니다. 유효하지 않은 `0x21`에는 반복 index 0인 `0xA1 status=3`을 반환합니다.
+정상 `0x21`은 BRIDGE mode로 진입합니다. BRIDGE 진입 시 안전용 PID 174가 자동 반환한 PID 193/200을 첫 측정 응답으로 오인하지 않도록 5 ms 안정화 구간 동안 CAN RX를 raw tunnel로 비운 뒤 첫 request를 시작합니다. 새 `0x21`은 진행 중 session을 교체합니다. `0x20` raw bridge request, `0x01` control command, `0x02` reset은 진행 중 benchmark를 취소합니다. 유효하지 않은 `0x21`에는 반복 index 0인 `0xA1 status=3`을 반환합니다.
 
 ### CAN Benchmark Result: MCU to PC CLI (`0xA1`)
 
-각 반복이 response, timeout 또는 TX failure로 끝날 때 한 packet을 반환합니다. Serial TX 공간이 부족하면 결과를 한 개 pending slot에 보관하고 다음 반복을 시작하지 않으므로 benchmark result는 의도적으로 버리지 않습니다. 따라서 host가 충분히 빠르게 읽지 않으면 실제 request 주기가 늘어날 수 있습니다.
+각 반복이 모든 response 수신, timeout 또는 TX failure로 끝날 때 한 packet을 반환합니다. 두 response는 기대 PID 순서의 고정 slot에 저장되므로 실제 도착 순서가 바뀌어도 PID별 통계가 섞이지 않습니다. Serial TX 공간이 부족하면 결과를 한 개 pending slot에 보관하고 다음 반복을 시작하지 않으므로 benchmark result는 의도적으로 버리지 않습니다. 따라서 host가 충분히 빠르게 읽지 않으면 실제 request 주기가 늘어날 수 있습니다.
 
 | Byte | Field | Type | Description |
 | --- | --- | --- | --- |
 | 0-1 | `header` | `uint8[2]` | `AA 55` |
-| 2 | `length` | `uint8` | `33 (0x21)` |
+| 2 | `length` | `uint8` | `52 (0x34)` |
 | 3 | `type` | `uint8` | `0xA1` |
 | 4 | `seq` | `uint8` | `0x21` session sequence |
 | 5-6 | `iteration` | `uint16 LE` | 1부터 시작하는 현재 반복 번호. invalid request는 0 |
-| 7 | `status` | `uint8` | `0=response`, `1=can_tx_failed`, `2=response_timeout`, `3=invalid_request` |
+| 7 | `status` | `uint8` | `0=모든 response 수신`, `1=can_tx_failed`, `2=response_timeout`, `3=invalid_request` |
 | 8 | `flags` | `uint8` | bit 0: 마지막 반복 결과 (`final`) |
 | 9-12 | `tx_timestamp_us` | `uint32 LE` | `can_transmit()` 호출 직전의 MCU `micros()` 값 |
-| 13-16 | `rx_timestamp_us` | `uint32 LE` | 일치 response 수신 직후 `micros()` 값. 실패/timeout은 0 |
-| 17-20 | `rtt_us` | `uint32 LE` | unsigned `rx - tx`. 실패/timeout은 0 |
+| 13-16 | `rx1_timestamp_us` | `uint32 LE` | PID1 response 수신 직후 `micros()`. 미수신은 0 |
+| 17-20 | `rtt1_us` | `uint32 LE` | PID1의 unsigned `rx1 - tx`. 미수신은 0 |
 | 21-22 | `timeout_count` | `uint16 LE` | session 누적 response timeout 횟수 |
 | 23-24 | `tx_failure_count` | `uint16 LE` | session 누적 CAN TX failure 횟수 |
-| 25-26 | `response_can_id` | `uint16 LE` | 실제 일치 response ID. 실패/timeout은 0 |
-| 27 | `response_dlc` | `uint8` | 실제 response DLC. 실패/timeout은 0 |
-| 28-35 | `response_data` | `uint8[8]` | 실제 response data, DLC 뒤는 0 |
-| 36 | `checksum` | `uint8` | XOR checksum |
+| 25-26 | `response_can_id` | `uint16 LE` | matcher에 설정한 공통 response CAN ID |
+| 27 | `response1_dlc` | `uint8` | PID1 response DLC. 미수신은 0 |
+| 28-35 | `response1_data` | `uint8[8]` | PID1 response data, DLC 뒤는 0 |
+| 36 | `response_count` | `uint8` | 기대 response 수, `1` 또는 `2` |
+| 37 | `received_mask` | `uint8` | bit 0: PID1 수신, bit 1: PID2 수신 |
+| 38-41 | `rx2_timestamp_us` | `uint32 LE` | PID2 response 수신 직후 `micros()`. 미수신은 0 |
+| 42-45 | `rtt2_us` | `uint32 LE` | PID2의 unsigned `rx2 - tx`. 미수신은 0 |
+| 46 | `response2_dlc` | `uint8` | PID2 response DLC. 미수신은 0 |
+| 47-54 | `response2_data` | `uint8[8]` | PID2 response data, DLC 뒤는 0 |
+| 55 | `checksum` | `uint8` | XOR checksum |
 
 ```text
-AA 55 21 A1 seq iter_lo iter_hi status flags
-tx_us[4] rx_us[4] rtt_us[4] timeout_count[2] tx_failure_count[2]
-rsp_id[2] dlc d0 d1 d2 d3 d4 d5 d6 d7 checksum
+AA 55 34 A1 seq iter_lo iter_hi status flags
+tx_us[4] rx1_us[4] rtt1_us[4] timeout_count[2] tx_failure_count[2]
+rsp_id[2] dlc1 rsp1_data[8] rsp_count received_mask
+rx2_us[4] rtt2_us[4] dlc2 rsp2_data[8] checksum
 ```
 
-`micros()`는 약 71.6분마다 wrap하지만 차이는 unsigned 32-bit 뺄셈으로 계산하므로 각 timeout/RTT가 `2^32 us`보다 짧은 현재 범위에서는 정상입니다. 타임스탬프는 MCU 부팅 이후 상대 시간이며 PC wall-clock이 아닙니다. 측정 구간에는 firmware가 CAN TX를 요청하고 완료를 기다리는 시간부터 polling RX mailbox에서 response를 회수하는 시점까지가 포함됩니다.
+`micros()`는 약 71.6분마다 wrap하지만 차이는 unsigned 32-bit 뺄셈으로 계산하므로 각 timeout/RTT가 `2^32 us`보다 짧은 현재 범위에서는 정상입니다. 타임스탬프는 MCU 부팅 이후 상대 시간이며 PC wall-clock이 아닙니다. `rtt1_us`와 `rtt2_us`는 같은 TX timestamp를 기준으로 각 PID가 수신될 때까지의 시간입니다. CLI의 `round_rtt_us`는 둘 중 큰 값, 즉 필요한 response가 모두 모일 때까지의 시간이고 `response_gap_us`는 두 RTT의 절댓값 차이입니다.
 
-PID 4로 Driver A의 PID 143 입력전압을 10 ms 주기, 5 ms timeout으로 100회 측정하는 CLI 예시는 다음과 같습니다. `--response-id`와 `--response-pid`를 생략하면 MD200T 규칙으로 각각 `0x701`, `143`을 계산합니다.
+Driver A에 PID 207을 보내고 자동 반환되는 PID 193/200을 10 ms 주기, 5 ms timeout으로 100회 측정하는 예시는 다음과 같습니다. `--response-id`, `--response-pid`, `--response-pid2`를 생략하면 `0x701`, `193`, `200`을 자동 선택합니다.
 
 ```bash
-uv run python src/can_cli.py benchmark 1 4 193 --dlc 8 --count 100 --period-ms 10 --timeout-ms 5
+uv run python src/can_cli.py benchmark 1 207 1 100 0 1 176 255 0 \
+  --dlc 8 --count 100 --period-ms 10 --timeout-ms 5
 ```
 
-이미 monitor가 열린 interactive prompt에서도 `benchmark` 이후 부분을 같은 형식으로 입력할 수 있습니다. 결과는 `BENCH seq=... iter=... tx_us=... rx_us=... rtt_us=... timeouts=...` 형태로 출력됩니다.
+PID 174도 같은 자동 matcher를 사용합니다. 단일 response를 측정하려면 `--response-pid`만 지정하고, 명시적으로 두 개를 측정하려면 `--response-pid`와 `--response-pid2`를 함께 지정합니다. 이미 monitor가 열린 interactive prompt에서도 `benchmark` 이후 부분을 같은 형식으로 입력할 수 있습니다.
 
-CLI는 새 benchmark 명령을 보낼 때 해당 sequence의 통계를 초기화하고, `0xA1`의 MCU timestamp로 RTT와 실제 TX/RX 간격을 누적합니다. `tx_interval_us`는 모든 연속 iteration의 `tx_timestamp_us` 차이이고, `rx_interval_us`는 정상 응답끼리의 `rx_timestamp_us` 차이입니다. 따라서 중간에 timeout/TX failure가 있으면 TX 간격은 계속 측정되지만 RX 간격은 직전 정상 응답부터 다음 정상 응답까지의 공백을 포함합니다. `micros()` wrap은 unsigned 32-bit 차이로 처리합니다.
+CLI는 새 benchmark 명령을 보낼 때 해당 sequence의 통계를 초기화하고, `0xA1`의 MCU timestamp로 PID별 RTT/RX 간격, round RTT, 두 response 간격, command TX 간격과 round 완료 간격을 누적합니다. timeout 때 한 PID만 도착한 경우 그 PID의 RTT/RX 표본은 유지하고 `partial_rounds`도 증가시킵니다. 따라서 어느 PID가 빠졌는지 PID별 표본 수로 구분할 수 있습니다. 중간 timeout/TX failure가 있어도 TX 간격은 계속 측정되며, PID별 RX 간격은 직전 해당 PID 응답부터 다음 응답까지의 공백을 포함합니다.
 
 `final` 결과를 받으면 MCU가 보고한 누적 timeout/TX failure와 수집한 sample로 다음과 같은 요약을 한 번 출력합니다. 모든 분포의 `p50/p95/p99`는 정렬된 sample 사이를 선형 보간하며 `stddev`는 모집단 표준편차입니다. 중간에 새 benchmark를 시작하면 이전 통계는 버리고 새 session으로 초기화하며, raw `pid`/`frame` 명령은 MCU benchmark를 취소하므로 CLI 통계도 함께 초기화합니다.
 
 ```text
-BENCH SUMMARY seq=0 attempts=100/100 responses=98 timeouts=2 tx_failures=0 success_rate=98.00%
-  rtt_us[n=98 min=312 avg=428.6 p50=417.0 p95=561.4 p99=603.2 max=619 stddev=54.8]
+BENCH SUMMARY seq=0 attempts=100/100 complete_rounds=98 partial_rounds=1 timeouts=2 tx_failures=0 success_rate=98.00%
+  pid193_rtt_us[n=99 min=312 avg=428.6 p50=417.0 p95=561.4 p99=603.2 max=619 stddev=54.8]
+  pid200_rtt_us[n=98 min=571 avg=702.1 p50=694.0 p95=811.2 p99=840.4 max=851 stddev=62.3]
+  round_rtt_us[n=98 min=571 avg=702.1 p50=694.0 p95=811.2 p99=840.4 max=851 stddev=62.3]
+  response_gap_us[n=98 min=201 avg=273.5 p50=270.0 p95=319.1 p99=334.2 max=340 stddev=29.4]
   tx_interval_us[n=99 min=9960 avg=10001.2 p50=10000.0 p95=10018.0 p99=10031.4 max=10042 stddev=12.1]
-  rx_interval_us[n=97 min=9821 avg=10207.5 p50=10003.0 p95=10114.2 p99=19891.4 max=20043 stddev=1410.8]
+  pid193_rx_interval_us[n=98 ...]
+  pid200_rx_interval_us[n=97 ...]
+  round_rx_interval_us[n=97 ...]
 ```
 
-`attempts`의 앞 값은 마지막 `0xA1`의 iteration이고 뒤 값은 CLI가 요청한 count입니다. `responses`와 성공률은 MCU의 최종 누적 timeout/TX failure를 기준으로 계산합니다. 정상적으로 모든 결과를 수집했다면 RTT sample 수는 `responses`, TX interval sample 수는 `attempts - 1`, RX interval sample 수는 `responses - 1`입니다.
+`attempts`의 앞 값은 마지막 `0xA1`의 iteration이고 뒤 값은 CLI가 요청한 count입니다. `complete_rounds`와 성공률은 MCU의 최종 누적 timeout/TX failure를 기준으로 계산합니다. 각 PID의 RTT 표본 수는 실제 해당 PID를 받은 횟수이므로 partial round에서는 서로 다를 수 있습니다.
+
+듀얼 result는 반복당 56 bytes입니다. 115200 baud에서 10 ms 주기는 약 48.6%를 사용하지만, 5 ms는 결과 packet만으로 약 97.2%여서 터미널 출력과 USB/host 지연에 매우 민감합니다. 2 ms는 이 baudrate의 물리적 전송량을 초과합니다. 자동 응답 벤치마크는 우선 10 ms 이상으로 실행하는 것을 권장합니다.
 
 ### Checksum 계산
 
@@ -977,8 +990,8 @@ Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서
 
 실제 장비 시험에서 확정해야 할 항목은 다음과 같습니다.
 
-- 설정한 PID 193/200 wheel별 polling 빈도(기본 100 Hz), PID 143 driver별 1 Hz 응답률과 500 ms/3 s freshness timeout의 적정성
-- RX mailbox overrun 발생 여부와 PID 143 입력전압 단위
+- PID 207/174 command에 대한 PID 193/200 자동 response 수신률과 500 ms freshness timeout의 적정성
+- command response burst에 따른 RX mailbox overrun 발생 여부, PID 143 driver별 1 Hz 응답률과 입력전압 단위
 - 채널별 direction polarity
 
 ## 주의 사항

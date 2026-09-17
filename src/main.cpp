@@ -29,12 +29,12 @@ const uint8_t CAN_BRIDGE_PACKET_SIZE = 19;
 const uint8_t CAN_BRIDGE_RESPONSE_LENGTH = 14;
 const uint8_t CAN_BRIDGE_RESPONSE_TYPE = 0xA0;
 const uint8_t CAN_BRIDGE_RESPONSE_SIZE = 18;
-const uint8_t CAN_BENCHMARK_PACKET_LENGTH = 22;
+const uint8_t CAN_BENCHMARK_PACKET_LENGTH = 24;
 const uint8_t CAN_BENCHMARK_PACKET_TYPE = 0x21;
-const uint8_t CAN_BENCHMARK_PACKET_SIZE = 26;
-const uint8_t CAN_BENCHMARK_RESULT_LENGTH = 33;
+const uint8_t CAN_BENCHMARK_PACKET_SIZE = 28;
+const uint8_t CAN_BENCHMARK_RESULT_LENGTH = 52;
 const uint8_t CAN_BENCHMARK_RESULT_TYPE = 0xA1;
-const uint8_t CAN_BENCHMARK_RESULT_SIZE = 37;
+const uint8_t CAN_BENCHMARK_RESULT_SIZE = 56;
 const uint8_t SERIAL_PACKET_MAX_SIZE = CAN_BENCHMARK_PACKET_SIZE;
 const uint8_t STATUS_PACKET_LENGTH = 7;
 const uint8_t STATUS_PACKET_TYPE = 0x81;
@@ -67,6 +67,9 @@ const uint16_t BATTERY_LOW_THRESHOLD_MV = 21000; // Configured low-voltage thres
 const uint32_t MD200T_CAN_BITRATE = 500000;
 const uint32_t CAN_BRIDGE_TX_TIMEOUT_US = 2000;
 const uint32_t CAN_BRIDGE_MAX_RX_TIMEOUT_US = 100000;
+// Let the PID 174 safety commands issued on BRIDGE entry finish returning
+// their automatic PID 193/200 frames before the first measured request.
+const uint32_t CAN_BENCHMARK_START_SETTLE_US = 5000;
 const unsigned long MAIN_DATA_TIMEOUT_MS = 500;
 const unsigned long VOLTAGE_TIMEOUT_MS = 3000;
 const uint8_t CAN_RX_DRAIN_LIMIT = 8;
@@ -186,8 +189,7 @@ struct CanTxScheduler
     bool initialized;
     bool command_sent;
     bool voltage_poll_handled;
-    uint8_t next_motor_poll;
-    uint8_t requested_wheel_mask;
+    uint8_t expected_wheel_mask;
     uint8_t received_wheel_mask;
     bool round_status_queued;
 };
@@ -196,7 +198,11 @@ struct CanBenchmarkState
 {
     CanFrame request;
     uint16_t response_can_id;
-    uint8_t response_pid;
+    uint8_t response_pids[2];
+    uint8_t response_count;
+    uint8_t received_mask;
+    CanFrame responses[2];
+    uint32_t rx_timestamps_us[2];
     uint16_t repeat_count;
     uint16_t iteration;
     uint16_t timeout_count;
@@ -212,16 +218,19 @@ struct CanBenchmarkState
 
 struct CanBenchmarkResult
 {
-    CanFrame response;
+    CanFrame responses[2];
+    uint16_t response_can_id;
     uint32_t tx_timestamp_us;
-    uint32_t rx_timestamp_us;
-    uint32_t rtt_us;
+    uint32_t rx_timestamps_us[2];
+    uint32_t rtt_us[2];
     uint16_t iteration;
     uint16_t timeout_count;
     uint16_t tx_failure_count;
     uint8_t seq;
     uint8_t status;
     uint8_t flags;
+    uint8_t response_count;
+    uint8_t received_mask;
     bool pending;
 };
 
@@ -306,7 +315,7 @@ static void parse_complete_can_bridge_frame(const uint8_t *packet);
 static void parse_complete_can_benchmark_frame(const uint8_t *packet);
 // Advance the benchmark TX/timeout state machine without blocking CAN RX.
 static void can_benchmark_update(uint32_t now_us);
-// Consume a matching benchmark response and queue its timing result.
+// Collect up to two matching responses and queue a result when the round ends.
 static bool can_benchmark_consume_rx(const CanFrame &frame, uint32_t rx_timestamp_us);
 // Write a queued benchmark result when the USB Serial TX buffer has room.
 static void can_benchmark_flush_result(void);
@@ -345,10 +354,10 @@ static bool calibration_active = false;
 static bool motor_enabled = false;
 static bool estop_active = false;
 static bool command_timeout = true;
-// Motor/safety TX failures are sticky; diagnostic poll TX failures recover on
-// the next successful poll and do not directly disable motor output.
+// Motor/safety TX failures are sticky; a PID 143 request failure recovers on
+// the next successful voltage request and does not directly disable output.
 static bool safety_can_tx_failure_latched = false;
-static bool poll_can_tx_failure_active = false;
+static bool voltage_request_can_tx_failure_active = false;
 static bool driver_status_fault_latched = false;
 static bool main_data_stale_latched = false;
 static bool battery_low_latched = false;
@@ -367,9 +376,9 @@ static bool system_status_pending = false;
 
 static WheelRpmCommand target_wheel_rpm_cmd = {0.0f, 0.0f, 0.0f, 0.0f};
 static CommandPacket auto_command = {0, 0, 0u};
-static CanTxScheduler can_tx_scheduler = {0u, 0u, false, false, false, 0u, 0u, 0u, false};
-static CanBenchmarkState can_benchmark = {{0u, 0u, {0u}}, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, false, false};
-static CanBenchmarkResult can_benchmark_result = {{0u, 0u, {0u}}, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, false};
+static CanTxScheduler can_tx_scheduler = {0u, 0u, false, false, false, 0u, 0u, false};
+static CanBenchmarkState can_benchmark = {};
+static CanBenchmarkResult can_benchmark_result = {};
 static CommandFrameParser command_rx_parser = {{0}, 0, CMD_RX_WAIT_HEADER_0};
 static MotorTelemetry lf_telemetry = {0, 0u, 0u, 0u, 0u, false};
 static MotorTelemetry rf_telemetry = {0, 0u, 0u, 0u, 0u, false};
@@ -644,42 +653,37 @@ static void send_can_bridge_response(uint8_t seq, uint8_t status, const CanFrame
 
 static void queue_invalid_can_benchmark_result(uint8_t seq)
 {
-    can_benchmark_result = CanBenchmarkResult{{0u, 0u, {0u}},
-                                              0u,
-                                              0u,
-                                              0u,
-                                              0u,
-                                              0u,
-                                              0u,
-                                              seq,
-                                              CAN_BENCHMARK_STATUS_INVALID_REQUEST,
-                                              CAN_BENCHMARK_FLAG_FINAL,
-                                              true};
+    can_benchmark_result = {};
+    can_benchmark_result.seq = seq;
+    can_benchmark_result.status = CAN_BENCHMARK_STATUS_INVALID_REQUEST;
+    can_benchmark_result.flags = CAN_BENCHMARK_FLAG_FINAL;
+    can_benchmark_result.pending = true;
 }
 
-static void complete_can_benchmark_attempt(uint8_t status,
-                                           const CanFrame *response,
-                                           uint32_t rx_timestamp_us)
+static void complete_can_benchmark_attempt(uint8_t status)
 {
-    CanFrame result_frame = {};
-    uint32_t rtt_us = 0u;
-    if (response != nullptr)
+    for (uint8_t i = 0u; i < 2u; ++i)
     {
-        result_frame = *response;
-        rtt_us = static_cast<uint32_t>(rx_timestamp_us - can_benchmark.tx_timestamp_us);
+        can_benchmark_result.responses[i] = can_benchmark.responses[i];
+        can_benchmark_result.rx_timestamps_us[i] = can_benchmark.rx_timestamps_us[i];
+        can_benchmark_result.rtt_us[i] =
+            (can_benchmark.received_mask & (1u << i)) != 0u
+                ? static_cast<uint32_t>(can_benchmark.rx_timestamps_us[i] -
+                                        can_benchmark.tx_timestamp_us)
+                : 0u;
     }
 
     const bool final = can_benchmark.iteration >= can_benchmark.repeat_count;
-    can_benchmark_result.response = result_frame;
     can_benchmark_result.tx_timestamp_us = can_benchmark.tx_timestamp_us;
-    can_benchmark_result.rx_timestamp_us = response != nullptr ? rx_timestamp_us : 0u;
-    can_benchmark_result.rtt_us = rtt_us;
+    can_benchmark_result.response_can_id = can_benchmark.response_can_id;
     can_benchmark_result.iteration = can_benchmark.iteration;
     can_benchmark_result.timeout_count = can_benchmark.timeout_count;
     can_benchmark_result.tx_failure_count = can_benchmark.tx_failure_count;
     can_benchmark_result.seq = can_benchmark.seq;
     can_benchmark_result.status = status;
     can_benchmark_result.flags = final ? CAN_BENCHMARK_FLAG_FINAL : 0u;
+    can_benchmark_result.response_count = can_benchmark.response_count;
+    can_benchmark_result.received_mask = can_benchmark.received_mask;
     can_benchmark_result.pending = true;
 
     can_benchmark.waiting_for_response = false;
@@ -702,15 +706,26 @@ static void can_benchmark_flush_result(void)
     packet[7] = can_benchmark_result.status;
     packet[8] = can_benchmark_result.flags;
     little_endian::write_u32(&packet[9], can_benchmark_result.tx_timestamp_us);
-    little_endian::write_u32(&packet[13], can_benchmark_result.rx_timestamp_us);
-    little_endian::write_u32(&packet[17], can_benchmark_result.rtt_us);
+    little_endian::write_u32(&packet[13], can_benchmark_result.rx_timestamps_us[0]);
+    little_endian::write_u32(&packet[17], can_benchmark_result.rtt_us[0]);
     little_endian::write_u16(&packet[21], can_benchmark_result.timeout_count);
     little_endian::write_u16(&packet[23], can_benchmark_result.tx_failure_count);
-    little_endian::write_u16(&packet[25], can_benchmark_result.response.id);
-    packet[27] = can_benchmark_result.response.dlc > 8u ? 8u : can_benchmark_result.response.dlc;
+    little_endian::write_u16(&packet[25], can_benchmark_result.response_can_id);
+    packet[27] = can_benchmark_result.responses[0].dlc > 8u
+                     ? 8u
+                     : can_benchmark_result.responses[0].dlc;
     for (uint8_t i = 0u; i < packet[27]; ++i)
-        packet[28u + i] = can_benchmark_result.response.data[i];
-    packet[36] = protocol_xor_checksum(packet, CAN_BENCHMARK_RESULT_SIZE - 1u);
+        packet[28u + i] = can_benchmark_result.responses[0].data[i];
+    packet[36] = can_benchmark_result.response_count;
+    packet[37] = can_benchmark_result.received_mask;
+    little_endian::write_u32(&packet[38], can_benchmark_result.rx_timestamps_us[1]);
+    little_endian::write_u32(&packet[42], can_benchmark_result.rtt_us[1]);
+    packet[46] = can_benchmark_result.responses[1].dlc > 8u
+                     ? 8u
+                     : can_benchmark_result.responses[1].dlc;
+    for (uint8_t i = 0u; i < packet[46]; ++i)
+        packet[47u + i] = can_benchmark_result.responses[1].data[i];
+    packet[55] = protocol_xor_checksum(packet, CAN_BENCHMARK_RESULT_SIZE - 1u);
 
     Serial.write(packet, CAN_BENCHMARK_RESULT_SIZE);
     can_benchmark_result.pending = false;
@@ -726,18 +741,35 @@ static void cancel_can_benchmark(void)
 static bool can_benchmark_consume_rx(const CanFrame &frame, uint32_t rx_timestamp_us)
 {
     if (!can_benchmark.active || !can_benchmark.waiting_for_response ||
-        frame.id != can_benchmark.response_can_id || frame.dlc == 0u ||
-        frame.data[0] != can_benchmark.response_pid)
+        frame.id != can_benchmark.response_can_id || frame.dlc == 0u)
+        return false;
+
+    uint8_t response_index = can_benchmark.response_count;
+    for (uint8_t i = 0u; i < can_benchmark.response_count; ++i)
+    {
+        if (frame.data[0] == can_benchmark.response_pids[i] &&
+            (can_benchmark.received_mask & (1u << i)) == 0u)
+        {
+            response_index = i;
+            break;
+        }
+    }
+    if (response_index >= can_benchmark.response_count)
         return false;
 
     if (static_cast<uint32_t>(rx_timestamp_us - can_benchmark.tx_timestamp_us) >= can_benchmark.timeout_us)
     {
         ++can_benchmark.timeout_count;
-        complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RX_TIMEOUT, nullptr, 0u);
+        complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RX_TIMEOUT);
         return false;
     }
 
-    complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RESPONSE, &frame, rx_timestamp_us);
+    can_benchmark.responses[response_index] = frame;
+    can_benchmark.rx_timestamps_us[response_index] = rx_timestamp_us;
+    can_benchmark.received_mask |= static_cast<uint8_t>(1u << response_index);
+    const uint8_t complete_mask = static_cast<uint8_t>((1u << can_benchmark.response_count) - 1u);
+    if (can_benchmark.received_mask == complete_mask)
+        complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RESPONSE);
     return true;
 }
 
@@ -751,7 +783,7 @@ static void can_benchmark_update(uint32_t now_us)
         if (static_cast<uint32_t>(now_us - can_benchmark.tx_timestamp_us) >= can_benchmark.timeout_us)
         {
             ++can_benchmark.timeout_count;
-            complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RX_TIMEOUT, nullptr, 0u);
+            complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RX_TIMEOUT);
         }
         return;
     }
@@ -762,12 +794,17 @@ static void can_benchmark_update(uint32_t now_us)
     ++can_benchmark.iteration;
     can_benchmark.tx_timestamp_us = now_us;
     can_benchmark.next_tx_us = now_us + can_benchmark.period_us;
+    can_benchmark.received_mask = 0u;
+    can_benchmark.responses[0] = {};
+    can_benchmark.responses[1] = {};
+    can_benchmark.rx_timestamps_us[0] = 0u;
+    can_benchmark.rx_timestamps_us[1] = 0u;
 
     if (!can_transmit(can_benchmark.request, CAN_BRIDGE_TX_TIMEOUT_US))
     {
         ++can_benchmark.tx_failure_count;
         latch_safety_can_tx_failure();
-        complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_TX_FAILED, nullptr, 0u);
+        complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_TX_FAILED);
         return;
     }
 
@@ -793,14 +830,18 @@ static void parse_complete_can_benchmark_frame(const uint8_t *packet)
         request.data[i] = packet[8u + i];
 
     const uint16_t response_can_id = little_endian::read_u16(&packet[16]);
-    const uint8_t response_pid = packet[18];
+    const uint8_t response_pid_1 = packet[18];
     const uint16_t repeat_count = little_endian::read_u16(&packet[19]);
     const uint16_t period_ms = little_endian::read_u16(&packet[21]);
     const uint16_t timeout_ms = little_endian::read_u16(&packet[23]);
+    const uint8_t response_count = packet[25];
+    const uint8_t response_pid_2 = packet[26];
 
     if (request.id > 0x7FFu || request.dlc > 8u || response_can_id > 0x7FFu ||
         repeat_count == 0u || period_ms == 0u || timeout_ms == 0u ||
-        timeout_ms > period_ms || static_cast<uint32_t>(timeout_ms) * 1000u > CAN_BRIDGE_MAX_RX_TIMEOUT_US)
+        timeout_ms > period_ms || static_cast<uint32_t>(timeout_ms) * 1000u > CAN_BRIDGE_MAX_RX_TIMEOUT_US ||
+        response_count == 0u || response_count > 2u ||
+        (response_count == 2u && response_pid_1 == response_pid_2))
     {
         queue_invalid_can_benchmark_result(seq);
         return;
@@ -810,14 +851,17 @@ static void parse_complete_can_benchmark_frame(const uint8_t *packet)
     bridge_tunnel_seq = seq;
     can_benchmark.request = request;
     can_benchmark.response_can_id = response_can_id;
-    can_benchmark.response_pid = response_pid;
+    can_benchmark.response_pids[0] = response_pid_1;
+    can_benchmark.response_pids[1] = response_pid_2;
+    can_benchmark.response_count = response_count;
+    can_benchmark.received_mask = 0u;
     can_benchmark.repeat_count = repeat_count;
     can_benchmark.iteration = 0u;
     can_benchmark.timeout_count = 0u;
     can_benchmark.tx_failure_count = 0u;
     can_benchmark.period_us = static_cast<uint32_t>(period_ms) * 1000u;
     can_benchmark.timeout_us = static_cast<uint32_t>(timeout_ms) * 1000u;
-    can_benchmark.next_tx_us = micros();
+    can_benchmark.next_tx_us = micros() + CAN_BENCHMARK_START_SETTLE_US;
     can_benchmark.tx_timestamp_us = 0u;
     can_benchmark.seq = seq;
     can_benchmark.active = true;
@@ -1001,9 +1045,9 @@ static void initialize_control_session(unsigned long now)
     // A new control session must not reuse telemetry received before bridge
     // mode. Freshness grace periods start from this timestamp as well.
     reset_telemetry_validity();
-    // A poll failure is a session-local, recoverable diagnostic. Do not carry
-    // it across BRIDGE -> CONTROL before the new polling timeline starts.
-    poll_can_tx_failure_active = false;
+    // A voltage request failure is a session-local, recoverable diagnostic.
+    // Do not carry it across BRIDGE -> CONTROL before the new timeline starts.
+    voltage_request_can_tx_failure_active = false;
     system_status_pending = false;
     control_mode_started_ms = now;
     reset_can_tx_scheduler(micros());
@@ -1092,16 +1136,16 @@ static void md200t_process_rx_frame(const CanFrame &frame, unsigned long now)
         if (motor->status != 0u)
             driver_status_fault_latched = true;
 
-        // A response contributes to this 10 ms round only after its matching
-        // request was transmitted. Once all four bits are present, queue the
-        // combined USB status immediately; duplicates cannot queue it twice.
+        // PID 207/174 makes each driver return PID 193 and PID 200. Count those
+        // four command-triggered frames in the current 10 ms command round and
+        // queue the combined USB status as soon as all wheels are present.
         if (serial_mode == SERIAL_MODE_CONTROL &&
             can_tx_scheduler.initialized &&
-            (can_tx_scheduler.requested_wheel_mask & wheel_mask) != 0u)
+            (can_tx_scheduler.expected_wheel_mask & wheel_mask) != 0u)
         {
             can_tx_scheduler.received_wheel_mask |= wheel_mask;
             if (!can_tx_scheduler.round_status_queued &&
-                can_tx_wheel_round_complete(can_tx_scheduler.requested_wheel_mask,
+                can_tx_wheel_round_complete(can_tx_scheduler.expected_wheel_mask,
                                             can_tx_scheduler.received_wheel_mask))
             {
                 can_tx_scheduler.round_status_queued = true;
@@ -1199,7 +1243,7 @@ static FaultSnapshot capture_fault_snapshot(unsigned long now)
     fault.serial_checksum_error = checksum_error_latched;
     fault.command_timeout = command_timeout;
     fault.driver_fault = motor_has_driver_fault();
-    fault.can_tx_failure = safety_can_tx_failure_latched || poll_can_tx_failure_active;
+    fault.can_tx_failure = safety_can_tx_failure_latched || voltage_request_can_tx_failure_active;
     fault.emergency_stop_active = estop_active;
     fault.battery_low = battery_low_latched;
     fault.serial_framing_error = serial_framing_error_latched;
@@ -1503,8 +1547,7 @@ static void reset_can_tx_scheduler(uint32_t now_us)
     can_tx_scheduler.initialized = true;
     can_tx_scheduler.command_sent = false;
     can_tx_scheduler.voltage_poll_handled = false;
-    can_tx_scheduler.next_motor_poll = 0u;
-    can_tx_scheduler.requested_wheel_mask = 0u;
+    can_tx_scheduler.expected_wheel_mask = 0u;
     can_tx_scheduler.received_wheel_mask = 0u;
     can_tx_scheduler.round_status_queued = false;
 }
@@ -1530,8 +1573,7 @@ void can_transmit_if_due(uint32_t now_us)
             CAN_TX_SUPERFRAME_CYCLES);
         can_tx_scheduler.command_sent = false;
         can_tx_scheduler.voltage_poll_handled = false;
-        can_tx_scheduler.next_motor_poll = 0u;
-        can_tx_scheduler.requested_wheel_mask = 0u;
+        can_tx_scheduler.expected_wheel_mask = 0u;
         can_tx_scheduler.received_wheel_mask = 0u;
         can_tx_scheduler.round_status_queued = false;
     }
@@ -1560,12 +1602,15 @@ void can_transmit_if_due(uint32_t now_us)
             command_enabled};
 
         md200t_send_driver_commands(driver_a, driver_b);
+        // Both command types are configured to return both motor MAIN_DATA
+        // frames from each driver; no PID 4 wheel requests are generated.
+        can_tx_scheduler.expected_wheel_mask = CAN_TX_ALL_WHEELS_MASK;
         return;
     }
 
     if (!can_tx_scheduler.voltage_poll_handled)
     {
-        ScheduledPollRequest voltage_request = {};
+        ScheduledVoltageRequest voltage_request = {};
         if (!scheduled_voltage_poll(can_tx_scheduler.superframe_cycle, voltage_request))
         {
             can_tx_scheduler.voltage_poll_handled = true;
@@ -1576,35 +1621,11 @@ void can_transmit_if_due(uint32_t now_us)
                 return;
 
             can_tx_scheduler.voltage_poll_handled = true;
-            poll_can_tx_failure_active =
+            voltage_request_can_tx_failure_active =
                 !md200t_request_pid_data(voltage_request.driver_id, voltage_request.pid);
             return;
         }
     }
-
-    if (!scheduled_motor_poll_cycle(can_tx_scheduler.superframe_cycle))
-        return;
-
-    if (can_tx_scheduler.next_motor_poll >= CAN_TX_MOTOR_POLL_COUNT)
-        return;
-
-    ScheduledPollRequest motor_request = {};
-    if (!scheduled_motor_poll(can_tx_scheduler.next_motor_poll, motor_request))
-    {
-        can_tx_scheduler.next_motor_poll = CAN_TX_MOTOR_POLL_COUNT;
-        return;
-    }
-
-    if (cycle_phase_us < motor_request.phase_us)
-        return;
-
-    // Send at most one request per main-loop invocation. The following loop
-    // iteration drains its response before advancing to the next wheel slot.
-    can_tx_scheduler.next_motor_poll++;
-    const bool poll_ok = md200t_request_pid_data(motor_request.driver_id, motor_request.pid);
-    poll_can_tx_failure_active = !poll_ok;
-    if (poll_ok)
-        can_tx_scheduler.requested_wheel_mask |= motor_request.wheel_mask;
 }
 
 void v_decodePWM()

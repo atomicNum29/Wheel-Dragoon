@@ -18,9 +18,9 @@ CAN_BRIDGE_REQUEST_LENGTH = 15
 CAN_BRIDGE_REQUEST_TYPE = 0x20
 CAN_BRIDGE_RESPONSE_LENGTH = 14
 CAN_BRIDGE_RESPONSE_TYPE = 0xA0
-CAN_BENCHMARK_REQUEST_LENGTH = 22
+CAN_BENCHMARK_REQUEST_LENGTH = 24
 CAN_BENCHMARK_REQUEST_TYPE = 0x21
-CAN_BENCHMARK_RESULT_LENGTH = 33
+CAN_BENCHMARK_RESULT_LENGTH = 52
 CAN_BENCHMARK_RESULT_TYPE = 0xA1
 MAX_PACKET_LENGTH = 64
 
@@ -56,7 +56,7 @@ class BenchmarkCommand:
     request_data: list[int]
     request_dlc: int
     response_can_id: int
-    response_pid: int
+    response_pids: tuple[int, ...]
     repeat_count: int
     period_ms: int
     timeout_ms: int
@@ -64,30 +64,44 @@ class BenchmarkCommand:
 
 @dataclass
 class BenchmarkStatistics:
-    """Collect RTT samples for the benchmark session started by this CLI."""
+    """Collect per-response and whole-round timing for one benchmark session."""
 
     seq: Optional[int] = None
     expected_count: int = 0
     last_iteration: int = 0
     timeout_count: int = 0
     tx_failure_count: int = 0
-    rtt_samples_us: list[int] = field(default_factory=list)
+    response_pids: tuple[int, ...] = ()
+    rtt_samples_us: list[list[int]] = field(default_factory=lambda: [[], []])
     tx_interval_samples_us: list[int] = field(default_factory=list)
-    rx_interval_samples_us: list[int] = field(default_factory=list)
+    rx_interval_samples_us: list[list[int]] = field(default_factory=lambda: [[], []])
+    round_rtt_samples_us: list[int] = field(default_factory=list)
+    response_gap_samples_us: list[int] = field(default_factory=list)
+    round_rx_interval_samples_us: list[int] = field(default_factory=list)
     previous_tx_timestamp_us: Optional[int] = None
-    previous_rx_timestamp_us: Optional[int] = None
+    previous_rx_timestamps_us: list[Optional[int]] = field(default_factory=lambda: [None, None])
+    previous_round_rx_timestamp_us: Optional[int] = None
+    partial_round_count: int = 0
 
-    def start(self, seq: int, expected_count: int) -> None:
+    def start(self, seq: int, expected_count: int, response_pids: tuple[int, ...]) -> None:
         self.seq = seq & 0xFF
         self.expected_count = expected_count
+        self.response_pids = response_pids
         self.last_iteration = 0
         self.timeout_count = 0
         self.tx_failure_count = 0
-        self.rtt_samples_us.clear()
+        for samples in self.rtt_samples_us:
+            samples.clear()
         self.tx_interval_samples_us.clear()
-        self.rx_interval_samples_us.clear()
+        for samples in self.rx_interval_samples_us:
+            samples.clear()
+        self.round_rtt_samples_us.clear()
+        self.response_gap_samples_us.clear()
+        self.round_rx_interval_samples_us.clear()
         self.previous_tx_timestamp_us = None
-        self.previous_rx_timestamp_us = None
+        self.previous_rx_timestamps_us = [None, None]
+        self.previous_round_rx_timestamp_us = None
+        self.partial_round_count = 0
 
     def cancel(self) -> None:
         self.seq = None
@@ -95,11 +109,19 @@ class BenchmarkStatistics:
         self.last_iteration = 0
         self.timeout_count = 0
         self.tx_failure_count = 0
-        self.rtt_samples_us.clear()
+        self.response_pids = ()
+        for samples in self.rtt_samples_us:
+            samples.clear()
         self.tx_interval_samples_us.clear()
-        self.rx_interval_samples_us.clear()
+        for samples in self.rx_interval_samples_us:
+            samples.clear()
+        self.round_rtt_samples_us.clear()
+        self.response_gap_samples_us.clear()
+        self.round_rx_interval_samples_us.clear()
         self.previous_tx_timestamp_us = None
-        self.previous_rx_timestamp_us = None
+        self.previous_rx_timestamps_us = [None, None]
+        self.previous_round_rx_timestamp_us = None
+        self.partial_round_count = 0
 
     @staticmethod
     def _percentile(sorted_samples: list[int], percentile: float) -> float:
@@ -139,9 +161,11 @@ class BenchmarkStatistics:
         iteration = int.from_bytes(packet[5:7], "little")
         status = packet[7]
         final = bool(packet[8] & 0x01)
+        response_count = min(packet[36], 2)
+        received_mask = packet[37] & ((1 << response_count) - 1)
 
         # Serial is ordered, but ignore a duplicate result if one is ever
-        # observed so it cannot bias the RTT distribution.
+        # observed so it cannot bias any timing distribution.
         if iteration > self.last_iteration:
             self.last_iteration = iteration
             tx_timestamp_us = int.from_bytes(packet[9:13], "little")
@@ -151,14 +175,46 @@ class BenchmarkStatistics:
                 )
             self.previous_tx_timestamp_us = tx_timestamp_us
 
-            if status == 0:
-                rx_timestamp_us = int.from_bytes(packet[13:17], "little")
-                if self.previous_rx_timestamp_us is not None:
-                    self.rx_interval_samples_us.append(
-                        (rx_timestamp_us - self.previous_rx_timestamp_us) & 0xFFFFFFFF
+            rx_offsets = (13, 38)
+            rtt_offsets = (17, 42)
+            received_rtts: list[int] = []
+            received_timestamps: list[int] = []
+            for response_index in range(response_count):
+                if (received_mask & (1 << response_index)) == 0:
+                    continue
+                rx_timestamp_us = int.from_bytes(
+                    packet[rx_offsets[response_index] : rx_offsets[response_index] + 4],
+                    "little",
+                )
+                rtt_us = int.from_bytes(
+                    packet[rtt_offsets[response_index] : rtt_offsets[response_index] + 4],
+                    "little",
+                )
+                previous_rx = self.previous_rx_timestamps_us[response_index]
+                if previous_rx is not None:
+                    self.rx_interval_samples_us[response_index].append(
+                        (rx_timestamp_us - previous_rx) & 0xFFFFFFFF
                     )
-                self.previous_rx_timestamp_us = rx_timestamp_us
-                self.rtt_samples_us.append(int.from_bytes(packet[17:21], "little"))
+                self.previous_rx_timestamps_us[response_index] = rx_timestamp_us
+                self.rtt_samples_us[response_index].append(rtt_us)
+                received_rtts.append(rtt_us)
+                received_timestamps.append(rx_timestamp_us)
+
+            complete_mask = (1 << response_count) - 1
+            if response_count > 0 and received_mask == complete_mask and status == 0:
+                round_rtt_us = max(received_rtts)
+                completion_index = received_rtts.index(round_rtt_us)
+                round_rx_timestamp_us = received_timestamps[completion_index]
+                self.round_rtt_samples_us.append(round_rtt_us)
+                if self.previous_round_rx_timestamp_us is not None:
+                    self.round_rx_interval_samples_us.append(
+                        (round_rx_timestamp_us - self.previous_round_rx_timestamp_us) & 0xFFFFFFFF
+                    )
+                self.previous_round_rx_timestamp_us = round_rx_timestamp_us
+                if response_count == 2:
+                    self.response_gap_samples_us.append(abs(received_rtts[1] - received_rtts[0]))
+            elif status == 2 and received_mask != 0:
+                self.partial_round_count += 1
 
         self.timeout_count = int.from_bytes(packet[21:23], "little")
         self.tx_failure_count = int.from_bytes(packet[23:25], "little")
@@ -166,21 +222,37 @@ class BenchmarkStatistics:
             return None
 
         attempts = iteration
-        responses = max(0, attempts - self.timeout_count - self.tx_failure_count)
-        success_rate = (100.0 * responses / attempts) if attempts else 0.0
+        complete_rounds = max(0, attempts - self.timeout_count - self.tx_failure_count)
+        success_rate = (100.0 * complete_rounds / attempts) if attempts else 0.0
         prefix = (
             f"BENCH SUMMARY seq={self.seq} attempts={attempts}/{self.expected_count} "
-            f"responses={responses} timeouts={self.timeout_count} "
+            f"complete_rounds={complete_rounds} partial_rounds={self.partial_round_count} "
+            f"timeouts={self.timeout_count} "
             f"tx_failures={self.tx_failure_count} success_rate={success_rate:.2f}%"
         )
-        summary = "\n  ".join(
-            (
-                prefix,
-                self._format_distribution("rtt_us", self.rtt_samples_us),
-                self._format_distribution("tx_interval_us", self.tx_interval_samples_us),
-                self._format_distribution("rx_interval_us", self.rx_interval_samples_us),
+        distributions = [prefix]
+        for response_index, pid in enumerate(self.response_pids):
+            distributions.append(
+                self._format_distribution(f"pid{pid}_rtt_us", self.rtt_samples_us[response_index])
             )
+        distributions.append(self._format_distribution("round_rtt_us", self.round_rtt_samples_us))
+        if len(self.response_pids) == 2:
+            distributions.append(
+                self._format_distribution("response_gap_us", self.response_gap_samples_us)
+            )
+        distributions.append(
+            self._format_distribution("tx_interval_us", self.tx_interval_samples_us)
         )
+        for response_index, pid in enumerate(self.response_pids):
+            distributions.append(
+                self._format_distribution(
+                    f"pid{pid}_rx_interval_us", self.rx_interval_samples_us[response_index]
+                )
+            )
+        distributions.append(
+            self._format_distribution("round_rx_interval_us", self.round_rx_interval_samples_us)
+        )
+        summary = "\n  ".join(distributions)
 
         self.cancel()
         return summary
@@ -396,8 +468,12 @@ def build_benchmark_request(command: BenchmarkCommand, seq: int) -> bytes:
         raise ValueError("request data byte count must fit the DLC and 8-byte CAN limit")
     if not 0 <= command.response_can_id <= 0x7FF:
         raise ValueError("response_can_id must be a standard 11-bit CAN ID")
-    if not 0 <= command.response_pid <= 0xFF:
-        raise ValueError("response_pid must be a byte")
+    if not 1 <= len(command.response_pids) <= 2:
+        raise ValueError("response_pids must contain one or two PIDs")
+    if any(not 0 <= pid <= 0xFF for pid in command.response_pids):
+        raise ValueError("each response PID must be a byte")
+    if len(set(command.response_pids)) != len(command.response_pids):
+        raise ValueError("response PIDs must be distinct")
     if not 1 <= command.repeat_count <= 0xFFFF:
         raise ValueError("repeat_count must be between 1 and 65535")
     if not 1 <= command.period_ms <= 0xFFFF:
@@ -425,13 +501,15 @@ def build_benchmark_request(command: BenchmarkCommand, seq: int) -> bytes:
             [
                 command.response_can_id & 0xFF,
                 (command.response_can_id >> 8) & 0xFF,
-                command.response_pid,
+                command.response_pids[0],
                 command.repeat_count & 0xFF,
                 (command.repeat_count >> 8) & 0xFF,
                 command.period_ms & 0xFF,
                 (command.period_ms >> 8) & 0xFF,
                 command.timeout_ms & 0xFF,
                 (command.timeout_ms >> 8) & 0xFF,
+                len(command.response_pids),
+                command.response_pids[1] if len(command.response_pids) == 2 else 0,
             ]
         )
     )
@@ -456,13 +534,16 @@ def build_command_parser(prog: str, add_help: bool) -> RaisingArgumentParser:
     frame_parser.add_argument("--timeout-ms", type=int, default=None)
 
     benchmark_parser = subparsers.add_parser(
-        "benchmark", add_help=add_help, help="repeat a CAN request and measure matching response RTT"
+        "benchmark",
+        add_help=add_help,
+        help="repeat a CAN request and measure one or two matching response RTTs",
     )
     benchmark_parser.add_argument("can_id", type=parse_can_id)
     benchmark_parser.add_argument("data", nargs="*", type=parse_byte)
     benchmark_parser.add_argument("--dlc", type=int, default=None)
     benchmark_parser.add_argument("--response-id", type=parse_can_id, default=None)
     benchmark_parser.add_argument("--response-pid", type=parse_byte, default=None)
+    benchmark_parser.add_argument("--response-pid2", type=parse_byte, default=None)
     benchmark_parser.add_argument("--count", type=int, default=100)
     benchmark_parser.add_argument("--period-ms", type=int, default=10)
     benchmark_parser.add_argument("--timeout-ms", type=int, default=None)
@@ -521,12 +602,22 @@ def command_from_namespace(
             if args.response_id is None
             else args.response_id
         )
-        response_pid = args.response_pid
-        if response_pid is None:
+        if args.response_pid2 is not None and args.response_pid is None:
+            raise CommandError("--response-pid2 requires --response-pid")
+
+        if args.response_pid is not None:
+            response_pids = (
+                (args.response_pid, args.response_pid2)
+                if args.response_pid2 is not None
+                else (args.response_pid,)
+            )
+        else:
             if len(args.data) >= 2 and args.data[0] == 4:
-                response_pid = args.data[1]
+                response_pids = (args.data[1],)
+            elif args.data and args.data[0] in (174, 207):
+                response_pids = (193, 200)
             elif args.data:
-                response_pid = args.data[0]
+                response_pids = (args.data[0],)
             else:
                 raise CommandError("--response-pid is required when request data is empty")
 
@@ -535,7 +626,7 @@ def command_from_namespace(
             args.data,
             dlc,
             response_can_id,
-            response_pid,
+            response_pids,
             args.count,
             args.period_ms,
             timeout_ms,
@@ -572,7 +663,8 @@ def interactive_help() -> str:
         "  pid DRIVER_ID PID [DATA_BYTE ...] [--mid MID] [--timeout-ms N]\n"
         "  frame CAN_ID [DATA_BYTE ...] [--dlc N] [--timeout-ms N]\n"
         "  benchmark CAN_ID [DATA_BYTE ...] [--dlc N] [--response-id ID]\n"
-        "            [--response-pid PID] [--count N] [--period-ms N] [--timeout-ms N]\n"
+        "            [--response-pid PID] [--response-pid2 PID] [--count N]\n"
+        "            [--period-ms N] [--timeout-ms N]\n"
         "  help\n"
         "  quit | exit | q"
     )
@@ -592,23 +684,41 @@ def format_packet(packet: bytes) -> str:
         status_name = BENCHMARK_STATUS_NAMES.get(status, f"unknown_{status}")
         final = bool(packet[8] & 0x01)
         tx_us = int.from_bytes(packet[9:13], "little")
-        rx_us = int.from_bytes(packet[13:17], "little")
-        rtt_us = int.from_bytes(packet[17:21], "little")
         timeout_count = int.from_bytes(packet[21:23], "little")
         tx_failure_count = int.from_bytes(packet[23:25], "little")
         can_id = int.from_bytes(packet[25:27], "little")
-        dlc = min(packet[27], 8)
-        data = list(packet[28 : 28 + dlc])
+        response_count = min(packet[36], 2)
+        received_mask = packet[37] & ((1 << response_count) - 1)
         final_text = " final" if final else ""
-        response_text = (
-            f" id=0x{can_id:03X} dlc={dlc} data={format_data(data, dlc)}"
-            if status == 0
-            else ""
-        )
+        response_parts: list[str] = []
+        rtts: list[int] = []
+        for response_index, (rx_offset, rtt_offset, dlc_offset, data_offset) in enumerate(
+            ((13, 17, 27, 28), (38, 42, 46, 47))
+        ):
+            if response_index >= response_count or (received_mask & (1 << response_index)) == 0:
+                continue
+            rx_us = int.from_bytes(packet[rx_offset : rx_offset + 4], "little")
+            rtt_us = int.from_bytes(packet[rtt_offset : rtt_offset + 4], "little")
+            dlc = min(packet[dlc_offset], 8)
+            data = list(packet[data_offset : data_offset + dlc])
+            pid = data[0] if data else None
+            pid_text = f"pid={pid}" if pid is not None else "pid=?"
+            response_parts.append(
+                f"rsp{response_index + 1}[{pid_text} rx_us={rx_us} rtt_us={rtt_us} "
+                f"dlc={dlc} data={format_data(data, dlc)}]"
+            )
+            rtts.append(rtt_us)
+        timing_text = ""
+        if len(rtts) == response_count and response_count > 0:
+            timing_text = f" round_rtt_us={max(rtts)}"
+            if response_count == 2:
+                timing_text += f" response_gap_us={abs(rtts[1] - rtts[0])}"
+        response_text = " " + " ".join(response_parts) if response_parts else ""
         return (
             f"[{timestamp}] BENCH seq={seq} iter={iteration} status={status_name}{final_text} "
-            f"tx_us={tx_us} rx_us={rx_us} rtt_us={rtt_us} "
-            f"timeouts={timeout_count} tx_failures={tx_failure_count}{response_text}"
+            f"tx_us={tx_us} received={received_mask.bit_count()}/{response_count} "
+            f"timeouts={timeout_count} tx_failures={tx_failure_count} id=0x{can_id:03X}"
+            f"{timing_text}{response_text}"
         )
 
     if packet[3] != CAN_BRIDGE_RESPONSE_TYPE or packet[2] != CAN_BRIDGE_RESPONSE_LENGTH:
@@ -640,7 +750,8 @@ def send_command(
         ui.log(
             f"BENCH TX seq={seq} id=0x{command.request_can_id:03X} "
             f"dlc={command.request_dlc} data={format_data(command.request_data, command.request_dlc)} "
-            f"response_id=0x{command.response_can_id:03X} response_pid={command.response_pid} "
+            f"response_id=0x{command.response_can_id:03X} "
+            f"response_pids={','.join(str(pid) for pid in command.response_pids)} "
             f"count={command.repeat_count} period_ms={command.period_ms} timeout_ms={command.timeout_ms}"
         )
         return (seq + 1) & 0xFF
@@ -679,7 +790,7 @@ def monitor(
         ui: TerminalUi,
     ) -> int:
         if isinstance(command, BenchmarkCommand):
-            benchmark_statistics.start(current_seq, command.repeat_count)
+            benchmark_statistics.start(current_seq, command.repeat_count, command.response_pids)
         else:
             # A raw 0x20 request cancels the MCU benchmark session.
             benchmark_statistics.cancel()
@@ -756,12 +867,15 @@ def build_main_parser() -> RaisingArgumentParser:
     frame_parser.add_argument("--dlc", type=int, default=None)
     add_connection_options(frame_parser, suppress_defaults=True)
 
-    benchmark_parser = subparsers.add_parser("benchmark", help="start a CAN RTT benchmark")
+    benchmark_parser = subparsers.add_parser(
+        "benchmark", help="start a one- or two-response CAN RTT benchmark"
+    )
     benchmark_parser.add_argument("can_id", type=parse_can_id)
     benchmark_parser.add_argument("data", nargs="*", type=parse_byte)
     benchmark_parser.add_argument("--dlc", type=int, default=None)
     benchmark_parser.add_argument("--response-id", type=parse_can_id, default=None)
     benchmark_parser.add_argument("--response-pid", type=parse_byte, default=None)
+    benchmark_parser.add_argument("--response-pid2", type=parse_byte, default=None)
     benchmark_parser.add_argument("--count", type=int, default=100)
     benchmark_parser.add_argument("--period-ms", type=int, default=10)
     benchmark_parser.add_argument(
