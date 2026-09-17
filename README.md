@@ -39,7 +39,7 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 - FlexCAN ESR1/ECR diagnostics 출력
 - 실제 배터리 전압 ADC 측정
 - watchdog reset 감지 source 연결
-- MD200T telemetry 주기와 freshness timeout의 실제 장비 검증
+- MD200T command-response 지연과 voltage freshness timeout의 실제 장비 검증
 
 ## 하드웨어 기준
 
@@ -285,7 +285,7 @@ serial_mode
 │   ├── mode_state == MANUAL → RC PWM으로 PID 207 목표 계산
 │   └── mode_state == AUTO   → 마지막 정상 0x01 command로 PID 207 목표 계산
 └── BRIDGE
-    ├── mode_state와 관계없이 automatic PID 207/174 및 telemetry polling 중단
+    ├── mode_state와 관계없이 automatic PID 207/174 및 PID 143 polling 중단
     ├── unsolicited 0x81/0x82 송신 중단
     ├── 0x20 raw CAN 송신과 0xA0 CAN 수신 tunnel 처리
     └── 0x21 반복 benchmark와 0xA1 sample 결과 처리
@@ -361,19 +361,23 @@ Stop, disable, emergency stop, command timeout 상태에서는 두 MD200T에 PID
 
 ## CAN TX scheduler와 command response
 
-CONTROL mode의 자동 CAN 송신은 `can_transmit_if_due(micros())` 한 함수가 관리합니다. 각 10 ms cycle의 시작에 같은 RPM/enable snapshot으로 Driver A와 Driver B의 PID 207 frame을 가능한 간격 없이 back-to-back 송신합니다. 출력이 금지된 상태에서는 같은 위치에 PID 174 두 장을 back-to-back 송신합니다. CAN은 직렬 bus이므로 두 frame이 물리적으로 동시에 전송되는 것은 아닙니다.
+CONTROL mode의 자동 CAN 송신은 `can_transmit_if_due(micros())` 한 함수가 관리합니다. 각 10 ms cycle의 `+0 ms`에 Driver A, `+3 ms` 이후에 Driver B의 PID 207을 송신합니다. 두 frame은 같은 RPM/enable snapshot을 사용합니다. 출력이 금지된 상태에서는 같은 위치에 PID 174를 송신합니다. Driver A의 응답 timeout이나 다른 safety fault가 첫 3 ms 구간에서 검출되면 예약된 Driver B 명령은 PID 174로 전환됩니다.
 
 MD200T A/B는 PID 207 또는 PID 174를 수신하면 별도 PID 4 요청 없이 각각 PID 193(MOT1 MAIN_DATA)과 PID 200(MOT2 MAIN_DATA)을 반환하도록 설정되어 있습니다. 따라서 firmware는 wheel 상태용 PID 4 frame을 생성하지 않고 들어오는 네 response만 처리합니다. 응답의 driver ID/PID는 기존 대각선 mapping `A/MOT1=LF`, `A/MOT2=RR`, `B/MOT1=RF`, `B/MOT2=LR`에 그대로 반영합니다.
 
-PID 143 입력전압은 command response에 포함되지 않으므로 기존 driver별 1 Hz 요청을 유지합니다. 1초 superframe의 cycle 0에서 Driver A, cycle 50에서 Driver B를 `+1 ms` 이후 요청하여 두 요청을 500 ms 떨어뜨립니다.
+각 driver command는 송신 시작 시각부터 3 ms 안에 해당 driver의 PID 193과 PID 200을 모두 받아야 합니다. 두 frame 중 하나라도 누락되거나 3 ms 이후 도착하면 `DRIVER_RX_TIMEOUT`을 latch하고 누락 wheel의 validity를 0으로 내립니다. 이 검사는 MCU가 RX mailbox를 읽은 `micros()` 시각을 사용하며, 응답 frame 자체에는 command sequence가 없으므로 CAN wire상의 실제 생성 시각을 직접 측정하는 것은 아닙니다.
+
+PID 143 입력전압은 command response에 포함되지 않으므로 기존 driver별 1 Hz 요청을 유지합니다. 1초 superframe의 cycle 0에서 Driver A, cycle 50에서 Driver B를 `+6 ms` 이후 요청하여 두 요청을 500 ms 떨어뜨립니다.
 
 ```text
-cycle +0 ms  Driver A PID 207/174 → 즉시 Driver B PID 207/174
-             Driver A/B가 PID 193과 PID 200 response 반환
-cycle +1 ms  1초 schedule에 해당하면 Driver A 또는 B PID 143 voltage
+cycle +0 ms  Driver A PID 207/174
+  +0..3 ms  Driver A PID 193/200 response window
+cycle +3 ms  Driver B PID 207/174
+  +3..6 ms  Driver B PID 193/200 response window
+cycle +6 ms  1초 schedule에 해당하면 Driver A 또는 B PID 143 voltage
 ```
 
-CAN RX는 blocking wait하지 않습니다. 현재 command cycle의 PID 193/200 네 종류가 모두 모이면 즉시 `0x82` 송신을 예약하고, USB TX 공간이 있으면 같은 main loop에서 전송합니다. 응답 하나가 누락되더라도 상태 보고가 끊기지 않도록 다음 10 ms cycle 경계에서 현재 validity/stale 상태를 담은 fallback `0x82`를 예약합니다. Loop가 여러 cycle 늦어져도 놓친 PID 207/174를 burst로 재생하지 않고 현재 cycle의 command pair를 다시 최우선으로 처리합니다.
+CAN RX는 blocking wait하지 않습니다. 현재 command cycle의 PID 193/200 네 종류가 모두 모이면 즉시 `0x82` 송신을 예약합니다. 응답이 누락되면 두 번째 3 ms window가 끝나는 시점에 timeout bit와 validity를 담은 fallback `0x82`를 예약합니다. Loop가 늦어져 실제 command가 지연되면 고정 cycle 위치가 아니라 실제 TX 시작 시각부터 3 ms를 보장한 뒤 다음 command로 진행하며, 놓친 command를 burst로 재생하지 않습니다.
 
 기본 100 Hz 동작은 command 200 frame/s, command-triggered PID 193/200 response 400 frame/s, voltage request/response 4 frame/s로 총 약 604 CAN frame/s입니다. 500 kbit/s Standard CAN에서 명목 bus load는 frame 길이와 bit stuffing에 따라 대략 14~17%입니다. `0x82` USB 출력은 `43 bytes × 100 Hz × 10 bits/byte = 43,000 bit/s`로 115200 bps 환산 약 37.3%이며, 기존 ROS command 50 Hz를 단순 합산하면 약 42.1%입니다. 실제 장비에서는 네 command response의 수신률, response burst에 따른 RX overrun, PID 207 jitter 및 host의 지속 수신 처리율을 함께 측정해야 합니다.
 
@@ -514,7 +518,7 @@ Legacy `error` bitfield는 다음 매핑을 사용합니다. `0x81`은 상세 MD
 | --- | --- | --- | --- |
 | 0 | `0x0001` | `CHECKSUM_ERROR` | 수신 packet checksum 오류 event. 정상 `0x82` 송신 후 clear |
 | 1 | `0x0002` | `COMMAND_TIMEOUT` | AUTO mode에서 정상 command가 500 ms 이상 없음. 정상 command 수신 또는 AUTO mode 이탈 시 clear |
-| 2 | `0x0004` | `DRIVER_FAULT` | 구동/안전 CAN TX failure, MD200T status, MAIN_DATA stale 중 하나 이상의 요약. 재부팅 전까지 유지 |
+| 2 | `0x0004` | `DRIVER_FAULT` | 구동/안전 CAN TX failure, MD200T status, driver RX timeout 중 하나 이상의 요약. 재부팅 전까지 유지 |
 | 3 | `0x0008` | `EMERGENCY_STOP_ACTIVE` | 현재 E-stop 입력이 활성. 정상 command에서 E-stop 해제 또는 AUTO mode 이탈 시 clear |
 | 4 | `0x0010` | `BATTERY_LOW` | 두 전압이 fresh인 상태에서 하나라도 21,000 mV 미만. 재부팅 전까지 유지 |
 | 5 | `0x0020` | `SERIAL_FRAMING_ERROR` | header/length/type framing 오류 event. 정상 `0x82` 송신 후 clear |
@@ -527,7 +531,7 @@ Legacy `error` bitfield는 다음 매핑을 사용합니다. `0x81`은 상세 MD
 
 ### System Status v2 Packet: MCU to ROS (`0x82`)
 
-MCU의 운용 상태와 두 MD200T에서 수집한 네 wheel telemetry를 한 시점의 snapshot으로 전달하는 canonical 상태 packet입니다. Control mode에서 매 10 ms polling round의 네 wheel 응답이 모두 모이면 즉시 송신하며 목표 전송률은 100 Hz입니다. 응답 누락 시에는 다음 cycle 경계에 fallback packet을 보내므로 오류 및 validity 보고가 중단되지 않습니다. Bridge mode에서는 송신하지 않습니다. 전체 크기는 43 bytes입니다.
+MCU의 운용 상태와 두 MD200T에서 수집한 네 wheel telemetry를 한 시점의 snapshot으로 전달하는 canonical 상태 packet입니다. Control mode에서 매 10 ms PID 207/174 command에 따른 네 wheel 응답이 모두 모이면 즉시 송신하며 목표 전송률은 100 Hz입니다. 응답 누락 시에는 Driver B의 3 ms response window가 끝날 때 fallback packet을 보내므로 오류 및 validity 보고가 중단되지 않습니다. Bridge mode에서는 송신하지 않습니다. 전체 크기는 43 bytes입니다.
 
 ```text
 AA 55 27 82 version seq state error_lo error_hi validity
@@ -562,40 +566,40 @@ LF[7] RF[7] LR[7] RR[7] checksum
 | --- | --- | --- | --- | --- | --- |
 | 0 | `0x0001` | `SERIAL_CHECKSUM_ERROR` | `0x01` 또는 `0x20` 수신 checksum 오류 | 진단 event, 상태 변경 없음 | 정상 `0x82` 송신 후 clear |
 | 1 | `0x0002` | `COMMAND_TIMEOUT` | AUTO mode에서 정상 command가 없거나 마지막 command 후 500 ms 초과 | `TIMEOUT_STOP`, 출력 금지 | 정상 command 수신 또는 AUTO mode 이탈 |
-| 2 | `0x0004` | `CAN_TX_FAILURE` | CAN 초기화, PID 207/174/bridge 송신 실패 또는 telemetry poll 송신 실패 | 구동/안전 TX 실패는 `FAULT`; poll 단발 실패는 진단만 표시 | 구동/안전 TX 실패는 재부팅, poll 실패는 다음 poll TX 성공 |
+| 2 | `0x0004` | `CAN_TX_FAILURE` | CAN 초기화, PID 207/174/bridge 송신 실패 또는 PID 143 요청 송신 실패 | 구동/안전 TX 실패는 `FAULT`; 전압 요청 단발 실패는 진단만 표시 | 구동/안전 TX 실패는 재부팅, 전압 요청 실패는 다음 요청 TX 성공 |
 | 3 | `0x0008` | `EMERGENCY_STOP_ACTIVE` | command flag bit 1 활성 | `ESTOP`, 출력 금지 | E-stop이 해제된 정상 command 또는 AUTO mode 이탈 |
 | 4 | `0x0010` | `BATTERY_LOW` | 두 driver 전압이 모두 fresh이고 하나라도 21,000 mV 미만 | `FAULT`, TQ-OFF | 재부팅 |
 | 5 | `0x0020` | `SERIAL_FRAMING_ERROR` | 잘못된 header/length/type 수신 | 진단 event, 상태 변경 없음 | 정상 `0x82` 송신 후 clear |
 | 6 | `0x0040` | `COMMAND_OUT_OF_RANGE` | `v` 또는 `w`가 허용 범위를 벗어남 | 해당 command 거부 | 정상 `0x82` 송신 후 clear |
 | 7 | `0x0080` | `WATCHDOG_RESET_DETECTED` | watchdog reset 감지 | 진단용 | 현재 감지 source 미구현 |
 | 8 | `0x0100` | `DRIVER_STATUS_FAULT_PRESENT` | 어느 wheel이든 MD200T raw `status != 0` | `FAULT`, TQ-OFF | 재부팅 |
-| 9 | `0x0200` | `MAIN_DATA_STALE` | 500 ms grace 이후 어느 wheel이든 MAIN_DATA invalid | `FAULT`, TQ-OFF | 재부팅 |
+| 9 | `0x0200` | `DRIVER_RX_TIMEOUT` | Driver A/B 명령 후 3 ms 안에 해당 PID 193/200 쌍이 모두 수신되지 않음 | `FAULT`, TQ-OFF | 재부팅 |
 | 10 | `0x0400` | `VOLTAGE_STALE` | 3 s grace 이후 Driver A/B 중 하나라도 voltage invalid | 진단 및 validity만 변경 | 두 voltage가 다시 fresh하면 자동 clear |
 | 11 | `0x0800` | `CAN_RX_OVERRUN` | RX mailbox에서 hardware overrun 검출 | 진단용, 즉시 정지하지 않음 | CAN 재초기화 또는 재부팅 |
 | 12 | `0x1000` | Reserved | 이전 BC 초기화 오류 위치. 현재 사용하지 않음 | 없음 | 항상 0 |
 | 13-15 | `0xE000` | Reserved | 사용하지 않음 | 없음 | 항상 0 |
 
-`FAULT`를 만드는 안전 fault는 구동/안전 경로의 `CAN_TX_FAILURE`, `BATTERY_LOW`, `DRIVER_STATUS_FAULT_PRESENT`, `MAIN_DATA_STALE`입니다. PID 143 전압 요청 한 건의 TX 실패도 같은 `CAN_TX_FAILURE` bit로 보이지만 즉시 `FAULT`로 승격하지 않고, 다음 전압 요청 TX가 성공하면 해제합니다. 내부에서는 sticky safety TX failure와 recoverable voltage-request TX failure를 분리합니다. 안전 fault에는 runtime reset이 없으며 디버깅 후 MCU를 재부팅해야 해제됩니다. Fault가 있으면 state 우선순위에 따라 E-stop이나 timeout보다 `FAULT`가 먼저 표시됩니다.
+`FAULT`를 만드는 안전 fault는 구동/안전 경로의 `CAN_TX_FAILURE`, `BATTERY_LOW`, `DRIVER_STATUS_FAULT_PRESENT`, `DRIVER_RX_TIMEOUT`입니다. PID 143 전압 요청 한 건의 TX 실패도 같은 `CAN_TX_FAILURE` bit로 보이지만 즉시 `FAULT`로 승격하지 않고, 다음 전압 요청 TX가 성공하면 해제합니다. 내부에서는 sticky safety TX failure와 recoverable voltage-request TX failure를 분리합니다. 안전 fault에는 runtime reset이 없으며 디버깅 후 MCU를 재부팅해야 해제됩니다. Fault가 있으면 state 우선순위에 따라 E-stop이나 command timeout보다 `FAULT`가 먼저 표시됩니다.
 
 Control mode에서는 PID 207/174에 대한 driver의 PID 193/200 command response를 수신하고 PID 143만 1 Hz로 요청합니다. Firmware는 PID 193/200용 PID 4와 CMD 5/6/50/51을 자동 생성하지 않습니다. Bridge mode 진입 시 두 driver를 PID 174로 TQ-OFF하고 PID 207/174 주기 송신, PID 143 polling, `0x82` 송신을 중단합니다. `0x81`은 어느 mode에서도 기본 송신하지 않습니다.
 
 #### Telemetry validity (Byte 9)
 
-`validity`는 값이 packet 안에 존재하는지를 뜻하지 않고, 해당 값이 최근 timeout 이내에 정상 수신되어 지금 사용 가능한지를 뜻합니다. Bit가 0이어도 telemetry byte에는 마지막 수신값이 남아 있을 수 있으므로 ROS는 반드시 validity bit를 먼저 확인하고, invalid 값을 현재 측정값으로 사용하면 안 됩니다.
+`validity`는 값이 packet 안에 존재하는지를 뜻하지 않고, 해당 command의 3 ms response window 안에서 정상 수신되어 지금 사용 가능한지를 뜻합니다. Bit가 0이어도 telemetry byte에는 마지막 수신값이 남아 있을 수 있으므로 ROS는 반드시 validity bit를 먼저 확인하고, invalid 값을 현재 측정값으로 사용하면 안 됩니다.
 
 | Bit | Mask | 대상 | 1이 되는 조건 | 0이 되는 조건 |
 | --- | --- | --- | --- | --- |
-| 0 | `0x01` | LF MAIN_DATA | Driver A/MOT1/PID 193 정상 frame 수신 후 500 ms 이내 | 미수신, 500 ms 초과 또는 control session 재시작 |
-| 1 | `0x02` | RF MAIN_DATA | Driver B/MOT1/PID 193 정상 frame 수신 후 500 ms 이내 | 미수신, 500 ms 초과 또는 control session 재시작 |
-| 2 | `0x04` | LR MAIN_DATA | Driver B/MOT2/PID 200 정상 frame 수신 후 500 ms 이내 | 미수신, 500 ms 초과 또는 control session 재시작 |
-| 3 | `0x08` | RR MAIN_DATA | Driver A/MOT2/PID 200 정상 frame 수신 후 500 ms 이내 | 미수신, 500 ms 초과 또는 control session 재시작 |
+| 0 | `0x01` | LF MAIN_DATA | Driver A 명령의 3 ms window 안에 MOT1/PID 193 정상 frame 수신 | 해당 window에서 미수신 또는 control session 재시작 |
+| 1 | `0x02` | RF MAIN_DATA | Driver B 명령의 3 ms window 안에 MOT1/PID 193 정상 frame 수신 | 해당 window에서 미수신 또는 control session 재시작 |
+| 2 | `0x04` | LR MAIN_DATA | Driver B 명령의 3 ms window 안에 MOT2/PID 200 정상 frame 수신 | 해당 window에서 미수신 또는 control session 재시작 |
+| 3 | `0x08` | RR MAIN_DATA | Driver A 명령의 3 ms window 안에 MOT2/PID 200 정상 frame 수신 | 해당 window에서 미수신 또는 control session 재시작 |
 | 4 | `0x10` | Driver A voltage | Driver A/PID 143 정상값 수신 후 3 s 이내 | 미수신, 3 s 초과 또는 control session 재시작 |
 | 5 | `0x20` | Driver B voltage | Driver B/PID 143 정상값 수신 후 3 s 이내 | 미수신, 3 s 초과 또는 control session 재시작 |
 | 6-7 | `0xC0` | Reserved | 사용하지 않음 | 항상 0 |
 
 정상 MAIN_DATA frame은 MDROBOT response MID 7, 올바른 driver ID, PID 193/200, DLC 8을 만족해야 합니다. 정상 전압 frame은 MID 7, 올바른 driver ID, PID 143, DLC 3 이상이고 raw 전압이 `1..655` 범위여야 합니다. PID 143 raw 단위는 0.1 V이며 MCU는 `raw × 100`으로 mV에 변환합니다. 잘못된 frame은 마지막 정상값과 timestamp를 갱신하지 않습니다.
 
-Control mode 시작 또는 bridge mode에서 control mode로 복귀하면 모든 validity와 저장 telemetry를 0으로 초기화합니다. MAIN_DATA는 처음 500 ms, voltage는 처음 3 s 동안 수신 대기 grace period를 가지며, 이 기간에는 validity가 0일 수 있지만 아직 stale error를 발생시키지 않습니다.
+Control mode 시작 또는 bridge mode에서 control mode로 복귀하면 모든 validity와 저장 telemetry를 0으로 초기화합니다. MAIN_DATA에는 별도 startup grace period가 없으며 첫 command의 3 ms response window부터 timeout 검사를 적용합니다. Voltage만 처음 3 s 동안 수신 대기 grace period를 가집니다.
 
 #### Wheel telemetry block
 
@@ -650,13 +654,13 @@ LR           = status 0,  -80 rpm, 11.0 A, output 450
 RR           = status 0,  +80 rpm, 11.5 A, output 460
 ```
 
-예를 들어 `DRIVER_STATUS_FAULT_PRESENT(bit 8)`와 `MAIN_DATA_STALE(bit 9)`가 동시에 설정되면 `system_error=0x0300`이고, little-endian 전송 byte는 `00 03`입니다.
+예를 들어 `DRIVER_STATUS_FAULT_PRESENT(bit 8)`와 `DRIVER_RX_TIMEOUT(bit 9)`이 동시에 설정되면 `system_error=0x0300`이고, little-endian 전송 byte는 `00 03`입니다.
 
 ### CAN Bridge Request: PC CLI to MCU
 
 MDAS처럼 PC 터미널에서 MD200T의 PID/data frame을 직접 보내기 위한 요청 패킷입니다. 같은 USB Serial 포트를 공유하므로 기존 ROS command/status packet과 동일한 `AA 55 length type ... checksum` framing을 사용하되, type은 `0x20`으로 분리합니다.
 
-요청을 받은 Teensy는 bridge mode로 전환한 뒤 표준 11-bit CAN data frame을 500 kbit/s CAN bus로 송신합니다. `0x20`의 packet layout과 timeout field는 기존 형식을 그대로 유지합니다. Bridge mode로 처음 전환할 때 두 driver에는 PID 174 TQ-OFF를 back-to-back으로 보내고 automatic command/polling scheduler를 중단합니다. Firmware는 broadcasting ON/OFF 명령을 자동으로 보내지 않습니다.
+요청을 받은 Teensy는 bridge mode로 전환한 뒤 표준 11-bit CAN data frame을 500 kbit/s CAN bus로 송신합니다. `0x20`의 packet layout과 timeout field는 기존 형식을 그대로 유지합니다. Bridge mode로 처음 전환할 때 두 driver에는 PID 174 TQ-OFF를 back-to-back으로 보내고 automatic PID 207/174 및 PID 143 scheduler를 중단합니다. Firmware는 broadcasting ON/OFF 명령을 자동으로 보내지 않습니다.
 
 지정한 timeout 동안 가장 먼저 들어온 CAN frame은 ID, driver ID, PID를 검사하지 않고 `0xA0`으로 전달합니다. 이후 bridge mode에서 수신하는 모든 standard CAN data frame도 같은 형식으로 계속 전달합니다. 따라서 외부에서 broadcasting을 켰거나 다른 node가 송신 중이면 요청 직후의 첫 `0xA0`이 요청 대상의 응답이라는 보장은 없습니다. 요청-응답 일치를 판단해야 한다면 PC 측에서 CAN ID와 PID를 보고 판단해야 합니다.
 
@@ -990,7 +994,7 @@ Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서
 
 실제 장비 시험에서 확정해야 할 항목은 다음과 같습니다.
 
-- PID 207/174 command에 대한 PID 193/200 자동 response 수신률과 500 ms freshness timeout의 적정성
+- PID 207/174 command에 대한 PID 193/200 자동 response 수신률과 3 ms response timeout의 적정성
 - command response burst에 따른 RX mailbox overrun 발생 여부, PID 143 driver별 1 Hz 응답률과 입력전압 단위
 - 채널별 direction polarity
 

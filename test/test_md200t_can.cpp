@@ -53,6 +53,20 @@ int main()
     assert_frame(0x002u, main_data2_request);
 
     assert(CAN_TX_COMMAND_PERIOD_US == 10000u);
+    assert(CAN_TX_DRIVER_B_PHASE_US == 3000u);
+    assert(CAN_TX_RESPONSE_TIMEOUT_US == 3000u);
+    assert(CAN_TX_VOLTAGE_PHASE_US == 6000u);
+    assert(CAN_TX_DRIVER_A_WHEELS_MASK ==
+           (CAN_TX_WHEEL_LF_MASK | CAN_TX_WHEEL_RR_MASK));
+    assert(CAN_TX_DRIVER_B_WHEELS_MASK ==
+           (CAN_TX_WHEEL_RF_MASK | CAN_TX_WHEEL_LR_MASK));
+    assert(can_tx_response_pair_complete(CAN_TX_DRIVER_A_WHEELS_MASK,
+                                         CAN_TX_DRIVER_A_WHEELS_MASK));
+    assert(!can_tx_response_pair_complete(CAN_TX_DRIVER_A_WHEELS_MASK,
+                                          CAN_TX_WHEEL_LF_MASK));
+    assert(!can_tx_response_window_expired(1000u, 3999u));
+    assert(can_tx_response_window_expired(1000u, 4000u));
+    assert(can_tx_response_window_expired(0xFFFFFF00u, 0x00000AB8u));
     uint8_t voltage_a_count = 0u;
     uint8_t voltage_b_count = 0u;
     for (uint8_t cycle = 0u; cycle < CAN_TX_SUPERFRAME_CYCLES; ++cycle)
@@ -60,7 +74,7 @@ int main()
         ScheduledVoltageRequest voltage = {};
         if (scheduled_voltage_poll(cycle, voltage))
         {
-            assert(voltage.phase_us == 1000u);
+            assert(voltage.phase_us == CAN_TX_VOLTAGE_PHASE_US);
             if (voltage.driver_id == MD200T_DRIVER_A_ID)
                 ++voltage_a_count;
             else if (voltage.driver_id == MD200T_DRIVER_B_ID)

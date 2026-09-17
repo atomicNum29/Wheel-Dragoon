@@ -70,7 +70,6 @@ const uint32_t CAN_BRIDGE_MAX_RX_TIMEOUT_US = 100000;
 // Let the PID 174 safety commands issued on BRIDGE entry finish returning
 // their automatic PID 193/200 frames before the first measured request.
 const uint32_t CAN_BENCHMARK_START_SETTLE_US = 5000;
-const unsigned long MAIN_DATA_TIMEOUT_MS = 500;
 const unsigned long VOLTAGE_TIMEOUT_MS = 3000;
 const uint8_t CAN_RX_DRAIN_LIMIT = 8;
 
@@ -137,7 +136,7 @@ typedef enum
 #define SYSTEM_ERR_COMMAND_OUT_OF_RANGE (1u << 6)
 #define SYSTEM_ERR_WATCHDOG_RESET_DETECTED (1u << 7)
 #define SYSTEM_ERR_DRIVER_STATUS_FAULT_PRESENT (1u << 8)
-#define SYSTEM_ERR_MAIN_DATA_STALE (1u << 9)
+#define SYSTEM_ERR_DRIVER_RX_TIMEOUT (1u << 9)
 #define SYSTEM_ERR_VOLTAGE_STALE (1u << 10)
 #define SYSTEM_ERR_CAN_RX_OVERRUN (1u << 11)
 
@@ -172,7 +171,7 @@ struct MotorTelemetry
     uint16_t controller_output;
     uint8_t status;
     unsigned long last_update_ms;
-    bool valid; // Cleared when MAIN_DATA exceeds its freshness timeout.
+    bool valid; // Cleared when the latest 3 ms command-response window misses it.
 };
 
 struct DriverVoltageTelemetry
@@ -185,10 +184,16 @@ struct DriverVoltageTelemetry
 struct CanTxScheduler
 {
     uint32_t cycle_start_us;
+    uint32_t driver_a_tx_us;
+    uint32_t driver_b_tx_us;
     uint8_t superframe_cycle;
     bool initialized;
-    bool command_sent;
+    bool driver_a_command_sent;
+    bool driver_a_response_checked;
+    bool driver_b_command_sent;
+    bool driver_b_response_checked;
     bool voltage_poll_handled;
+    Md200tDriverCommand pending_driver_b_command;
     uint8_t expected_wheel_mask;
     uint8_t received_wheel_mask;
     bool round_status_queued;
@@ -248,7 +253,7 @@ struct FaultSnapshot
     bool command_out_of_range;
     bool watchdog_reset;
     bool driver_status_fault;
-    bool main_data_stale;
+    bool driver_rx_timeout;
     bool voltage_stale;
     bool can_rx_overrun;
 };
@@ -284,7 +289,7 @@ void protocol_send_system_status_if_ready(void);
 void motor_set_left_right_rpm(float left_rpm, float right_rpm);
 // Set every wheel target RPM to zero.
 void motor_stop_all(void);
-// Send the due automatic command pair or polling request without RX waiting.
+// Send the due automatic command pair or 1 Hz voltage request without RX waiting.
 void can_transmit_if_due(uint32_t now_us);
 // Check whether command packet velocity fields are inside supported physical limits.
 static bool command_in_range(const CommandPacket &command);
@@ -332,11 +337,13 @@ static void update_effective_motor_command(DriveMode drive_mode,
                                            unsigned int v_pwm,
                                            unsigned int w_pwm,
                                            unsigned long now);
-// Send both driver frames back-to-back from one command snapshot.
+// Send both safety frames back-to-back outside the periodic scheduler.
 static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a,
                                         const Md200tDriverCommand &driver_b);
 static void reset_can_tx_scheduler(uint32_t now_us);
-static void md200t_process_rx_frame(const CanFrame &frame, unsigned long now);
+static void md200t_process_rx_frame(const CanFrame &frame,
+                                    unsigned long now,
+                                    uint32_t rx_timestamp_us);
 static void md200t_drain_rx(unsigned long now);
 static void md200t_update_telemetry_health(unsigned long now);
 static void initialize_control_session(unsigned long now);
@@ -354,12 +361,12 @@ static bool calibration_active = false;
 static bool motor_enabled = false;
 static bool estop_active = false;
 static bool command_timeout = true;
-// Motor/safety TX failures are sticky; a PID 143 request failure recovers on
-// the next successful voltage request and does not directly disable output.
+// Motor/safety TX failures are sticky; the diagnostic voltage-request failure
+// recovers on the next successful voltage request and does not disable output.
 static bool safety_can_tx_failure_latched = false;
 static bool voltage_request_can_tx_failure_active = false;
 static bool driver_status_fault_latched = false;
-static bool main_data_stale_latched = false;
+static bool driver_rx_timeout_latched = false;
 static bool battery_low_latched = false;
 static bool watchdog_reset_detected = false;
 static bool checksum_error_latched = false;
@@ -376,7 +383,7 @@ static bool system_status_pending = false;
 
 static WheelRpmCommand target_wheel_rpm_cmd = {0.0f, 0.0f, 0.0f, 0.0f};
 static CommandPacket auto_command = {0, 0, 0u};
-static CanTxScheduler can_tx_scheduler = {0u, 0u, false, false, false, 0u, 0u, false};
+static CanTxScheduler can_tx_scheduler = {};
 static CanBenchmarkState can_benchmark = {};
 static CanBenchmarkResult can_benchmark_result = {};
 static CommandFrameParser command_rx_parser = {{0}, 0, CMD_RX_WAIT_HEADER_0};
@@ -1113,7 +1120,28 @@ static MotorTelemetry *md200t_find_motor_telemetry(uint8_t driver_id,
     return nullptr;
 }
 
-static void md200t_process_rx_frame(const CanFrame &frame, unsigned long now)
+static bool md200t_response_window_open(uint8_t driver_id, uint32_t rx_timestamp_us)
+{
+    if (driver_id == MD200T_DRIVER_A_ID)
+    {
+        return can_tx_scheduler.driver_a_command_sent &&
+               !can_tx_scheduler.driver_a_response_checked &&
+               !can_tx_response_window_expired(can_tx_scheduler.driver_a_tx_us,
+                                                rx_timestamp_us);
+    }
+    if (driver_id == MD200T_DRIVER_B_ID)
+    {
+        return can_tx_scheduler.driver_b_command_sent &&
+               !can_tx_scheduler.driver_b_response_checked &&
+               !can_tx_response_window_expired(can_tx_scheduler.driver_b_tx_us,
+                                                rx_timestamp_us);
+    }
+    return false;
+}
+
+static void md200t_process_rx_frame(const CanFrame &frame,
+                                    unsigned long now,
+                                    uint32_t rx_timestamp_us)
 {
     uint8_t driver_id = 0u;
     if (!md200t_decode_response_id(frame.id, driver_id) || frame.dlc == 0u)
@@ -1124,7 +1152,9 @@ static void md200t_process_rx_frame(const CanFrame &frame, unsigned long now)
     MotorTelemetry *motor = md200t_find_motor_telemetry(driver_id, pid, wheel_mask);
     if (motor != nullptr)
     {
-        if (frame.dlc < 8u)
+        // Only a complete response received inside the 3 ms window belonging
+        // to this driver's latest command can refresh wheel telemetry.
+        if (frame.dlc < 8u || !md200t_response_window_open(driver_id, rx_timestamp_us))
             return;
 
         motor->status = frame.data[1];
@@ -1144,6 +1174,12 @@ static void md200t_process_rx_frame(const CanFrame &frame, unsigned long now)
             (can_tx_scheduler.expected_wheel_mask & wheel_mask) != 0u)
         {
             can_tx_scheduler.received_wheel_mask |= wheel_mask;
+            if (can_tx_response_pair_complete(CAN_TX_DRIVER_A_WHEELS_MASK,
+                                              can_tx_scheduler.received_wheel_mask))
+                can_tx_scheduler.driver_a_response_checked = true;
+            if (can_tx_response_pair_complete(CAN_TX_DRIVER_B_WHEELS_MASK,
+                                              can_tx_scheduler.received_wheel_mask))
+                can_tx_scheduler.driver_b_response_checked = true;
             if (!can_tx_scheduler.round_status_queued &&
                 can_tx_wheel_round_complete(can_tx_scheduler.expected_wheel_mask,
                                             can_tx_scheduler.received_wheel_mask))
@@ -1196,7 +1232,7 @@ static void md200t_drain_rx(unsigned long now)
         }
         else
         {
-            md200t_process_rx_frame(frame, now);
+            md200t_process_rx_frame(frame, now, micros());
         }
     }
 }
@@ -1208,16 +1244,8 @@ static bool telemetry_is_fresh(bool valid, unsigned long last_update_ms, unsigne
 
 static void md200t_update_telemetry_health(unsigned long now)
 {
-    lf_telemetry.valid = telemetry_is_fresh(lf_telemetry.valid, lf_telemetry.last_update_ms, now, MAIN_DATA_TIMEOUT_MS);
-    rf_telemetry.valid = telemetry_is_fresh(rf_telemetry.valid, rf_telemetry.last_update_ms, now, MAIN_DATA_TIMEOUT_MS);
-    lr_telemetry.valid = telemetry_is_fresh(lr_telemetry.valid, lr_telemetry.last_update_ms, now, MAIN_DATA_TIMEOUT_MS);
-    rr_telemetry.valid = telemetry_is_fresh(rr_telemetry.valid, rr_telemetry.last_update_ms, now, MAIN_DATA_TIMEOUT_MS);
     driver_a_voltage.valid = telemetry_is_fresh(driver_a_voltage.valid, driver_a_voltage.last_update_ms, now, VOLTAGE_TIMEOUT_MS);
     driver_b_voltage.valid = telemetry_is_fresh(driver_b_voltage.valid, driver_b_voltage.last_update_ms, now, VOLTAGE_TIMEOUT_MS);
-
-    if (serial_mode == SERIAL_MODE_CONTROL && now - control_mode_started_ms >= MAIN_DATA_TIMEOUT_MS &&
-        (!lf_telemetry.valid || !rf_telemetry.valid || !lr_telemetry.valid || !rr_telemetry.valid))
-        main_data_stale_latched = true;
 
     if (driver_a_voltage.valid && driver_b_voltage.valid &&
         (driver_a_voltage.millivolts < BATTERY_LOW_THRESHOLD_MV || driver_b_voltage.millivolts < BATTERY_LOW_THRESHOLD_MV))
@@ -1232,9 +1260,9 @@ static void latch_safety_can_tx_failure(void)
 
 static bool motor_has_driver_fault(void)
 {
-    // Recoverable diagnostic poll failures are intentionally excluded. A
-    // sustained loss of poll responses is promoted by MAIN_DATA_STALE.
-    return safety_can_tx_failure_latched || driver_status_fault_latched || main_data_stale_latched;
+    // The recoverable voltage-request failure is intentionally excluded. A
+    // missing PID 193/200 pair is latched by the 3 ms response-window checker.
+    return safety_can_tx_failure_latched || driver_status_fault_latched || driver_rx_timeout_latched;
 }
 
 static FaultSnapshot capture_fault_snapshot(unsigned long now)
@@ -1250,7 +1278,7 @@ static FaultSnapshot capture_fault_snapshot(unsigned long now)
     fault.command_out_of_range = command_out_of_range_latched;
     fault.watchdog_reset = watchdog_reset_detected;
     fault.driver_status_fault = driver_status_fault_latched;
-    fault.main_data_stale = main_data_stale_latched;
+    fault.driver_rx_timeout = driver_rx_timeout_latched;
     fault.voltage_stale = serial_mode == SERIAL_MODE_CONTROL &&
                           now - control_mode_started_ms >= VOLTAGE_TIMEOUT_MS &&
                           (!driver_a_voltage.valid || !driver_b_voltage.valid);
@@ -1349,8 +1377,8 @@ static uint16_t build_system_error_bits(const FaultSnapshot &fault)
         error |= SYSTEM_ERR_WATCHDOG_RESET_DETECTED;
     if (fault.driver_status_fault)
         error |= SYSTEM_ERR_DRIVER_STATUS_FAULT_PRESENT;
-    if (fault.main_data_stale)
-        error |= SYSTEM_ERR_MAIN_DATA_STALE;
+    if (fault.driver_rx_timeout)
+        error |= SYSTEM_ERR_DRIVER_RX_TIMEOUT;
     if (fault.voltage_stale)
         error |= SYSTEM_ERR_VOLTAGE_STALE;
     if (fault.can_rx_overrun)
@@ -1506,50 +1534,68 @@ void motor_stop_all(void)
     motor_set_left_right_rpm(0.0f, 0.0f);
 }
 
-static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a, const Md200tDriverCommand &driver_b)
+static bool md200t_send_driver_command(uint8_t driver_id,
+                                       const Md200tDriverCommand &command)
 {
-    bool driver_a_ok = false;
-    if (driver_a.enabled)
-    {
-        driver_a_ok = md200t_set_velocity(MD200T_DRIVER_A_ID,
-                                          rpm_to_i16(driver_a.ch1_rpm),
-                                          rpm_to_i16(driver_a.ch2_rpm));
-    }
-    else
-    {
-        driver_a_ok = md200t_torque_off(MD200T_DRIVER_A_ID);
-    }
+    if (command.enabled)
+        return md200t_set_velocity(driver_id,
+                                   rpm_to_i16(command.ch1_rpm),
+                                   rpm_to_i16(command.ch2_rpm));
+    return md200t_torque_off(driver_id);
+}
 
-    // Always attempt Driver B immediately after Driver A. Both frames were
-    // built from the same command snapshot, and one failure must not suppress
-    // the other driver's update.
-    bool driver_b_ok = false;
-    if (driver_b.enabled)
-    {
-        driver_b_ok = md200t_set_velocity(MD200T_DRIVER_B_ID,
-                                          rpm_to_i16(driver_b.ch1_rpm),
-                                          rpm_to_i16(driver_b.ch2_rpm));
-    }
-    else
-    {
-        driver_b_ok = md200t_torque_off(MD200T_DRIVER_B_ID);
-    }
+static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a,
+                                        const Md200tDriverCommand &driver_b)
+{
+    // Reset and BRIDGE-entry safety paths intentionally do not use the normal
+    // 3 ms scheduler: both TQ-OFF frames must be attempted immediately.
+    const bool driver_a_ok = md200t_send_driver_command(MD200T_DRIVER_A_ID, driver_a);
+    const bool driver_b_ok = md200t_send_driver_command(MD200T_DRIVER_B_ID, driver_b);
 
     if (!driver_a_ok || !driver_b_ok)
         latch_safety_can_tx_failure();
     digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_latched);
 }
 
+static void invalidate_wheel_telemetry(uint8_t wheel_mask)
+{
+    if ((wheel_mask & CAN_TX_WHEEL_LF_MASK) != 0u)
+        lf_telemetry.valid = false;
+    if ((wheel_mask & CAN_TX_WHEEL_RF_MASK) != 0u)
+        rf_telemetry.valid = false;
+    if ((wheel_mask & CAN_TX_WHEEL_LR_MASK) != 0u)
+        lr_telemetry.valid = false;
+    if ((wheel_mask & CAN_TX_WHEEL_RR_MASK) != 0u)
+        rr_telemetry.valid = false;
+}
+
+static void close_driver_response_window(uint8_t driver_id)
+{
+    const uint8_t expected_mask = driver_id == MD200T_DRIVER_A_ID
+                                      ? CAN_TX_DRIVER_A_WHEELS_MASK
+                                      : CAN_TX_DRIVER_B_WHEELS_MASK;
+    const uint8_t missing_mask = static_cast<uint8_t>(
+        expected_mask & static_cast<uint8_t>(~can_tx_scheduler.received_wheel_mask));
+    if (missing_mask != 0u)
+    {
+        invalidate_wheel_telemetry(missing_mask);
+        driver_rx_timeout_latched = true;
+    }
+
+    if (driver_id == MD200T_DRIVER_A_ID)
+        can_tx_scheduler.driver_a_response_checked = true;
+    else
+        can_tx_scheduler.driver_b_response_checked = true;
+
+    digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_latched);
+}
+
 static void reset_can_tx_scheduler(uint32_t now_us)
 {
+    can_tx_scheduler = {};
     can_tx_scheduler.cycle_start_us = now_us;
     can_tx_scheduler.superframe_cycle = 0u;
     can_tx_scheduler.initialized = true;
-    can_tx_scheduler.command_sent = false;
-    can_tx_scheduler.voltage_poll_handled = false;
-    can_tx_scheduler.expected_wheel_mask = 0u;
-    can_tx_scheduler.received_wheel_mask = 0u;
-    can_tx_scheduler.round_status_queued = false;
 }
 
 void can_transmit_if_due(uint32_t now_us)
@@ -1563,6 +1609,23 @@ void can_transmit_if_due(uint32_t now_us)
     const uint32_t elapsed_us = static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us);
     if (elapsed_us >= CAN_TX_COMMAND_PERIOD_US)
     {
+        // If a command was sent late, do not start the next driver's command
+        // until its full 3 ms response window has elapsed.
+        if (can_tx_scheduler.driver_a_command_sent &&
+            !can_tx_scheduler.driver_a_response_checked)
+        {
+            if (!can_tx_response_window_expired(can_tx_scheduler.driver_a_tx_us, now_us))
+                return;
+            close_driver_response_window(MD200T_DRIVER_A_ID);
+        }
+        if (can_tx_scheduler.driver_b_command_sent &&
+            !can_tx_scheduler.driver_b_response_checked)
+        {
+            if (!can_tx_response_window_expired(can_tx_scheduler.driver_b_tx_us, now_us))
+                return;
+            close_driver_response_window(MD200T_DRIVER_B_ID);
+        }
+
         if (!can_tx_scheduler.round_status_queued)
             system_status_pending = true;
 
@@ -1571,7 +1634,10 @@ void can_transmit_if_due(uint32_t now_us)
         can_tx_scheduler.superframe_cycle = static_cast<uint8_t>(
             (can_tx_scheduler.superframe_cycle + skipped_cycles % CAN_TX_SUPERFRAME_CYCLES) %
             CAN_TX_SUPERFRAME_CYCLES);
-        can_tx_scheduler.command_sent = false;
+        can_tx_scheduler.driver_a_command_sent = false;
+        can_tx_scheduler.driver_a_response_checked = false;
+        can_tx_scheduler.driver_b_command_sent = false;
+        can_tx_scheduler.driver_b_response_checked = false;
         can_tx_scheduler.voltage_poll_handled = false;
         can_tx_scheduler.expected_wheel_mask = 0u;
         can_tx_scheduler.received_wheel_mask = 0u;
@@ -1579,12 +1645,10 @@ void can_transmit_if_due(uint32_t now_us)
     }
 
     const uint32_t cycle_phase_us = static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us);
-    if (!can_tx_scheduler.command_sent)
+    if (!can_tx_scheduler.driver_a_command_sent)
     {
-        can_tx_scheduler.command_sent = true;
-
-        // Fault and safety gates are evaluated once for both drivers so their
-        // back-to-back frames carry one coherent command snapshot.
+        // Both driver commands use this one coherent target snapshot even
+        // though Driver B is intentionally transmitted 3 ms later.
         const bool command_enabled = motor_enabled && !estop_active && !command_timeout &&
                                      !motor_has_driver_fault() && !battery_low_latched;
         const WheelRpmCommand target = command_enabled
@@ -1596,16 +1660,61 @@ void can_transmit_if_due(uint32_t now_us)
             target.rr_rpm, // MD200T A MOT2 = RR
             command_enabled};
 
-        const Md200tDriverCommand driver_b = {
+        can_tx_scheduler.pending_driver_b_command = Md200tDriverCommand{
             target.rf_rpm, // MD200T B MOT1 = RF
             target.lr_rpm, // MD200T B MOT2 = LR
             command_enabled};
 
-        md200t_send_driver_commands(driver_a, driver_b);
-        // Both command types are configured to return both motor MAIN_DATA
-        // frames from each driver; no PID 4 wheel requests are generated.
-        can_tx_scheduler.expected_wheel_mask = CAN_TX_ALL_WHEELS_MASK;
+        can_tx_scheduler.driver_a_command_sent = true;
+        can_tx_scheduler.driver_a_tx_us = micros();
+        can_tx_scheduler.expected_wheel_mask = CAN_TX_DRIVER_A_WHEELS_MASK;
+        if (!md200t_send_driver_command(MD200T_DRIVER_A_ID, driver_a))
+            latch_safety_can_tx_failure();
+        digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_latched);
         return;
+    }
+
+    if (!can_tx_scheduler.driver_b_command_sent)
+    {
+        if (cycle_phase_us < CAN_TX_DRIVER_B_PHASE_US)
+            return;
+        // Preserve the full A-to-B idle interval even when both A responses
+        // arrive early or Driver A itself was sent late in the cycle.
+        if (!can_tx_response_window_expired(can_tx_scheduler.driver_a_tx_us, now_us))
+            return;
+        if (!can_tx_scheduler.driver_a_response_checked)
+        {
+            close_driver_response_window(MD200T_DRIVER_A_ID);
+        }
+
+        // A response timeout or any other safety fault detected during the
+        // first window changes Driver B's scheduled frame to TQ-OFF.
+        if (motor_has_driver_fault() || battery_low_latched || estop_active || command_timeout)
+            can_tx_scheduler.pending_driver_b_command.enabled = false;
+
+        can_tx_scheduler.driver_b_command_sent = true;
+        can_tx_scheduler.driver_b_tx_us = micros();
+        can_tx_scheduler.expected_wheel_mask |= CAN_TX_DRIVER_B_WHEELS_MASK;
+        if (!md200t_send_driver_command(MD200T_DRIVER_B_ID,
+                                        can_tx_scheduler.pending_driver_b_command))
+            latch_safety_can_tx_failure();
+        digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_latched);
+        return;
+    }
+
+    // Keep all later automatic TX outside Driver B's complete 3 ms window,
+    // even when both responses arrive before the deadline.
+    if (!can_tx_response_window_expired(can_tx_scheduler.driver_b_tx_us, now_us))
+        return;
+    if (!can_tx_scheduler.driver_b_response_checked)
+        close_driver_response_window(MD200T_DRIVER_B_ID);
+
+    // A complete pair queues 0x82 from RX immediately. A partial/empty pair
+    // reaches here at the deadline and queues one fallback with timeout bits.
+    if (!can_tx_scheduler.round_status_queued)
+    {
+        can_tx_scheduler.round_status_queued = true;
+        system_status_pending = true;
     }
 
     if (!can_tx_scheduler.voltage_poll_handled)
