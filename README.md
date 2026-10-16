@@ -517,7 +517,7 @@ Legacy `error` bitfield는 다음 매핑을 사용합니다. `0x81`은 상세 MD
 | Bit | Mask | 이름 | 의미와 유지 조건 |
 | --- | --- | --- | --- |
 | 0 | `0x0001` | `CHECKSUM_ERROR` | 수신 packet checksum 오류 event. 정상 `0x82` 송신 후 clear |
-| 1 | `0x0002` | `COMMAND_TIMEOUT` | AUTO mode에서 정상 command가 500 ms 이상 없음. 정상 command 수신 또는 AUTO mode 이탈 시 clear |
+| 1 | `0x0002` | `COMMAND_TIMEOUT` | AUTO mode에서 정상 command가 500 ms 동안 나타나지 않음. 정상 command 수신 또는 AUTO mode 이탈 시 clear |
 | 2 | `0x0004` | `DRIVER_FAULT` | 구동/안전 CAN TX failure, MD200T status, driver RX timeout 중 하나 이상의 요약. 재부팅 전까지 유지 |
 | 3 | `0x0008` | `EMERGENCY_STOP_ACTIVE` | 현재 E-stop 입력이 활성. 정상 command에서 E-stop 해제 또는 AUTO mode 이탈 시 clear |
 | 4 | `0x0010` | `BATTERY_LOW` | 두 전압이 fresh인 상태에서 하나라도 21,000 mV 미만. 재부팅 전까지 유지 |
