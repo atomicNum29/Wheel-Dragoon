@@ -1,0 +1,483 @@
+# MD200T Command Response 상태 수집 및 단일 CAN TX Scheduler 계획
+
+## 1. 변경 배경과 확인된 장비 동작
+
+실제 MD200T 시험에서 다음 동작을 확인했다.
+
+1. `PID_COMMAND(10), CMD 50`만 실행하면 PID 200(MOT2 MAIN_DATA)이 broadcasting된다.
+2. 이 상태에서 CMD 5를 실행하면 PID 193(MOT1 MAIN_DATA)만 broadcasting된다.
+3. CMD 6으로 PID 193 broadcasting을 끄면, CMD 50을 다시 보내지 않아도 PID 200 broadcasting이 재개된다.
+4. CMD 5와 CMD 50의 실행 순서와 관계없이 두 설정이 모두 활성화된 동안에는 PID 193만 관찰된다.
+5. CMD 5만 활성화된 상태에서도 PID 4로 PID 200을 요청하면 PID 200 데이터가 정상 반환된다.
+
+따라서 MOT2 telemetry나 PID 200 자체가 고장 난 것은 아니다. MD200T는 두 broadcasting enable 상태를 기억하지만, 두 상태가 동시에 활성화되면 PID 193을 우선하거나 하나의 broadcasting source만 실제 송신하는 것으로 판단한다. 외부 CAN analyzer로 버스 자체를 캡처하기 전까지 MCU가 같은 CAN ID의 두 연속 frame 중 두 번째를 잃는 가능성을 완전히 배제할 수는 없지만, 차량 상태 수집 설계는 불완전한 동시 broadcasting에 의존하지 않는다.
+
+Broadcasting에 의존하지 않는 원칙은 유지한다. 이후 MD200T를 PID 207 또는 PID 174 수신 시 PID 193/200을 반환하도록 설정했으므로, production 상태 수집은 별도 wheel polling 대신 command response를 사용한다.
+
+## 2. 작업 범위
+
+- MCU production code에서 CMD 5/6/50/51과 broadcasting 개념을 모두 제거한다. Bridge CLI에서 사용자가 raw CAN frame을 직접 보내는 기능만 그대로 둔다.
+- PID 193/200은 PID 207/174에 대한 driver command response로 취득한다.
+- PID 143은 command response에 포함되지 않으므로 driver별 1 Hz `PID_REQ_PID_DATA(4)` 요청을 유지한다.
+- Driver A/B의 PID 207 듀얼채널 속도 명령을 각각 정확히 10 ms 주기로 유지한다.
+- PID 207/PID 174 Driver A/B frame은 하나의 command snapshot을 공유하되 A를 +0 ms, B를 A 실제 TX로부터 3 ms 이후에 송신하고, 1 Hz 전압 요청도 `can_transmit_if_due()` 한 곳에서 관리한다.
+- Driver A/B ID, 대각선 MOT1/MOT2 배치, 좌우 wheel mapping, 방향 반전, RPM 단위, TQ-OFF, E-stop, command timeout, RC override를 변경하지 않는다.
+- CAN bitrate는 현재 장비 설정에 맞춘 500 kbit/s를 사용하고 Standard 11-bit frame 설정은 유지한다.
+- MCU↔ROS/PC packet framing과 type `0x01`, `0x20`, `0x81`, `0x82`, `0xA0`의 wire layout을 유지한다.
+- `0x81` serializer는 보존하지만 기본 송신 호출이 주석 처리된 상태를 유지한다.
+- `0x82`를 canonical 상태 packet으로 유지한다.
+- bridge mode의 연속 `0xA0` tunnel과 대화형 CLI는 유지한다.
+- ROS 2 package는 직접 수정하지 않고 변경 방향만 보고서에 반영한다.
+- 불필요한 구조 변경이나 unrelated refactoring은 하지 않는다.
+
+## 3. 보존할 현재 구조
+
+### 3.1 모터 제어와 매핑
+
+- `md200t_set_velocity(driver_id, rpm1, rpm2)`의 PID 207 payload를 유지한다.
+- Driver A ID는 1, Driver B ID는 2이다.
+- telemetry와 command mapping은 다음과 같이 유지한다.
+
+```text
+Driver A MOT1 / PID 193 = LF
+Driver A MOT2 / PID 200 = RR
+Driver B MOT1 / PID 193 = RF
+Driver B MOT2 / PID 200 = LR
+```
+
+- PID 193/200 response의 signed RPM, current, controller output, raw motor status decode를 유지한다.
+- PID 143 voltage의 signed 0.1 V decode와 mV 변환을 유지한다.
+
+### 3.2 Serial protocol
+
+- 공통 framing은 `AA 55`, 1-byte payload length, type/payload, XOR checksum이다.
+- 2-byte 정수는 little-endian으로 직렬화하며 signed 값은 2의 보수 bit pattern을 유지한다.
+- System Status v2 `0x82`는 payload 39 bytes, 전체 43 bytes를 유지한다.
+- wheel 순서와 7-byte telemetry layout은 LF, RF, LR, RR 순서를 유지한다.
+- validity bit 0~5의 wire 위치를 유지한다.
+- bridge request `0x20`과 response/tunnel `0xA0` 형식을 유지한다.
+
+### 3.3 상태와 안전 정책
+
+- `mcu_state`는 최종 운용 상태, `system_error`는 MCU/system 원인 요약, `wheel.status`는 MD200T raw 원인, wheel `validity`는 최신 3 ms command-response window의 수신 성공 여부를 나타낸다.
+- PID 193/200의 `status != 0`은 어느 bit이든 즉시 fault로 latch한다.
+- motor status fault, driver RX timeout, battery low, PID 207/PID 174 송신 실패와 같이 실제 구동 안전에 관련된 fault는 자동 해제하지 않고 재부팅으로만 해제한다.
+- PID 143 전압 요청 한 건의 TX 실패는 `CAN_TX_FAILURE` 진단을 세우되 즉시 motor fault로 승격하지 않으며, 다음 전압 요청 TX 성공 시 이 진단만 해제한다. PID 193/200 쌍이 3 ms 안에 모이지 않을 때의 정지는 `DRIVER_RX_TIMEOUT` latch가 담당한다.
+- voltage stale은 diagnostic/validity에만 반영하고 즉시 정지시키지 않는다.
+- source가 없던 legacy `over_current`, `over_temperature`, `parameter_error` 변수는 다시 도입하지 않는다.
+- RC `mode_state`는 STOP/MANUAL/AUTO 중 명령 소스를 선택하는 값이고, `serial_mode`는 CONTROL/BRIDGE 통신 경로를 선택하는 값이다. 서로 대체하거나 같은 의미로 사용하지 않는다.
+
+## 4. Broadcasting 관련 롤백
+
+### 4.1 제거 대상
+
+다음 production 경로를 제거한다.
+
+- `md200t_set_main_data_broadcast()` public API
+- PID 10의 CMD 5/6/50/51 상수와 frame builder
+- `MD200T_BROADCAST_RETRY_COUNT`
+- `md200t_send_broadcast_command_with_retry()`
+- `md200t_configure_broadcasting()`
+- startup의 CMD 5/50 전송
+- `BRIDGE_MODE → CONTROL_MODE` 전환 시 CMD 5/50 재전송
+- BC 설정용 retry와 initialization failure latch
+- BC ON/OFF payload를 검증하는 production 단위 테스트
+
+Bridge CLI를 통해 사용자가 진단 목적으로 raw PID 10 frame을 직접 보내는 기능은 막지 않는다. 다만 MCU firmware는 해당 명령을 자동 생성하거나 정상 상태 수집에 사용하지 않는다.
+
+CMD 6/51 OFF도 production code에서는 제거한다. 드라이버 broadcasting 상태를 변경하는 것은 bridge 사용자의 책임이며, firmware는 startup이나 mode 전환 시 broadcasting 상태를 추정하거나 보정하지 않는다.
+
+### 4.2 오류 bit 처리
+
+`0x82 system_error`의 전체 크기와 bit 위치는 유지한다. 기존 bit 12 `BC_INITIALIZATION_FAILURE`는 다른 의미로 재사용하지 않고 reserved/항상 0으로 변경한다.
+
+```text
+bit 12  RESERVED_FORMER_BC_INITIALIZATION_FAILURE = 0
+```
+
+기존 legacy `DRIVER_FAULT` 집계에서는 BC initialization failure 원인을 제거한다. PID 143 요청 송신 실패는 기존 `CAN_TX_FAILURE`, command response 누락은 `DRIVER_RX_TIMEOUT`, 전압 값이 오래된 경우는 `VOLTAGE_STALE`로 표현한다.
+
+## 5. PID data request API
+
+PID 4 요청은 bridge/진단과 PID 143 전압 수집에 사용할 수 있는 공통 API로 유지한다.
+
+```cpp
+bool md200t_request_pid_data(uint8_t driver_id, uint8_t target_pid);
+```
+
+CAN payload는 target PID만 달라지고 나머지는 항상 0이다.
+
+```text
+04 C1 00 00 00 00 00 00  // PID 193, MOT1 MAIN_DATA
+04 C8 00 00 00 00 00 00  // PID 200, MOT2 MAIN_DATA
+04 8F 00 00 00 00 00 00  // PID 143, input voltage
+```
+
+- command CAN ID는 기존과 같이 `(0 << 8) | driver_id`를 사용한다.
+- DLC는 8을 유지한다.
+- 함수는 PID 4 request frame을 송신하는 역할만 담당하고 응답을 blocking wait하지 않는다.
+- CONTROL mode scheduler는 PID 143에만 이 API를 사용한다. PID 193/200 요청은 bridge/진단용으로만 남는다.
+- 기존 `md200t_request_input_voltage()`를 별도 wrapper로 남길 필요가 없다면 공통 함수로 교체하여 중복 frame builder를 만들지 않는다.
+
+## 6. 단일 주기 CAN TX scheduler
+
+### 6.1 관리 범위와 함수 경계
+
+Control mode의 모든 자동 주기 송신을 다음 한 함수에서 관리한다.
+
+```cpp
+void can_transmit_if_due(uint32_t now_us);
+```
+
+관리 대상은 Driver A/B의 PID 207 또는 PID 174 command pair와 Driver A/B PID 143 전압 요청이다. PID 193/200용 PID 4 요청은 생성하지 않는다. Driver A는 cycle +0 ms, Driver B는 Driver A 실제 TX로부터 3 ms 이후에 송신하고, 전압 요청은 두 response window 뒤의 +6 ms phase에 둔다.
+
+`0x20` bridge request가 지정한 raw CAN frame과 bridge 진입 시의 일회성 TQ-OFF는 주기 scheduler의 대상이 아니다. 이 경로는 `serial_mode`를 먼저 BRIDGE로 전환하여 automatic TX를 중단한 뒤 event-driven으로 실행하므로 주기 명령과 경쟁하지 않는다. Bridge 진입의 Driver A/B PID 174 역시 같은 safety snapshot으로 가능한 간격 없이 연속 송신한다.
+
+### 6.2 Driver A/B command 동기화와 command response
+
+현재 한 번의 논리적 속도 갱신은 Driver A와 Driver B에 각각 한 장씩, 총 두 장의 PID 207 frame을 송신한다. 두 frame은 하나의 command snapshot에서 만들되 Driver A를 cycle +0 ms, Driver B를 Driver A 실제 TX 시작으로부터 3 ms 이후에 송신한다. 출력이 비활성인 경우에도 같은 위치에서 PID 174를 송신한다. 첫 response window에서 timeout 또는 safety fault가 발생하면 예약된 Driver B frame은 PID 174로 전환한다.
+
+MD200T A/B는 PID 207 또는 PID 174를 받으면 PID 193(MOT1)과 PID 200(MOT2)을 반환하도록 설정되어 있다. 각 command event 후 별도 요청 없이 네 response를 수신하며, 현재 cycle의 네 wheel bit가 모두 모이면 `0x82`를 예약한다.
+
+```text
+cycle +0 ms  Driver A PID 207/174
+  +0..3 ms  Driver A PID 193/200 response window
+cycle +3 ms  Driver B PID 207/174
+  +3..6 ms  Driver B PID 193/200 response window
+cycle +6 ms  해당 cycle에 예약된 경우 Driver A/B PID 143 한 장
+```
+
+- Driver A와 B는 각각 10 ms, 즉 100 Hz를 유지한다.
+- command event 직전에 safety condition을 평가하고 두 driver에 사용할 RPM/enable 상태를 하나의 command snapshot으로 고정한다. 두 frame 모두 반드시 같은 snapshot에서 만들며 두 frame 사이에 일반 입력이나 mode를 다시 계산하지 않는다.
+- Driver A 송신 후 PID 193/200 두 frame을 non-blocking으로 수집하고 3 ms 경계에서 누락 여부를 판정한 뒤 Driver B를 송신한다. Driver B도 같은 3 ms 검사를 적용한다.
+- scheduler 호출 한 번에는 automatic CAN frame을 최대 한 장만 송신하며, 다음 main loop iteration은 CAN RX를 먼저 drain한다.
+- 기존 `can_transmit()`의 frame별 최대 2 ms TX 완료 확인은 유지한다. 새 scheduler에는 CAN response를 기다리는 loop나 due된 event를 몰아서 재생하는 blocking/catch-up loop를 만들지 않는다.
+- loop가 여러 cycle 늦으면 과거 cycle을 연속 재생하지 않고 현재 cycle로 이동한다. 이렇게 해야 지연 뒤 burst와 PID 207 phase 붕괴를 막을 수 있다.
+- `last = now` 방식 대신 누적 absolute deadline과 wrap-safe 비교를 사용해 실행 시간이 주기에 누적되어 drift하지 않게 한다.
+
+### 6.3 1초 superframe 전압 배치
+
+전압 요청만 1초 superframe을 사용하며 두 driver 요청을 500 ms 떨어뜨린다.
+
+```text
+1초 superframe 기준
+
+   6 ms  Driver A / PID 143  → Driver A voltage
+ 506 ms  Driver B / PID 143  → Driver B voltage
+```
+
+Wheel telemetry는 100 Hz command에 대한 response이며 실제 driver/channel mapping을 다음처럼 명시적으로 유지한다.
+
+```text
+LF = Driver A PID 193
+RF = Driver B PID 193
+LR = Driver B PID 200
+RR = Driver A PID 200
+```
+
+### 6.4 mode 전환과 scheduler reset
+
+- CONTROL mode startup 또는 BRIDGE→CONTROL 전환 시 telemetry validity와 scheduler epoch/slot index를 함께 초기화한다.
+- 첫 주기에는 안전 상태로 만든 command snapshot을 사용하고 +0 ms Driver A/B command pair로 시작한다.
+- BRIDGE mode에서는 `can_transmit_if_due()`가 아무 automatic frame도 만들지 않는다.
+- CONTROL→BRIDGE 전환에서는 먼저 automatic scheduler를 비활성화한 뒤 기존 일회성 Driver A/B PID 174를 보낸다.
+- STOP/MANUAL/AUTO 전환은 scheduler 자체를 재시작하지 않는다. 오직 다음 10 ms command snapshot의 source와 enable만 바꿔 주기를 연속적으로 유지한다.
+
+### 6.5 예상 CAN 부하
+
+확정 schedule 기준의 초당 frame 수는 대략 다음과 같다.
+
+```text
+PID 207/PID 174 command:  2 drivers × 100 Hz             =  200 frame/s
+Command MAIN_DATA reply:  4 wheels × 100 Hz              =  400 frame/s
+Voltage polling:         2 drivers × 1 Hz × req/resp     =    4 frame/s
+합계                                                         604 frame/s
+```
+
+500 kbit/s Standard CAN에서 8-byte frame, stuffing과 inter-frame space를 고려하면 명목 bus load는 대략 14~17% 범위로 예상한다. 실제 장비에서는 response 지연, response burst, error frame, 다른 CAN node traffic을 포함해 측정한다.
+
+## 7. CAN RX 처리
+
+- response MID 7과 driver ID를 확인한다.
+- PID 193/200은 DLC 8 이상일 때만 motor telemetry로 반영한다.
+- PID 143은 필요한 최소 DLC를 만족하고 정상적인 양수 전압일 때만 반영한다.
+- command response를 포함해 control mode에서 알려진 driver/PID와 DLC가 맞는 frame은 정상 decoder를 사용한다.
+- bridge mode에서는 기존대로 CAN ID/PID filter 없이 모든 수신 frame을 `0xA0`으로 전달한다.
+- command response를 기다리는 별도 `can_receive()` 구현을 추가하지 않고 기존 non-blocking drain을 재사용한다.
+- FlexCAN RX mailbox는 MB1 하나로 롤백하되, MB1의 `CODE_RX_OVERRUN` 감지와 `CAN_RX_OVERRUN` diagnostic은 유지한다.
+
+## 8. Freshness와 fault 처리
+
+PID 207/174 command response는 각 driver별 3 ms window 안에서 transaction 단위로 판정한다.
+
+- wheel별 PID 193/200 target rate: 100 Hz command response
+- MAIN_DATA response timeout: driver별 3 ms
+- control session 시작 시 MAIN_DATA grace period: 없음
+- driver별 PID 143 target rate: 1 Hz
+- Voltage freshness timeout: 3 s
+- control session 시작 시 Voltage grace period: 3 s
+
+`0x82 system_error` bit 9 위치는 유지하지만 이름과 의미를 `DRIVER_RX_TIMEOUT`으로 변경한다. Driver A 또는 B 명령 후 3 ms 안에 해당 PID 193/200 쌍이 모두 모이지 않으면 설정한다.
+
+command와 response를 transaction 단위로 non-blocking match한다. 별도 bit를 추가하지 않고 기존 bit 9 위치를 다음 의미로 사용한다.
+
+- PID 207/174 또는 PID 143 request CAN TX 실패: `CAN_TX_FAILURE`
+- PID 193/200 response pair의 3 ms 내 미완료: `DRIVER_RX_TIMEOUT`
+- PID 143 정상 response 장기 미수신: `VOLTAGE_STALE`
+- returned motor status 이상: `DRIVER_STATUS_FAULT_PRESENT`와 wheel별 raw `status`
+
+## 9. System Status v2 유지
+
+신규 packet을 추가하거나 layout을 변경하지 않는다. 현재 `0x82`를 그대로 사용한다.
+
+```text
+Byte  0      0xAA
+Byte  1      0x55
+Byte  2      payload length = 39
+Byte  3      type = 0x82
+Byte  4      protocol version = 1
+Byte  5      sequence
+Byte  6      mcu_state
+Byte  7-8    system_error, uint16 LE
+Byte  9      validity bitmask
+Byte 10-11   Driver A input voltage, uint16 LE, mV
+Byte 12-13   Driver B input voltage, uint16 LE, mV
+Byte 14-20   LF telemetry
+Byte 21-27   RF telemetry
+Byte 28-34   LR telemetry
+Byte 35-41   RR telemetry
+Byte 42      XOR checksum over Byte 0-41
+```
+
+각 wheel의 7-byte layout도 유지한다.
+
+```text
+offset +0     MD200T raw motor status, uint8
+offset +1..2  actual RPM, int16 LE
+offset +3..4  current, uint16 LE, 0.1 A
+offset +5..6  controller output, uint16 LE
+```
+
+Validity bit도 유지한다.
+
+```text
+bit 0  LF PID 193 fresh
+bit 1  RF PID 193 fresh
+bit 2  LR PID 200 fresh
+bit 3  RR PID 200 fresh
+bit 4  Driver A PID 143 fresh
+bit 5  Driver B PID 143 fresh
+bit 6-7 reserved
+```
+
+System error는 bit 12만 reserved로 정리하고 나머지를 유지한다.
+
+```text
+bit 0   SERIAL_CHECKSUM_ERROR
+bit 1   COMMAND_TIMEOUT
+bit 2   CAN_TX_FAILURE
+bit 3   EMERGENCY_STOP_ACTIVE
+bit 4   BATTERY_LOW
+bit 5   SERIAL_FRAMING_ERROR
+bit 6   COMMAND_OUT_OF_RANGE
+bit 7   WATCHDOG_RESET_DETECTED
+bit 8   DRIVER_STATUS_FAULT_PRESENT
+bit 9   DRIVER_RX_TIMEOUT
+bit 10  VOLTAGE_STALE
+bit 11  CAN_RX_OVERRUN
+bit 12  reserved, always 0
+bit 13-15 reserved
+```
+
+`0x82` layout은 유지한다. Control mode에서는 한 10 ms cycle에 요청한 네 wheel 응답이 모두 모이면 즉시 송신하고, 응답 누락 시 다음 cycle 경계에서 fallback 상태를 송신하여 목표 100 Hz 상태 보고를 유지한다. Legacy `0x81`은 serializer/scheduler를 보존하되 기본 loop 호출을 주석 처리한 상태로 유지한다.
+
+## 10. `mode_state`와 Serial mode의 역할 정리
+
+현재 소스에는 서로 다른 두 종류의 mode가 있다.
+
+```text
+mode_state  = RC 3-position switch가 선택한 구동 source
+              STOP / MANUAL / AUTO
+
+serial_mode = MCU Serial/CAN 처리 경로
+              CONTROL / BRIDGE
+```
+
+`serial_mode == CONTROL`은 ROS가 실제로 차량을 제어한다는 뜻이 아니다. CONTROL 안에서도 `mode_state == STOP`이면 정지, MANUAL이면 RC, AUTO일 때만 마지막 정상 `0x01` command가 속도 source가 된다. `0x82 mcu_state` 역시 이 source 선택값을 그대로 보내는 필드가 아니라 fault/estop/timeout/enable 우선순위가 적용된 최종 운용 결과이다.
+
+### 10.1 현재 구현에서 확인된 문제
+
+현재 loop는 먼저 `mode_state`에 따라 STOP/MANUAL/AUTO target을 결정하고, 그 뒤 `serial_drain_command_packets()`에서 `0x01`을 즉시 `motor_enabled`, `estop_active`, `target_wheel_rpm_cmd`에 적용한 다음 `motor_send_target_if_due()`를 호출한다.
+
+이 순서에서는 physical switch가 STOP 또는 MANUAL이어도 같은 loop에 새 `0x01`이 들어오면, 다음 loop에서 RC mode가 다시 덮어쓰기 전에 ROS target이 한 번 CAN으로 송신될 수 있다. 또한 ISR이 `mode_state`를 loop 도중 바꾸면 한 iteration 안의 여러 비교가 서로 다른 mode를 볼 수 있다.
+
+### 10.2 최소 수정 방향
+
+- `0x01` parser는 검증된 AUTO command와 마지막 수신 시각을 별도 저장할 뿐 최종 motor output 변수를 직접 바꾸지 않는다.
+- 각 loop 시작에서 volatile `mode_state`, `v_pulseWidth`, `w_pulseWidth`를 한 번 local snapshot으로 읽는다.
+- Serial input 처리 후 한 함수에서 현재 snapshot과 fault/timeout/E-stop을 조합해 다음 10 ms cycle용 최종 command snapshot을 결정한다.
+- 적용 우선순위는 기존 안전 정책을 보존해 다음처럼 명시한다.
+
+```text
+BRIDGE             → automatic output 없음
+latched fault      → TQ-OFF
+STOP               → TQ-OFF
+MANUAL             → RC v/w target
+AUTO + E-stop      → TQ-OFF
+AUTO + timeout     → TQ-OFF
+AUTO + disabled    → TQ-OFF
+AUTO 정상          → 마지막 정상 0x01 target
+```
+
+- STOP/MANUAL에서는 ROS motion target이 output에 섞이지 않는다. 기존 정책대로 AUTO용 command timeout과 Serial E-stop은 AUTO에서만 적용하고, RC MANUAL 전환은 ROS 제어보다 우선한다.
+- `mode_state`는 ISR에서 선택값만 갱신하고, CAN 송신이나 큰 상태 변경을 수행하지 않는다.
+- `motor_get_current_state()`/`0x82 mcu_state`는 최종 command snapshot과 같은 상태 입력에서 계산하여 보고 상태와 실제 TX 동작이 어긋나지 않게 한다.
+- main loop의 논리 순서는 다음처럼 고정한다. CAN RX에서 새 fault가 확인되면 같은 iteration의 다음 automatic TX부터 안전 출력이 적용된다.
+
+```text
+RC volatile 값 local snapshot
+→ Serial packet drain 및 AUTO command 저장 / Serial mode 전환
+→ CAN RX drain과 telemetry/fault freshness 갱신
+→ mode_state와 안전 조건으로 effective command 결정
+→ can_transmit_if_due(now_us)
+→ 0x82 status 송신
+```
+
+### 10.3 CONTROL/BRIDGE 동작
+
+```text
+startup 또는 type 0x01 command 수신 → CONTROL_MODE
+type 0x20 bridge request 수신       → BRIDGE_MODE
+```
+
+### CONTROL_MODE
+
+- `can_transmit_if_due()`가 Driver A/B PID 207 또는 PID 174와 PID 143 요청을 고정 phase로 실행한다.
+- CAN RX를 telemetry decoder로 전달한다.
+- 네 wheel 응답 취합 직후 `0x82`를 목표 100 Hz로 송신한다.
+- CMD 5/6/50/51은 자동 송신하지 않는다.
+
+### BRIDGE_MODE
+
+- 진입 시 두 driver에 기존 PID 174 TQ-OFF를 가능한 간격 없이 연속으로 한 번씩 전송한다.
+- 단일 scheduler의 모든 automatic TX를 중단한다.
+- unsolicited `0x81`/`0x82`를 보내지 않는다.
+- 기존 `0x20` request와 연속 `0xA0` unfiltered tunnel을 유지한다.
+- CLI의 continuous monitor, 입력 줄 복원, `quit`/`exit`/`q`, Ctrl-C/Ctrl-D를 유지한다.
+- bridge 진입 및 control 복귀에서 broadcasting ON/OFF 명령을 자동 전송하지 않는다.
+
+### BRIDGE_MODE → CONTROL_MODE
+
+- 이전 session telemetry와 validity를 지운다.
+- 단일 TX scheduler의 epoch, slot index, command snapshot을 안전 상태로 초기화한다.
+- CMD 5/6/50/51 없이 command/voltage schedule을 시작한다.
+- 기존 fault latch는 자동 해제하지 않는다.
+
+## 11. 구현 시 제거할 중복과 유지할 경계
+
+### 제거/수정
+
+- BC enable retry helper와 BC initialization latch를 제거한다.
+- `motor_has_driver_fault()`에서 BC failure 항목을 제거한다.
+- startup과 control 복귀 공통 함수는 telemetry reset과 단일 TX scheduler 초기화만 담당하도록 수정한다.
+- PID 4 builder는 bridge/진단과 PID 143 요청이 공유하는 공통 request builder로 유지한다.
+- 독립적인 `motor_send_target_if_due()`와 `md200t_poll_voltage_if_due()`를 제거하고 motor command/TQ-OFF와 두 voltage source를 `can_transmit_if_due()`의 한 timeline으로 합친다.
+- `apply_command_packet()`이 최종 motor output을 즉시 덮어쓰지 않게 하고 AUTO command 저장과 최종 command 결정 단계를 분리한다.
+- 한 loop iteration에서는 `mode_state`와 RC PWM을 local snapshot으로 고정해 mode 전환 race를 피한다.
+- README의 wheel polling 설명을 command response 및 PID 143 전압 요청 설명으로 교체한다.
+- host test에서 command response round mask와 PID 143 scheduler 주기를 검증한다.
+
+### 유지
+
+- PID 207과 PID 174 payload는 명시적인 현재 구현을 유지한다.
+- LF/RF/LR/RR serialization과 driver별 대각선 mapping은 안전 검토가 가능하도록 명시적으로 유지한다.
+- common little-endian helper와 checksum helper를 유지한다.
+- `FaultSnapshot`, legacy/v2 error builder 분리, side-effect 없는 state 계산을 유지한다.
+- control telemetry decoder와 bridge unfiltered tunnel의 역할을 합치지 않는다.
+- CAN RX 함수 안에 polling transaction용 별도 timeout/matching 경로를 추가하지 않는다.
+- `0x20` raw bridge TX와 bridge 진입의 일회성 TQ-OFF는 event-driven 경로로 유지한다. CONTROL의 automatic TX만 단일 주기 scheduler가 소유한다.
+- serial packet layout과 공개 상위 제어 API를 재설계하지 않는다.
+
+## 12. 예상 수정 파일
+
+### Wheel-Dragoon
+
+- `include/md200t_can.hpp`: BC API 제거, 공통 PID 4 request API 선언
+- `include/can_tx_schedule.hpp`: 10 ms command period와 1초 voltage schedule 정의
+- `src/md200t_can.cpp`: CMD 5/6/50/51 builder 제거, PID 193/200/143 request 지원
+- `src/main.cpp`: BC 초기화/retry/fault 제거, 단일 automatic CAN TX scheduler 구현, AUTO command 저장과 최종 output 결정 분리, control session 초기화 수정
+- `include/flexcan0.hpp`: MB1 단일 polling RX에 필요한 API만 유지하며 overrun diagnostic API는 보존
+- `src/flexcan0.cpp`: broadcasting burst 대응용 MB2~MB4와 pending mailbox 순회를 제거하고 MB1 단일 수신으로 복귀하되 MB1 overrun 감지는 유지
+- `README.md`: command response schedule, freshness, error bit 12를 문서화
+- `test/test_md200t_can.cpp`: command payload, PID request payload, voltage scheduler를 검증
+- `test/test_can_cli.py`: `0x20`/`0xA0` wire 및 stream test 유지, 필요한 회귀 확인만 수행
+- `src/can_cli.py`: 기능 변경 없음
+- `include/little_endian.hpp`: 변경 없음
+- `agent/ros2_update_report.md`: bit 12 reserved와 command-response 기반 freshness 의미를 문서 수정
+
+### ROS 2 package
+
+- 실제 package는 이번 작업에서 수정하지 않는다.
+- 추후 parser는 같은 `0x82` layout을 사용하므로 packet decoder 구조 변경은 필요 없다.
+- `system_error` bit 12를 BC failure가 아니라 reserved로 해석하도록 문서와 상수만 갱신한다.
+- validity는 값의 취득 방식을 구분하지 않고 freshness로 해석한다.
+
+## 13. 구현 순서
+
+1. PID 207/174 command response round와 PID 143 1초 scheduler test를 먼저 작성한다.
+2. BC API/retry/startup·control 전환 송신과 BC failure latch를 모두 제거한다.
+3. 공통 PID 4 request API를 구현한다.
+4. AUTO command 저장과 `mode_state` 기반 최종 command snapshot 결정을 분리하고 loop 순서를 정리한다.
+5. Driver A/B command pair와 두 voltage source를 `can_transmit_if_due()`에 통합한다.
+6. FlexCAN RX를 MB1 단일 mailbox 구조로 롤백한다.
+7. 기존 decoder, mapping, freshness, fault, `0x82`, bridge 동작을 회귀 테스트한다.
+8. README와 ROS 변경 제안 보고서를 command response 기준으로 수정한다.
+9. host unit test와 PlatformIO Teensy 3.2 release build를 실행한다.
+10. 실제 장비에서 command response 수신률, command pair 간격, PID 207 jitter, stale timeout과 CAN load를 측정한다.
+
+## 14. 확정 사항
+
+### 14.1 확정된 schedule
+
+- Driver A/B PID 207 또는 PID 174는 각각 10 ms 주기이다.
+- 각 cycle의 +0 ms에 Driver A, Driver A 실제 TX 시작에서 3 ms 이후에 Driver B frame을 송신한다. 두 frame은 같은 command snapshot을 사용한다.
+- LF/RF/LR/RR는 100 Hz command response이고 Driver A/B voltage는 각각 1 Hz 요청이다.
+- due 판단, command snapshot, voltage table 진행은 `can_transmit_if_due()` 한 곳에서 처리한다.
+- 늦은 slot은 burst로 복구하지 않고 skip하며 절대 deadline을 유지한다.
+
+### 14.2 확정된 롤백 및 fault 정책
+
+- FlexCAN RX는 MB1 단일 polling RX 구조로 롤백하되 MB1 overrun diagnostic은 유지한다.
+- PID 10 CMD 5/6/50/51과 BC 관련 production API/fault를 모두 제거한다.
+- PID 143 요청의 단발 TX 실패는 transient `CAN_TX_FAILURE` 진단만 표시하고 다음 전압 요청 성공 시 해제한다.
+- PID 207/PID 174 송신 실패, motor raw status fault, DRIVER_RX_TIMEOUT, battery low는 안전 fault로 latch하며 재부팅 전에는 해제하지 않는다.
+- 하나의 wire bit `CAN_TX_FAILURE`에 반영하더라도 내부 변수는 periodic motor/safety TX fault와 recoverable voltage-request TX error를 분리해 fault 승격 및 해제 정책이 섞이지 않게 한다.
+
+### 14.3 RC PWM signal-loss 처리
+
+`mode_state`, `v_pulseWidth`, `w_pulseWidth`는 마지막 정상 PWM 값을 보존하지만 RC receiver 자체에 fail-safe가 구현되어 있다. MCU에서 별도의 PWM freshness timeout이나 signal-loss 판정을 추가하지 않고 기존 동작을 유지한다. 이번 작업은 local snapshot과 STOP/MANUAL에서 ROS target이 섞이는 문제만 수정한다.
+
+## 15. 검증 기준
+
+- startup, CONTROL/BRIDGE 전환 및 정상 loop에서 CMD 5/6/50/51이 한 번도 자동 송신되지 않는다.
+- production firmware에 BC initialization retry와 BC failure latch가 남지 않는다.
+- PID 143 request가 `04 8F 00 00 00 00 00 00`으로 전송된다.
+- `can_transmit_if_due()` 외부에 CONTROL mode의 automatic PID 207/PID 174/PID 143 due 판정이 남지 않는다.
+- 10 ms마다 Driver A는 +0 ms, Driver B는 Driver A TX로부터 3 ms 이후에 같은 snapshot의 PID 207 또는 PID 174를 송신하고 wheel용 PID 4 request는 생성되지 않는다.
+- scheduler의 command event 외에는 호출 한 번에 automatic frame을 최대 한 장만 송신하며, 이전 10 ms cycle의 missed event를 다음 cycle에서 catch-up burst로 재생하지 않는다.
+- Driver A/B command 사이에서 target/mode를 다시 계산하지 않는다. Driver A response timeout 또는 safety fault가 발생하면 Driver B scheduled command를 TQ-OFF로 전환한다.
+- LF/RF/LR/RR command response가 각각 목표 100 Hz로 수신되고 Driver A/B voltage가 각각 1 Hz로 요청되며 기존 대각선 mapping을 보존한다.
+- 각 driver의 두 command response가 실제 TX 시작 후 3 ms 안에 모두 오지 않으면 누락 wheel validity가 0이 되고 `DRIVER_RX_TIMEOUT`이 latch된다.
+- PID 207/PID 174가 driver당 100 Hz로 유지된다.
+- PID 143 TX 단발 실패는 motor fault를 만들지 않고 다음 전압 요청 성공으로 `CAN_TX_FAILURE`가 해제되며, motor/safety TX 실패와 `DRIVER_RX_TIMEOUT`은 재부팅까지 fault로 유지된다.
+- STOP/MANUAL 상태에서 같은 loop에 `0x01`이 수신되어도 ROS target이 CAN으로 한 cycle도 누출되지 않는다.
+- loop 한 iteration 동안 동일한 local `mode_state` snapshot을 사용하며, CONTROL/BRIDGE와 STOP/MANUAL/AUTO의 역할이 섞이지 않는다.
+- PID 207 payload, 방향 반전, RPM 단위, 대각선 mapping, TQ-OFF와 안전/RC/E-stop 동작이 변경되지 않는다.
+- CAN bitrate가 500 kbit/s이고 Standard 11-bit 설정이 유지된다.
+- FlexCAN RX가 결정대로 MB1 단일 mailbox 구조로 복귀한다.
+- `0x82` packet 크기, field offset, wheel 순서, validity bit 위치가 변경되지 않는다.
+- `system_error` bit 12는 항상 0이고 다른 의미로 재사용되지 않는다.
+- `0x81` serializer wire format은 보존되고 기본 송신은 계속 비활성이다.
+- bridge `0x20`/`0xA0` wire format과 CLI continuous monitor가 유지된다.
+- host unit test와 PlatformIO Teensy 3.2 release build가 통과한다.
+- 실제 MD200T에서 PID 207/174 command에 대한 PID 193/200 응답이 driver별 3 ms 안에 모두 수신되는지와 PID 143 voltage freshness timeout을 확인한다.
