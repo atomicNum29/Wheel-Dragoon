@@ -10,7 +10,7 @@
 
 // car width and wheel radius
 const float W = 0.485; // m
-const float R = 0.13; // m
+const float R = 0.13 / 2.0f; // m
 
 // Command packet protocol: AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
 const uint8_t PKT_HEADER_0 = 0xAA;
