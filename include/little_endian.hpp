@@ -23,6 +23,11 @@ inline uint32_t read_u32(const uint8_t *data)
            (static_cast<uint32_t>(data[3]) << 24u);
 }
 
+inline int32_t read_i32(const uint8_t *data)
+{
+    return static_cast<int32_t>(read_u32(data));
+}
+
 inline void write_u16(uint8_t *data, uint16_t value)
 {
     data[0] = static_cast<uint8_t>(value & 0xFFu);
@@ -42,5 +47,10 @@ inline void write_u32(uint8_t *data, uint32_t value)
     data[1] = static_cast<uint8_t>((value >> 8u) & 0xFFu);
     data[2] = static_cast<uint8_t>((value >> 16u) & 0xFFu);
     data[3] = static_cast<uint8_t>((value >> 24u) & 0xFFu);
+}
+
+inline void write_i32(uint8_t *data, int32_t value)
+{
+    write_u32(data, static_cast<uint32_t>(value));
 }
 }

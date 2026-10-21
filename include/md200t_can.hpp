@@ -10,6 +10,8 @@ constexpr uint8_t MD200T_PID_REQUEST_PID_DATA = 4u;
 constexpr uint8_t MD200T_PID_VOLT_IN = 143u;
 constexpr uint8_t MD200T_PID_MAIN_DATA = 193u;
 constexpr uint8_t MD200T_PID_MAIN_DATA2 = 200u;
+constexpr uint8_t MD200T_PID_MONITOR = 196u;
+constexpr uint8_t MD200T_PID_MONITOR2 = 201u;
 
 bool send_frame(const CanFrame &frame);
 bool md200t_set_velocity(uint8_t driver_id, int16_t rpm1, int16_t rpm2);

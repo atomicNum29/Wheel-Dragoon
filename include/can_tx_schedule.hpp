@@ -5,7 +5,7 @@
 #include "md200t_can.hpp"
 
 // Driver A starts each 10 ms cycle and Driver B follows at +3 ms. Each command
-// owns a 3 ms window for its automatic PID 193/200 response pair, so no
+// owns a 3 ms window for its automatic PID 196/201 response pair, so no
 // separate wheel polling slots are required.
 constexpr uint32_t CAN_TX_COMMAND_PERIOD_US = 10000u;
 constexpr uint32_t CAN_TX_DRIVER_B_PHASE_US = 3000u;
