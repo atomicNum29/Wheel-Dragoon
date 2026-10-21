@@ -1,4 +1,5 @@
 #include "flexcan0.hpp"
+#include "error_report.hpp"
 
 #include <Arduino.h>
 #include <kinetis.h>
@@ -50,7 +51,7 @@ constexpr uint8_t kMbCodeRxEmpty = 0b0100u;
 constexpr uint8_t kMbCodeRxOverrun = 0b0110u;
 
 bool g_can_initialized = false;
-bool g_rx_overrun_detected = false;
+int g_rx_overrun_reports_remaining = 0;
 
 volatile uint32_t &mb_reg(uint8_t mb, uintptr_t offset)
 {
@@ -156,7 +157,7 @@ bool abort_tx_mb(uint32_t timeout_us)
 bool can_begin(uint32_t bitrate)
 {
     g_can_initialized = false;
-    g_rx_overrun_detected = false;
+    g_rx_overrun_reports_remaining = 0;
 
     if (bitrate != kSupportedBitrate)
         return false;
@@ -257,7 +258,7 @@ bool can_receive(CanFrame &frame, uint32_t timeout_us)
     }
 
     if (code == kMbCodeRxOverrun)
-        g_rx_overrun_detected = true;
+        g_rx_overrun_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
 
     uint8_t dlc = static_cast<uint8_t>((cs >> kMbDlcShift) & 0x0Fu);
     if (dlc > 8u)
@@ -279,7 +280,13 @@ bool can_receive(CanFrame &frame, uint32_t timeout_us)
 
 bool can_rx_overrun_detected()
 {
-    return g_rx_overrun_detected;
+    return g_rx_overrun_reports_remaining > 0;
+}
+
+void can_rx_overrun_report_sent()
+{
+    if (g_rx_overrun_reports_remaining > 0)
+        --g_rx_overrun_reports_remaining;
 }
 
 bool can_is_initialized()

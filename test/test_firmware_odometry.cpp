@@ -16,10 +16,16 @@ struct TimedFrame
 };
 static std::deque<TimedFrame> rx_frames;
 static std::vector<CanFrame> tx_frames;
+static int fake_overrun_reports_remaining = 0;
 
 bool can_begin(uint32_t) { return true; }
 bool can_is_initialized() { return true; }
-bool can_rx_overrun_detected() { return false; }
+bool can_rx_overrun_detected() { return fake_overrun_reports_remaining > 0; }
+void can_rx_overrun_report_sent()
+{
+    if (fake_overrun_reports_remaining > 0)
+        --fake_overrun_reports_remaining;
+}
 bool can_transmit(const CanFrame &frame, uint32_t)
 {
     tx_frames.push_back(frame);
@@ -51,17 +57,29 @@ static CanFrame monitor(uint8_t driver, uint8_t pid, int16_t rpm, int32_t count,
 static void reset_test()
 {
     fake_clock_us = 10000u;
+    command_timeout = false;
+    estop_active = false;
+    motor_enabled = false;
+    booting = false;
+    calibration_active = false;
+    control_mode_started_ms = 10u;
+    command_timeout_reports_remaining = 0;
+    estop_reports_remaining = 0;
+    voltage_stale_reports_remaining = 0;
+    voltage_request_can_tx_failure_reports_remaining = 0;
+    watchdog_reset_reports_remaining = 0;
+    fake_overrun_reports_remaining = 0;
     Serial = {};
     serial_mode = SERIAL_MODE_CONTROL;
     system_status_pending = false;
     system_status_tx_seq = 0u;
-    driver_status_fault_latched = false;
-    driver_rx_timeout_latched = false;
-    safety_can_tx_failure_latched = false;
-    battery_low_latched = false;
-    checksum_error_latched = false;
-    serial_framing_error_latched = false;
-    command_out_of_range_latched = false;
+    driver_status_fault_reports_remaining = 0;
+    driver_rx_timeout_reports_remaining = 0;
+    safety_can_tx_failure_reports_remaining = 0;
+    battery_low_reports_remaining = 0;
+    checksum_error_reports_remaining = 0;
+    serial_framing_error_reports_remaining = 0;
+    command_out_of_range_reports_remaining = 0;
     reset_telemetry_validity();
     reset_can_tx_scheduler(10000u);
     can_tx_scheduler.driver_a_command_sent = true;
@@ -109,14 +127,14 @@ static void test_invalid_duplicate_and_missing_response()
     md200t_process_rx_frame(monitor(1, 193, 7, 7), 10u, 10700u);
     md200t_process_rx_frame(monitor(3, 196, 7, 7), 10u, 10700u);
     md200t_process_rx_frame(frame, 10u, 13000u); // Deadline is exclusive.
-    assert(!lf_telemetry.valid && !driver_status_fault_latched);
+    assert(!lf_telemetry.valid && !driver_status_fault_reports_remaining);
     md200t_process_rx_frame(frame, 10u, 10700u);
-    assert(lf_telemetry.status == 0x20u && driver_status_fault_latched);
+    assert(lf_telemetry.status == 0x20u && driver_status_fault_reports_remaining);
     assert(lf_telemetry.encoder_count == std::numeric_limits<int32_t>::min());
     md200t_process_rx_frame(monitor(1, 196, 7, 7), 10u, 10800u);
     assert(lf_telemetry.actual_rpm == 7 && lf_telemetry.rx_timestamp_us == 10800u);
     close_driver_response_window(1);
-    assert(driver_rx_timeout_latched && lf_telemetry.valid && !rr_telemetry.valid);
+    assert(driver_rx_timeout_reports_remaining && lf_telemetry.valid && !rr_telemetry.valid);
     const MotorTelemetry saved = lf_telemetry;
     invalidate_wheel_telemetry(CAN_TX_WHEEL_LF_MASK);
     assert(!lf_telemetry.valid && lf_telemetry.encoder_count == saved.encoder_count &&
@@ -147,21 +165,21 @@ static void test_wire_snapshot_and_usb_stream()
     reset_test();
     receive_round();
     fake_clock_us = 14500u;
-    checksum_error_latched = true;
-    serial_framing_error_latched = true;
-    command_out_of_range_latched = true;
+    checksum_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
+    serial_framing_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
+    command_out_of_range_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
     assert(!protocol_send_system_status());
     assert(Serial.output.empty() && system_status_tx_seq == 0u);
-    assert(checksum_error_latched && serial_framing_error_latched && command_out_of_range_latched);
+    assert(checksum_error_reports_remaining && serial_framing_error_reports_remaining && command_out_of_range_reports_remaining);
     Serial.space = 62;
     assert(!protocol_send_system_status());
-    assert(Serial.output.empty() && checksum_error_latched);
+    assert(Serial.output.empty() && checksum_error_reports_remaining);
     Serial.space = 63;
     assert(protocol_send_system_status());
     assert(Serial.output.size() == 63u);
     assert(Serial.write_requests == std::vector<size_t>{63u});
-    assert(system_status_tx_seq == 1u && !checksum_error_latched &&
-           !serial_framing_error_latched && !command_out_of_range_latched);
+    assert(system_status_tx_seq == 1u && checksum_error_reports_remaining == 9 &&
+           serial_framing_error_reports_remaining == 9 && command_out_of_range_reports_remaining == 9);
     const uint8_t *p = Serial.output.data();
     assert(p[0] == 0xAA && p[1] == 0x55 && p[2] == 59u && p[3] == 0x82 && p[4] == 2u);
     assert(p[5] == 0u && p[9] == 0x0Fu);
@@ -219,6 +237,138 @@ static void test_snapshot_timestamp_before_serial_write()
     assert((Serial.write_requests == std::vector<size_t>{18u, 63u}));
 }
 
+static uint16_t send_status_error_bits()
+{
+    Serial.space = 64;
+    Serial.output.clear();
+    assert(protocol_send_system_status());
+    assert(Serial.output.size() == 63u);
+    return little_endian::read_u16(Serial.output.data() + 7);
+}
+
+static void test_ten_reports_for_all_errors()
+{
+    reset_test();
+    int *const counters[] = {
+        &checksum_error_reports_remaining, &command_timeout_reports_remaining,
+        &safety_can_tx_failure_reports_remaining, &estop_reports_remaining,
+        &battery_low_reports_remaining, &serial_framing_error_reports_remaining,
+        &command_out_of_range_reports_remaining, &watchdog_reset_reports_remaining,
+        &driver_status_fault_reports_remaining, &driver_rx_timeout_reports_remaining,
+        &voltage_stale_reports_remaining, &fake_overrun_reports_remaining,
+        &voltage_request_can_tx_failure_reports_remaining,
+    };
+    for (int *counter : counters)
+        *counter = ERROR_REPORT_REPEAT_COUNT;
+    // Reading status and building an unsent packet must not consume reports.
+    motor_build_error_bits();
+    capture_fault_snapshot(millis());
+    assert(!protocol_send_system_status());
+    for (int *counter : counters)
+        assert(*counter == 10);
+    // A write can fail even after the USB space check (e.g. disconnect).
+    Serial.space = 63;
+    Serial.reject_write = true;
+    assert(!protocol_send_system_status());
+    assert(Serial.output.empty() && system_status_tx_seq == 0u);
+    for (int *counter : counters)
+        assert(*counter == 10);
+    Serial.reject_write = false;
+    for (int packet = 0; packet < 10; ++packet)
+    {
+        assert(send_status_error_bits() == 0x0FFFu);
+        assert(Serial.output[6] == MOTOR_STATE_FAULT);
+        for (int *counter : counters)
+            assert(*counter == 9 - packet);
+    }
+    assert(!motor_has_driver_fault());
+    for (int packet = 0; packet < 3; ++packet)
+    {
+        assert(send_status_error_bits() == 0u);
+        for (int *counter : counters)
+            assert(*counter == 0); // No underflow or resurrection.
+    }
+}
+
+static void test_retrigger_and_independent_countdowns()
+{
+    reset_test();
+    uint8_t bad_command[CMD_PACKET_SIZE] = {0xAA, 0x55, 7, 1};
+    parse_complete_command_frame(bad_command, millis()); // Bad XOR checksum.
+    assert(checksum_error_reports_remaining == 10);
+    for (int i = 0; i < 4; ++i)
+        assert(send_status_error_bits() == SYSTEM_ERR_SERIAL_CHECKSUM_ERROR);
+    assert(checksum_error_reports_remaining == 6);
+    parse_complete_command_frame(bad_command, millis());
+    assert(checksum_error_reports_remaining == 10);
+    serial_framing_error_reports_remaining = 3;
+    for (int i = 0; i < 10; ++i)
+    {
+        const uint16_t expected = SYSTEM_ERR_SERIAL_CHECKSUM_ERROR |
+                                 (i < 3 ? SYSTEM_ERR_SERIAL_FRAMING_ERROR : 0u);
+        assert(send_status_error_bits() == expected);
+    }
+    assert(send_status_error_bits() == 0u);
+    latch_safety_can_tx_failure();
+    initialize_control_session(millis());
+    assert(safety_can_tx_failure_reports_remaining == 10);
+    // A new control session must not clear an unreported diagnostic either.
+    voltage_request_can_tx_failure_reports_remaining = 7;
+    initialize_control_session(millis());
+    assert(voltage_request_can_tx_failure_reports_remaining == 7);
+}
+
+static void test_live_inputs_reload_without_delaying_input_release()
+{
+    reset_test();
+    command_timeout = true;
+    estop_active = true;
+    const uint16_t bits = SYSTEM_ERR_COMMAND_TIMEOUT | SYSTEM_ERR_EMERGENCY_STOP_ACTIVE;
+    for (int i = 0; i < 15; ++i)
+    {
+        assert(send_status_error_bits() == bits);
+        assert(command_timeout_reports_remaining == 9 && estop_reports_remaining == 9);
+        assert(Serial.output[6] == MOTOR_STATE_ESTOP);
+    }
+    command_timeout = false;
+    estop_active = false;
+    for (int i = 0; i < 9; ++i)
+    {
+        assert(send_status_error_bits() == bits);
+        assert(Serial.output[6] == MOTOR_STATE_DISABLED);
+    }
+    assert(send_status_error_bits() == 0u);
+}
+
+static void test_persistent_battery_and_stale_voltage_reload()
+{
+    reset_test();
+    driver_a_voltage = DriverVoltageTelemetry{20000u, 10u, true};
+    driver_b_voltage = DriverVoltageTelemetry{24000u, 10u, true};
+    for (int i = 0; i < 12; ++i)
+    {
+        md200t_update_telemetry_health(10u);
+        assert(send_status_error_bits() == SYSTEM_ERR_BATTERY_LOW);
+        assert(battery_low_reports_remaining == 9);
+    }
+    driver_a_voltage.millivolts = 24000u;
+    md200t_update_telemetry_health(10u);
+    for (int i = 0; i < 9; ++i)
+        assert(send_status_error_bits() == SYSTEM_ERR_BATTERY_LOW);
+    assert(send_status_error_bits() == 0u);
+    driver_a_voltage.valid = false;
+    fake_clock_us = 4000000u;
+    for (int i = 0; i < 12; ++i)
+    {
+        assert(send_status_error_bits() == SYSTEM_ERR_VOLTAGE_STALE);
+        assert(voltage_stale_reports_remaining == 9);
+    }
+    driver_a_voltage.valid = true;
+    for (int i = 0; i < 9; ++i)
+        assert(send_status_error_bits() == SYSTEM_ERR_VOLTAGE_STALE);
+    assert(send_status_error_bits() == 0u);
+}
+
 int main()
 {
     test_receive_and_timestamp();
@@ -227,4 +377,8 @@ int main()
     test_wire_snapshot_and_usb_stream();
     test_response_protection_unchanged();
     test_snapshot_timestamp_before_serial_write();
+    test_ten_reports_for_all_errors();
+    test_retrigger_and_independent_countdowns();
+    test_live_inputs_reload_without_delaying_input_release();
+    test_persistent_battery_and_stale_voltage_reload();
 }

@@ -113,6 +113,7 @@ bool can_begin(uint32_t bitrate);
 bool can_transmit(const CanFrame& frame, uint32_t timeout_us);
 bool can_receive(CanFrame& frame, uint32_t timeout_us);
 bool can_rx_overrun_detected();
+void can_rx_overrun_report_sent();
 ```
 
 MD200T 계층 API:
@@ -214,7 +215,7 @@ MD200T의 command-triggered PID 196/201, PID 143 응답 및 CAN bridge traffic�
 | RX complete flag | `CAN0_IFLAG1 & (1u << 1)` |
 | RX unlock / clear | MB1의 `CS/ID/WORD`를 읽고 `CAN0_TIMER`를 읽은 뒤 `IFLAG1` bit 1을 clear |
 
-`can_receive()`는 MB1의 `IFLAG1`이 set될 때까지 timeout polling하고 standard ID, DLC, data byte를 복사한다. 처리 후 MB1을 다시 `CODE_RX_EMPTY`로 돌린다. `CODE_RX_OVERRUN`은 sticky diagnostic으로 기록한다. 정상 loop는 timeout 0으로 수신 frame을 drain하며 별도의 polling-response 대기 loop를 만들지 않는다.
+`can_receive()`는 MB1의 `IFLAG1`이 set될 때까지 timeout polling하고 standard ID, DLC, data byte를 복사한다. 처리 후 MB1을 다시 `CODE_RX_EMPTY`로 돌린다. `CODE_RX_OVERRUN`을 감지하면 진단 보고 잔여 횟수를 10으로 설정한다. 해당 진단은 `0x82` 송신마다 한 번 차감한다. 정상 loop는 timeout 0으로 수신 frame을 drain하며 별도의 polling-response 대기 loop를 만들지 않는다.
 
 ### ESR1/ECR diagnostics 추후 구현
 
@@ -365,7 +366,7 @@ CONTROL mode의 자동 CAN 송신은 `can_transmit_if_due(micros())` 한 함수�
 
 MD200T A/B는 PID 207 또는 PID 174를 수신하면 별도 PID 4 요청 없이 각각 PID 196(MOT1 MONITOR)과 PID 201(MOT2 MONITOR)을 반환하도록 설정되어 있습니다. 따라서 firmware는 wheel 상태용 PID 4 frame을 생성하지 않고 들어오는 네 response만 처리합니다. 응답의 driver ID/PID는 기존 대각선 mapping `A/MOT1=LF`, `A/MOT2=RR`, `B/MOT1=RF`, `B/MOT2=LR`에 그대로 반영합니다.
 
-각 driver command는 송신 시작 시각부터 3 ms 안에 해당 driver의 PID 196과 PID 201을 모두 받아야 합니다. 두 frame 중 하나라도 누락되거나 3 ms 이후 도착하면 `DRIVER_RX_TIMEOUT`을 latch하고 누락 wheel의 validity를 0으로 내립니다. 이 검사는 MCU가 RX mailbox를 읽은 `micros()` 시각을 사용하며, 응답 frame 자체에는 command sequence가 없으므로 CAN wire상의 실제 생성 시각을 직접 측정하는 것은 아닙니다.
+각 driver command는 송신 시작 시각부터 3 ms 안에 해당 driver의 PID 196과 PID 201을 모두 받아야 합니다. 두 frame 중 하나라도 누락되거나 3 ms 이후 도착하면 `DRIVER_RX_TIMEOUT` 보고 잔여 횟수를 10으로 설정하고 누락 wheel의 validity를 0으로 내립니다. 이 검사는 MCU가 RX mailbox를 읽은 `micros()` 시각을 사용하며, 응답 frame 자체에는 command sequence가 없으므로 CAN wire상의 실제 생성 시각을 직접 측정하는 것은 아닙니다.
 
 PID 143 입력전압은 command response에 포함되지 않으므로 기존 driver별 1 Hz 요청을 유지합니다. 1초 superframe의 cycle 0에서 Driver A, cycle 50에서 Driver B를 `+6 ms` 이후 요청하여 두 요청을 500 ms 떨어뜨립니다.
 
@@ -449,7 +450,7 @@ AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
 
 ### MCU Reset Command: Host to MCU (`0x02`)
 
-Sticky safety fault를 포함한 MCU 상태를 재부팅으로 초기화할 때 사용하는 software reset 명령입니다. 우발적인 짧은 packet이 reset으로 해석되지 않도록 고정 magic `A5 5A`와 정상 XOR checksum을 모두 요구합니다.
+MCU 상태 전체를 명시적으로 재부팅해 초기화할 때 사용하는 software reset 명령입니다. 우발적인 짧은 packet이 reset으로 해석되지 않도록 고정 magic `A5 5A`와 정상 XOR checksum을 모두 요구합니다.
 
 | Byte | Field | Type | Description |
 | --- | --- | --- | --- |
@@ -516,13 +517,13 @@ Legacy `error` bitfield는 다음 매핑을 사용합니다. `0x81`은 상세 MD
 
 | Bit | Mask | 이름 | 의미와 유지 조건 |
 | --- | --- | --- | --- |
-| 0 | `0x0001` | `CHECKSUM_ERROR` | 수신 packet checksum 오류 event. 정상 `0x82` 송신 후 clear |
-| 1 | `0x0002` | `COMMAND_TIMEOUT` | AUTO mode에서 정상 command가 500 ms 동안 나타나지 않음. 정상 command 수신 또는 AUTO mode 이탈 시 clear |
-| 2 | `0x0004` | `DRIVER_FAULT` | 구동/안전 CAN TX failure, MD200T status, driver RX timeout 중 하나 이상의 요약. 재부팅 전까지 유지 |
-| 3 | `0x0008` | `EMERGENCY_STOP_ACTIVE` | 현재 E-stop 입력이 활성. 정상 command에서 E-stop 해제 또는 AUTO mode 이탈 시 clear |
-| 4 | `0x0010` | `BATTERY_LOW` | 두 전압이 fresh인 상태에서 하나라도 21,000 mV 미만. 재부팅 전까지 유지 |
-| 5 | `0x0020` | `SERIAL_FRAMING_ERROR` | header/length/type framing 오류 event. 정상 `0x82` 송신 후 clear |
-| 6 | `0x0040` | `COMMAND_OUT_OF_RANGE` | command 속도 범위 오류 event. 정상 `0x82` 송신 후 clear |
+| 0 | `0x0001` | `CHECKSUM_ERROR` | 수신 checksum 오류를 마지막 감지 후 `0x82` 10개에 보고 |
+| 1 | `0x0002` | `COMMAND_TIMEOUT` | AUTO 정상 command가 500ms 넘게 없으면 재감지. 마지막 감지 후 `0x82` 10개에 보고 |
+| 2 | `0x0004` | `DRIVER_FAULT` | 구동/안전 CAN TX failure, MD200T status, driver RX timeout의 잔여 보고가 있으면 설정 |
+| 3 | `0x0008` | `EMERGENCY_STOP_ACTIVE` | E-stop 입력 활성 시 재감지. 입력 해제 후에도 잔여 보고는 유지 |
+| 4 | `0x0010` | `BATTERY_LOW` | 두 전압이 fresh이고 하나라도 21,000mV 미만이면 재감지. 마지막 감지 후 `0x82` 10개에 보고 |
+| 5 | `0x0020` | `SERIAL_FRAMING_ERROR` | framing 오류를 마지막 감지 후 `0x82` 10개에 보고 |
+| 6 | `0x0040` | `COMMAND_OUT_OF_RANGE` | 범위 오류를 마지막 감지 후 `0x82` 10개에 보고 |
 | 7 | `0x0080` | `WATCHDOG_RESET_DETECTED` | watchdog reset 진단용. 현재 값을 설정하는 source는 구현되지 않음 |
 | 8 | `0x0100` | `OVER_CURRENT` | legacy 예약 bit. 현재 항상 0 |
 | 9 | `0x0200` | `OVER_TEMPERATURE` | legacy 예약 bit. 현재 항상 0 |
@@ -547,7 +548,7 @@ LF[11] RF[11] LR[11] RR[11] checksum
 | 2 | length | uint8 | 59, type부터 checksum 직전까지 |
 | 3 | type | uint8 | 0x82 |
 | 4 | version | uint8 | 2 |
-| 5 | seq | uint8 | 실제 Serial.write가 수행될 때 증가, 255 이후 0 |
+| 5 | seq | uint8 | Serial.write가 전체 packet 쓰기에 성공할 때 증가, 255 이후 0 |
 | 6 | mcu_state | uint8 | 기존 상태 enum |
 | 7-8 | system_error | uint16 | 기존 오류 bit 위치 유지 |
 | 9 | validity | uint8 | bit 0..3: LF/RF/LR/RR, bit 4..5: A/B voltage |
@@ -560,32 +561,43 @@ LF[11] RF[11] LR[11] RR[11] checksum
 | 51-61 | rr | 11 bytes | A/MOT2/PID201 |
 | 62 | checksum | uint8 | byte 0..61 XOR |
 
-패킷 데이터 조립 후 `Serial.availableForWrite()`가 전체 63bytes 이상인지 확인합니다. 공간이 있으면 snapshot 시각을 기록하고 checksum 계산 직후 `Serial.write(packet, 63)`을 호출합니다. 공간이 부족하면 다음 loop에서 최신 데이터로 다시 시도합니다. 오류 event 비트와 sequence는 기존과 같이 Serial.write 호출 후 처리합니다.
+패킷 데이터 조립 후 `Serial.availableForWrite()`가 전체 63bytes 이상인지 확인합니다. 공간이 있으면 snapshot 시각을 기록하고 checksum 계산 직후 `Serial.write(packet, 63)`을 호출합니다. 공간이 부족하면 다음 loop에서 최신 데이터로 다시 시도합니다. sequence 증가와 오류 잔여 보고 횟수 차감은 Serial.write가 63bytes 쓰기에 성공한 뒤 처리합니다. USB 공간 부족이나 write 실패 시 차감하지 않습니다. write 성공은 MCU USB 송신 버퍼에 기록했다는 뜻이며 host 수신 확인은 아닙니다.
 
 #### System error (Byte 7-8)
 
 `system_error`는 원인을 나타내는 bitfield이므로 여러 bit가 동시에 설정될 수 있습니다. `mcu_state`는 우선순위를 적용한 최종 운용 상태 하나만 나타냅니다. 따라서 `system_error != 0`이 항상 `mcu_state == FAULT`를 뜻하지는 않습니다.
 
-| Bit | Mask | 이름 | 설정 조건 | 운용 영향 | 해제 조건 |
-| --- | --- | --- | --- | --- | --- |
-| 0 | `0x0001` | `SERIAL_CHECKSUM_ERROR` | `0x01` 또는 `0x20` 수신 checksum 오류 | 진단 event, 상태 변경 없음 | 정상 `0x82` 송신 후 clear |
-| 1 | `0x0002` | `COMMAND_TIMEOUT` | AUTO mode에서 정상 command가 없거나 마지막 command 후 500 ms 초과 | `TIMEOUT_STOP`, 출력 금지 | 정상 command 수신 또는 AUTO mode 이탈 |
-| 2 | `0x0004` | `CAN_TX_FAILURE` | CAN 초기화, PID 207/174/bridge 송신 실패 또는 PID 143 요청 송신 실패 | 구동/안전 TX 실패는 `FAULT`; 전압 요청 단발 실패는 진단만 표시 | 구동/안전 TX 실패는 재부팅, 전압 요청 실패는 다음 요청 TX 성공 |
-| 3 | `0x0008` | `EMERGENCY_STOP_ACTIVE` | command flag bit 1 활성 | `ESTOP`, 출력 금지 | E-stop이 해제된 정상 command 또는 AUTO mode 이탈 |
-| 4 | `0x0010` | `BATTERY_LOW` | 두 driver 전압이 모두 fresh이고 하나라도 21,000 mV 미만 | `FAULT`, TQ-OFF | 재부팅 |
-| 5 | `0x0020` | `SERIAL_FRAMING_ERROR` | 잘못된 header/length/type 수신 | 진단 event, 상태 변경 없음 | 정상 `0x82` 송신 후 clear |
-| 6 | `0x0040` | `COMMAND_OUT_OF_RANGE` | `v` 또는 `w`가 허용 범위를 벗어남 | 해당 command 거부 | 정상 `0x82` 송신 후 clear |
-| 7 | `0x0080` | `WATCHDOG_RESET_DETECTED` | watchdog reset 감지 | 진단용 | 현재 감지 source 미구현 |
-| 8 | `0x0100` | `DRIVER_STATUS_FAULT_PRESENT` | 어느 wheel이든 MD200T raw `status != 0` | `FAULT`, TQ-OFF | 재부팅 |
-| 9 | `0x0200` | `DRIVER_RX_TIMEOUT` | Driver A/B 명령 후 3 ms 안에 해당 PID 196/201 쌍이 모두 수신되지 않음 | `FAULT`, TQ-OFF | 재부팅 |
-| 10 | `0x0400` | `VOLTAGE_STALE` | 3 s grace 이후 Driver A/B 중 하나라도 voltage invalid | 진단 및 validity만 변경 | 두 voltage가 다시 fresh하면 자동 clear |
-| 11 | `0x0800` | `CAN_RX_OVERRUN` | RX mailbox에서 hardware overrun 검출 | 진단용, 즉시 정지하지 않음 | CAN 재초기화 또는 재부팅 |
-| 12 | `0x1000` | Reserved | 이전 BC 초기화 오류 위치. 현재 사용하지 않음 | 없음 | 항상 0 |
-| 13-15 | `0xE000` | Reserved | 사용하지 않음 | 없음 | 항상 0 |
+| Bit | Mask | 이름 | 감지 조건 | 운용 영향 |
+| --- | --- | --- | --- | --- |
+| 0 | `0x0001` | `SERIAL_CHECKSUM_ERROR` | 수신 packet XOR 불일치 | 진단만 보고 |
+| 1 | `0x0002` | `COMMAND_TIMEOUT` | AUTO 정상 command가 500ms 넘게 없음 | 현재 timeout 입력 동안 `TIMEOUT_STOP`, 출력 금지 |
+| 2 | `0x0004` | `CAN_TX_FAILURE` | CAN 초기화, 구동/안전/bridge/benchmark TX 또는 PID143 요청 TX 실패 | 구동/안전 실패 잔여 횟수 동안 `FAULT`; 전압 요청 실패는 진단만 보고 |
+| 3 | `0x0008` | `EMERGENCY_STOP_ACTIVE` | E-stop 입력 활성 | 현재 입력 동안 `ESTOP`, 출력 금지 |
+| 4 | `0x0010` | `BATTERY_LOW` | 두 전압이 fresh이고 하나라도 21000mV 미만 | 잔여 횟수 동안 `FAULT`, TQ-OFF |
+| 5 | `0x0020` | `SERIAL_FRAMING_ERROR` | header/length/type framing 오류 | 진단만 보고 |
+| 6 | `0x0040` | `COMMAND_OUT_OF_RANGE` | command 속도 범위 오류 | 해당 command 거부 |
+| 7 | `0x0080` | `WATCHDOG_RESET_DETECTED` | 현재 감지 source 미구현 | 현재는 항상 0 |
+| 8 | `0x0100` | `DRIVER_STATUS_FAULT_PRESENT` | 정상 수신된 wheel raw status가 0이 아님 | 잔여 횟수 동안 `FAULT`, TQ-OFF |
+| 9 | `0x0200` | `DRIVER_RX_TIMEOUT` | 명령 후 3ms 동안 해당 PID196/201 쌍이 불완전 | 잔여 횟수 동안 `FAULT`, TQ-OFF |
+| 10 | `0x0400` | `VOLTAGE_STALE` | CONTROL 시작 3초 이후 한쪽 이상의 전압이 invalid | 진단 및 voltage validity 보고 |
+| 11 | `0x0800` | `CAN_RX_OVERRUN` | RX mailbox overrun 실제 감지 | 진단만 보고 |
+| 12-15 | `0xF000` | Reserved | 현재 사용하지 않음 | 항상 0 |
 
-`FAULT`를 만드는 안전 fault는 구동/안전 경로의 `CAN_TX_FAILURE`, `BATTERY_LOW`, `DRIVER_STATUS_FAULT_PRESENT`, `DRIVER_RX_TIMEOUT`입니다. PID 143 전압 요청 한 건의 TX 실패도 같은 `CAN_TX_FAILURE` bit로 보이지만 즉시 `FAULT`로 승격하지 않고, 다음 전압 요청 TX가 성공하면 해제합니다. 내부에서는 sticky safety TX failure와 recoverable voltage-request TX failure를 분리합니다. 안전 fault에는 runtime reset이 없으며 디버깅 후 MCU를 재부팅해야 해제됩니다. Fault가 있으면 state 우선순위에 따라 E-stop이나 command timeout보다 `FAULT`가 먼저 표시됩니다.
+각 오류는 bool latch 대신 **정수 잔여 보고 횟수**로 관리합니다. 마지막 감지 시점부터 10개의 canonical `0x82` packet에 포함하고 자동 해제합니다.
 
-Control mode에서는 PID 207/174에 대한 driver의 PID 196/201 command response를 수신하고 PID 143만 1 Hz로 요청합니다. Firmware는 PID 196/201용 PID 4와 CMD 5/6/50/51을 자동 생성하지 않습니다. Bridge mode 진입 시 두 driver를 PID 174로 TQ-OFF하고 PID 207/174 주기 송신, PID 143 polling, `0x82` 송신을 중단합니다. `0x81`은 어느 mode에서도 기본 송신하지 않습니다.
+1. 감지 시 해당 오류의 잔여 횟수를 `10`으로 설정합니다. 이미 보고 중이어도 재감지되면 다시 `10`입니다.
+2. packet에는 차감 전 값이 0보다 큰 오류 비트를 설정합니다. `Serial.write()`가 전체 packet 쓰기에 성공한 뒤 각 양수 잔여 횟수를 1씩 차감합니다.
+3. 따라서 새 감지가 없으면 10번째 packet까지 오류가 포함되고 11번째부터 해제됩니다. 0에서 더 차감하지 않습니다.
+4. USB 공간 부족으로 packet을 전송하지 못하거나 단순 상태 조회만 한 경우 차감하지 않습니다. `0x81`, bridge, benchmark packet은 차감하지 않습니다. BRIDGE에서는 `0x82`가 중단되므로 잔여 횟수를 유지합니다.
+5. command timeout·E-stop·voltage stale은 현재 조건이 참인 동안 반복해서 10으로 갱신합니다. 저전압은 fresh 전압이 낮은 동안, 드라이버 상태 오류는 새 오류 응답을 받을 때, CAN 실패·timeout·overrun은 새로 감지할 때 갱신합니다.
+
+이는 **발생 횟수나 시간 기반 timeout이 아니라 남은 보고 횟수**입니다. `0x82`가 100Hz로 전송될 때 새 감지 없는 오류는 약 100ms 뒤에 만료되지만, 전송 지연이 있으면 더 오래 유지됩니다. 세션 전환이나 전압 조회 TX 성공만으로 남은 오류 보고를 지우지 않습니다.
+
+구동/안전 TX 실패, driver status, driver RX timeout, 저전압은 해당 잔여 횟수가 남아 있는 동안 기존 TQ-OFF 경로로 출력을 차단합니다. 잔여 횟수가 0이 되면 이 오류에 의한 차단이 해제되고 현재 enable·E-stop·timeout 조건으로 출력 허용을 판단합니다. 별도의 복구 요청이나 재허용 handshake는 추가하지 않습니다. 전압 조회 TX 실패는 같은 CAN_TX_FAILURE bit를 사용하지만 계속 진단 전용입니다.
+
+E-stop과 command timeout의 **현재 입력 상태는 기존 정지 판단에 유지**합니다. 입력이 해제된 뒤에도 오류 비트는 남은 횟수만큼 보고되지만 이 과거 보고 때문에 `ESTOP`/`TIMEOUT_STOP` 상태를 연장하지 않습니다. 반대로 현재 입력이 활성인데 보고 횟수만 소진되어 구동이 허용되지는 않습니다. wheel raw status byte는 드라이버 원본 값이며 이 보고 카운트다운으로 변조하지 않습니다.
+
+Control mode에서는 PID207/174에 대한 PID196/201 응답과 driver별 1Hz PID143을 사용합니다. 추가 CAN 요청·Setup packet·누적 오류 통계 packet은 이번 변경에 포함하지 않습니다.
 
 #### Telemetry validity (Byte 9)
 
@@ -626,7 +638,7 @@ count를 미터로 바꾸려면 실제 count/rev, 감속비, 휠 반지름과 �
 
 ROS 수신부는 length 59와 version 2를 함께 검사하고, prefix는 `struct.Struct("<BBBBHBHHI")`, wheel은 `struct.Struct("<BhiI")`로 해석할 수 있습니다. MCU 시각은 ROS epoch와 다르므로 시간 기준 변환은 호스트에서 수행합니다. 단방향 packet의 시각만으로 USB 지연과 clock offset을 완전히 분리할 수는 없습니다.
 
-MDROBOT CAN 통신사양 V2.1의 raw `status` bit 의미는 다음과 같습니다. 현재 안전 정책에서는 아래 bit 중 하나라도 설정되어 `status != 0`이면 `DRIVER_STATUS_FAULT_PRESENT`를 latch하고 차량을 `FAULT`로 전환합니다.
+MDROBOT CAN 통신사양 V2.1의 raw `status` bit 의미는 다음과 같습니다. 아래 bit 중 하나라도 설정된 `status != 0` 응답을 받으면 `DRIVER_STATUS_FAULT_PRESENT`의 잔여 보고 횟수를 10으로 설정하고 차량을 `FAULT`로 전환합니다.
 
 | Bit | Mask | MD200T 이름 | 의미 |
 | --- | --- | --- | --- |

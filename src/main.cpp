@@ -3,6 +3,7 @@
 
 #include "can_tx_schedule.hpp"
 #include "flexcan0.hpp"
+#include "error_report.hpp"
 #include "little_endian.hpp"
 #include "md200t_can.hpp"
 
@@ -239,7 +240,7 @@ struct CanBenchmarkResult
     bool pending;
 };
 
-// One side-effect-free view of all live and latched fault sources. Legacy
+// One side-effect-free view of all live inputs and remaining error reports. Legacy
 // 0x81 and System Status v2 map this same view to their own wire bitfields.
 struct FaultSnapshot
 {
@@ -256,6 +257,9 @@ struct FaultSnapshot
     bool driver_rx_timeout;
     bool voltage_stale;
     bool can_rx_overrun;
+    // Live inputs remain separate from their repeated diagnostic reports.
+    bool command_timeout_active;
+    bool emergency_stop_input_active;
 };
 
 struct CommandFrameParser
@@ -271,7 +275,7 @@ void v_decodePWM();
 void w_decodePWM();
 // RC mode select PWM decoder ISR.
 void mode_decodePWM();
-// Build the status packet error bitfield from current latched and live faults.
+// Build the status packet error bitfield from current error reports.
 uint16_t motor_build_error_bits(void);
 // Resolve the current high-level motor state with fault and safety priority.
 MotorState motor_get_current_state(void);
@@ -351,6 +355,8 @@ static void enter_control_mode(unsigned long now);
 static void enter_bridge_mode(void);
 static void latch_safety_can_tx_failure(void);
 static bool motor_has_driver_fault(void);
+static void refresh_live_error_reports(unsigned long now);
+static void decrement_error_reports(void);
 static FaultSnapshot capture_fault_snapshot(unsigned long now);
 static uint16_t build_legacy_error_bits(const FaultSnapshot &fault);
 static uint16_t build_system_error_bits(const FaultSnapshot &fault);
@@ -361,17 +367,20 @@ static bool calibration_active = false;
 static bool motor_enabled = false;
 static bool estop_active = false;
 static bool command_timeout = true;
-// Motor/safety TX failures are sticky; the diagnostic voltage-request failure
-// recovers on the next successful voltage request and does not disable output.
-static bool safety_can_tx_failure_latched = false;
-static bool voltage_request_can_tx_failure_active = false;
-static bool driver_status_fault_latched = false;
-static bool driver_rx_timeout_latched = false;
-static bool battery_low_latched = false;
-static bool watchdog_reset_detected = false;
-static bool checksum_error_latched = false;
-static bool serial_framing_error_latched = false;
-static bool command_out_of_range_latched = false;
+// Error observations expire after ten transmitted 0x82 reports. Repeated
+// detection reloads ten; voltage-request TX failures remain diagnostic-only.
+static int safety_can_tx_failure_reports_remaining = 0;
+static int voltage_request_can_tx_failure_reports_remaining = 0;
+static int driver_status_fault_reports_remaining = 0;
+static int driver_rx_timeout_reports_remaining = 0;
+static int battery_low_reports_remaining = 0;
+static int watchdog_reset_reports_remaining = 0;
+static int checksum_error_reports_remaining = 0;
+static int serial_framing_error_reports_remaining = 0;
+static int command_out_of_range_reports_remaining = 0;
+static int command_timeout_reports_remaining = 0;
+static int estop_reports_remaining = 0;
+static int voltage_stale_reports_remaining = 0;
 static unsigned long last_valid_command_ms = 0;
 static unsigned long last_status_tx_ms = 0;
 static unsigned long control_mode_started_ms = 0;
@@ -416,7 +425,7 @@ void setup()
     }
 
     // Start the 10 ms reporting timeline even after CAN initialization fails,
-    // so the host continues to receive the latched diagnostic at 100 Hz.
+    // so the host continues to receive the failure diagnostic at 100 Hz.
     initialize_control_session(millis());
 
     booting = false;
@@ -438,6 +447,7 @@ void loop()
     can_benchmark_flush_result();
     md200t_update_telemetry_health(now);
     update_effective_motor_command(drive_mode, v_pwm, w_pwm, now);
+    refresh_live_error_reports(now);
     can_transmit_if_due(micros());
     protocol_send_system_status_if_ready();
     // Legacy 0x81 output is intentionally disabled; 0x82 is canonical.
@@ -563,7 +573,7 @@ static void parse_complete_command_frame(const uint8_t *packet, unsigned long no
 {
     if (protocol_xor_checksum(packet, CMD_PACKET_SIZE - 1u) != packet[CMD_PACKET_SIZE - 1u])
     {
-        checksum_error_latched = true;
+        checksum_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
         return;
     }
 
@@ -574,7 +584,7 @@ static void parse_complete_command_frame(const uint8_t *packet, unsigned long no
 
     if (!command_in_range(command))
     {
-        command_out_of_range_latched = true;
+        command_out_of_range_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
         return;
     }
 
@@ -610,7 +620,7 @@ static void parse_complete_reset_frame(const uint8_t *packet)
 {
     if (protocol_xor_checksum(packet, RESET_PACKET_SIZE - 1u) != packet[RESET_PACKET_SIZE - 1u])
     {
-        checksum_error_latched = true;
+        checksum_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
         return;
     }
 
@@ -618,7 +628,7 @@ static void parse_complete_reset_frame(const uint8_t *packet)
     // rebooting the controller. Sequence byte 4 is reserved for host tracking.
     if (packet[5] != RESET_MAGIC_0 || packet[6] != RESET_MAGIC_1)
     {
-        serial_framing_error_latched = true;
+        serial_framing_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
         return;
     }
 
@@ -825,7 +835,7 @@ static void parse_complete_can_benchmark_frame(const uint8_t *packet)
 
     if (protocol_xor_checksum(packet, CAN_BENCHMARK_PACKET_SIZE - 1u) != packet[CAN_BENCHMARK_PACKET_SIZE - 1u])
     {
-        checksum_error_latched = true;
+        checksum_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
         queue_invalid_can_benchmark_result(seq);
         return;
     }
@@ -880,7 +890,7 @@ static void parse_complete_can_bridge_frame(const uint8_t *packet)
     const uint8_t seq = packet[4];
     if (protocol_xor_checksum(packet, CAN_BRIDGE_PACKET_SIZE - 1u) != packet[CAN_BRIDGE_PACKET_SIZE - 1u])
     {
-        checksum_error_latched = true;
+        checksum_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
         send_can_bridge_response(seq, CAN_BRIDGE_STATUS_INVALID_REQUEST, nullptr);
         return;
     }
@@ -945,7 +955,7 @@ static void parse_complete_serial_frame(const uint8_t *packet, unsigned long now
     }
     else
     {
-        serial_framing_error_latched = true;
+        serial_framing_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
     }
 }
 
@@ -962,7 +972,7 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
         }
         else
         {
-            serial_framing_error_latched = true;
+            serial_framing_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
         }
         break;
 
@@ -975,7 +985,7 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
         }
         else
         {
-            serial_framing_error_latched = true;
+            serial_framing_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
             command_parser_reset(command_rx_parser);
         }
         break;
@@ -992,7 +1002,7 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
         }
         else
         {
-            serial_framing_error_latched = true;
+            serial_framing_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
             command_parser_reset(command_rx_parser);
         }
         break;
@@ -1009,7 +1019,7 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
         }
         else
         {
-            serial_framing_error_latched = true;
+            serial_framing_error_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
             command_parser_reset(command_rx_parser);
         }
         break;
@@ -1052,9 +1062,6 @@ static void initialize_control_session(unsigned long now)
     // A new control session must not reuse telemetry received before bridge
     // mode. Freshness grace periods start from this timestamp as well.
     reset_telemetry_validity();
-    // A voltage request failure is a session-local, recoverable diagnostic.
-    // Do not carry it across BRIDGE -> CONTROL before the new timeline starts.
-    voltage_request_can_tx_failure_active = false;
     system_status_pending = false;
     control_mode_started_ms = now;
     reset_can_tx_scheduler(micros());
@@ -1164,7 +1171,7 @@ static void md200t_process_rx_frame(const CanFrame &frame,
         motor->last_update_ms = now;
         motor->valid = true;
         if (motor->status != 0u)
-            driver_status_fault_latched = true;
+            driver_status_fault_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
 
         // With user-configured PID149=7, PID207/174 returns PID196/201. Count those
         // four command-triggered frames in the current 10 ms command round and
@@ -1249,39 +1256,83 @@ static void md200t_update_telemetry_health(unsigned long now)
 
     if (driver_a_voltage.valid && driver_b_voltage.valid &&
         (driver_a_voltage.millivolts < BATTERY_LOW_THRESHOLD_MV || driver_b_voltage.millivolts < BATTERY_LOW_THRESHOLD_MV))
-        battery_low_latched = true;
+        battery_low_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
 
 }
 
 static void latch_safety_can_tx_failure(void)
 {
-    safety_can_tx_failure_latched = true;
+    safety_can_tx_failure_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
 }
 
 static bool motor_has_driver_fault(void)
 {
-    // The recoverable voltage-request failure is intentionally excluded. A
-    // missing PID 193/200 pair is latched by the 3 ms response-window checker.
-    return safety_can_tx_failure_latched || driver_status_fault_latched || driver_rx_timeout_latched;
+    // Voltage-request failures are diagnostic-only. Safety errors prevent
+    // output while their ten-report countdown remains nonzero.
+    return safety_can_tx_failure_reports_remaining > 0 ||
+           driver_status_fault_reports_remaining > 0 ||
+           driver_rx_timeout_reports_remaining > 0;
+}
+
+static bool voltage_telemetry_is_stale(unsigned long now)
+{
+    return serial_mode == SERIAL_MODE_CONTROL &&
+           now - control_mode_started_ms >= VOLTAGE_TIMEOUT_MS &&
+           (!driver_a_voltage.valid || !driver_b_voltage.valid);
+}
+
+static void refresh_live_error_reports(unsigned long now)
+{
+    if (command_timeout)
+        command_timeout_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
+    if (estop_active)
+        estop_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
+    if (voltage_telemetry_is_stale(now))
+        voltage_stale_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
+}
+
+static void decrement_error_reports(void)
+{
+    int *const reports[] = {
+        &safety_can_tx_failure_reports_remaining,
+        &voltage_request_can_tx_failure_reports_remaining,
+        &driver_status_fault_reports_remaining,
+        &driver_rx_timeout_reports_remaining,
+        &battery_low_reports_remaining,
+        &watchdog_reset_reports_remaining,
+        &checksum_error_reports_remaining,
+        &serial_framing_error_reports_remaining,
+        &command_out_of_range_reports_remaining,
+        &command_timeout_reports_remaining,
+        &estop_reports_remaining,
+        &voltage_stale_reports_remaining,
+    };
+    for (int *remaining : reports)
+    {
+        if (*remaining > 0)
+            --*remaining;
+    }
+    can_rx_overrun_report_sent();
 }
 
 static FaultSnapshot capture_fault_snapshot(unsigned long now)
 {
     FaultSnapshot fault = {};
-    fault.serial_checksum_error = checksum_error_latched;
-    fault.command_timeout = command_timeout;
+    fault.serial_checksum_error = checksum_error_reports_remaining > 0;
+    fault.command_timeout = command_timeout || command_timeout_reports_remaining > 0;
+    fault.command_timeout_active = command_timeout;
     fault.driver_fault = motor_has_driver_fault();
-    fault.can_tx_failure = safety_can_tx_failure_latched || voltage_request_can_tx_failure_active;
-    fault.emergency_stop_active = estop_active;
-    fault.battery_low = battery_low_latched;
-    fault.serial_framing_error = serial_framing_error_latched;
-    fault.command_out_of_range = command_out_of_range_latched;
-    fault.watchdog_reset = watchdog_reset_detected;
-    fault.driver_status_fault = driver_status_fault_latched;
-    fault.driver_rx_timeout = driver_rx_timeout_latched;
-    fault.voltage_stale = serial_mode == SERIAL_MODE_CONTROL &&
-                          now - control_mode_started_ms >= VOLTAGE_TIMEOUT_MS &&
-                          (!driver_a_voltage.valid || !driver_b_voltage.valid);
+    fault.can_tx_failure = safety_can_tx_failure_reports_remaining > 0 ||
+                           voltage_request_can_tx_failure_reports_remaining > 0;
+    fault.emergency_stop_active = estop_active || estop_reports_remaining > 0;
+    fault.emergency_stop_input_active = estop_active;
+    fault.battery_low = battery_low_reports_remaining > 0;
+    fault.serial_framing_error = serial_framing_error_reports_remaining > 0;
+    fault.command_out_of_range = command_out_of_range_reports_remaining > 0;
+    fault.watchdog_reset = watchdog_reset_reports_remaining > 0;
+    fault.driver_status_fault = driver_status_fault_reports_remaining > 0;
+    fault.driver_rx_timeout = driver_rx_timeout_reports_remaining > 0;
+    fault.voltage_stale = voltage_stale_reports_remaining > 0 || voltage_telemetry_is_stale(now);
     fault.can_rx_overrun = can_rx_overrun_detected();
     return fault;
 }
@@ -1343,13 +1394,13 @@ static MotorState resolve_motor_state(const FaultSnapshot &fault)
 {
     if (fault.driver_fault || fault.battery_low)
         return MOTOR_STATE_FAULT;
-    if (fault.emergency_stop_active)
+    if (fault.emergency_stop_input_active)
         return MOTOR_STATE_ESTOP;
     if (booting)
         return MOTOR_STATE_BOOTING;
     if (calibration_active)
         return MOTOR_STATE_CALIBRATION;
-    if (fault.command_timeout)
+    if (fault.command_timeout_active)
         return MOTOR_STATE_TIMEOUT_STOP;
     if (!motor_enabled)
         return MOTOR_STATE_DISABLED;
@@ -1416,8 +1467,8 @@ static bool protocol_send_system_status(void)
 {
     uint8_t packet[SYSTEM_STATUS_PACKET_SIZE] = {};
     const unsigned long now = millis();
-    // State and error fields must describe the same instant even when an
-    // event latch is cleared after this packet is accepted by USB Serial.
+    refresh_live_error_reports(now);
+    // Serialize before consuming a report: a count of one is still reported.
     const FaultSnapshot fault = capture_fault_snapshot(now);
     packet[0] = PKT_HEADER_0;
     packet[1] = PKT_HEADER_1;
@@ -1439,11 +1490,10 @@ static bool protocol_send_system_status(void)
     {
         little_endian::write_u32(&packet[14], micros());
         packet[SYSTEM_STATUS_PACKET_SIZE - 1u] = protocol_xor_checksum(packet, SYSTEM_STATUS_PACKET_SIZE - 1u);
-        Serial.write(packet, SYSTEM_STATUS_PACKET_SIZE);
+        if (Serial.write(packet, SYSTEM_STATUS_PACKET_SIZE) != SYSTEM_STATUS_PACKET_SIZE)
+            return false;
         system_status_tx_seq++;
-        checksum_error_latched = false;
-        serial_framing_error_latched = false;
-        command_out_of_range_latched = false;
+        decrement_error_reports();
         return true;
     }
     return false;
@@ -1555,7 +1605,7 @@ static void md200t_send_driver_commands(const Md200tDriverCommand &driver_a,
 
     if (!driver_a_ok || !driver_b_ok)
         latch_safety_can_tx_failure();
-    digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_latched);
+    digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_reports_remaining);
 }
 
 static void invalidate_wheel_telemetry(uint8_t wheel_mask)
@@ -1580,7 +1630,7 @@ static void close_driver_response_window(uint8_t driver_id)
     if (missing_mask != 0u)
     {
         invalidate_wheel_telemetry(missing_mask);
-        driver_rx_timeout_latched = true;
+        driver_rx_timeout_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
     }
 
     if (driver_id == MD200T_DRIVER_A_ID)
@@ -1588,7 +1638,7 @@ static void close_driver_response_window(uint8_t driver_id)
     else
         can_tx_scheduler.driver_b_response_checked = true;
 
-    digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_latched);
+    digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_reports_remaining);
 }
 
 static void reset_can_tx_scheduler(uint32_t now_us)
@@ -1651,7 +1701,7 @@ void can_transmit_if_due(uint32_t now_us)
         // Both driver commands use this one coherent target snapshot even
         // though Driver B is intentionally transmitted 3 ms later.
         const bool command_enabled = motor_enabled && !estop_active && !command_timeout &&
-                                     !motor_has_driver_fault() && !battery_low_latched;
+                                     !motor_has_driver_fault() && !battery_low_reports_remaining;
         const WheelRpmCommand target = command_enabled
                                            ? target_wheel_rpm_cmd
                                            : WheelRpmCommand{0.0f, 0.0f, 0.0f, 0.0f};
@@ -1671,7 +1721,7 @@ void can_transmit_if_due(uint32_t now_us)
         can_tx_scheduler.expected_wheel_mask = CAN_TX_DRIVER_A_WHEELS_MASK;
         if (!md200t_send_driver_command(MD200T_DRIVER_A_ID, driver_a))
             latch_safety_can_tx_failure();
-        digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_latched);
+        digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_reports_remaining);
         return;
     }
 
@@ -1690,7 +1740,7 @@ void can_transmit_if_due(uint32_t now_us)
 
         // A response timeout or any other safety fault detected during the
         // first window changes Driver B's scheduled frame to TQ-OFF.
-        if (motor_has_driver_fault() || battery_low_latched || estop_active || command_timeout)
+        if (motor_has_driver_fault() || battery_low_reports_remaining || estop_active || command_timeout)
             can_tx_scheduler.pending_driver_b_command.enabled = false;
 
         can_tx_scheduler.driver_b_command_sent = true;
@@ -1699,7 +1749,7 @@ void can_transmit_if_due(uint32_t now_us)
         if (!md200t_send_driver_command(MD200T_DRIVER_B_ID,
                                         can_tx_scheduler.pending_driver_b_command))
             latch_safety_can_tx_failure();
-        digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_latched);
+        digitalWrite(LED_BUILTIN, motor_has_driver_fault() || battery_low_reports_remaining);
         return;
     }
 
@@ -1731,8 +1781,8 @@ void can_transmit_if_due(uint32_t now_us)
                 return;
 
             can_tx_scheduler.voltage_poll_handled = true;
-            voltage_request_can_tx_failure_active =
-                !md200t_request_pid_data(voltage_request.driver_id, voltage_request.pid);
+            if (!md200t_request_pid_data(voltage_request.driver_id, voltage_request.pid))
+                voltage_request_can_tx_failure_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
             return;
         }
     }

@@ -20,6 +20,7 @@ inline void __disable_irq() {}
 struct FakeSerial
 {
     int space = 0;
+    bool reject_write = false;
     uint32_t write_time_us = 0u;
     std::vector<uint8_t> output;
     std::vector<size_t> write_requests;
@@ -33,6 +34,8 @@ struct FakeSerial
         assert(size <= static_cast<size_t>(space));
         assert(size <= 64u);
         write_requests.push_back(size);
+        if (reject_write)
+            return static_cast<size_t>(-1);
         const size_t count = size;
         output.insert(output.end(), data, data + count);
         space -= static_cast<int>(count);
