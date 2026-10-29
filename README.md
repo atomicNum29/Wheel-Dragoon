@@ -64,6 +64,8 @@ Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드�
 | 각속도 입력 `w` | `0` | RC PWM 입력 |
 | 선속도 입력 `v` | `1` | RC PWM 입력 |
 | 모드 선택 | `2` | RC PWM 입력 |
+| 드라이버 A 전원 릴레이 | `5` | HIGH: PWR_SW close, LOW: open |
+| 드라이버 B 전원 릴레이 | `6` | HIGH: PWR_SW close, LOW: open |
 
 ### CAN / MD200T 연결
 
@@ -269,20 +271,21 @@ MD200T A/B는 이미 `500 kbit/s`로 설정된 상태를 전제로 한다. 펌�
 
 ## 동작 모드
 
-모드 채널의 PWM 평균값으로 주행 모드를 선택합니다.
+모드 채널의 최근 유효 PWM 10개 평균값으로 주행 모드를 선택합니다. 800–2200 us 범위의 펄스를 측정에 사용하며, 이 범위 밖의 펄스는 무시합니다. 초기 모드와 평균 버퍼는 STOP(1200 us)으로 시작합니다. POWERDOWN에서만 GPIO 5·6을 LOW로 출력하며, STOP/MANUAL/AUTO에서는 HIGH로 출력해 두 드라이버의 PWR_SW 접점을 닫습니다. 릴레이 출력은 CONTROL/BRIDGE와 관계없이 RC 모드를 따릅니다.
 
 | PWM 범위 | 모드 | 동작 |
 | --- | --- | --- |
-| `< 1300 us` | Stop (`DRIVE_MODE_STOP`) | 좌/우 목표 RPM을 `0`으로 설정 |
+| `< 1100 us` | Powerdown (`DRIVE_MODE_POWERDOWN`) | GPIO 5·6 LOW, 드라이버 전원 차단 및 목표 RPM `0` |
+| `1100-1299 us` | Stop (`DRIVE_MODE_STOP`) | 좌/우 목표 RPM을 `0`으로 설정 |
 | `1300-1699 us` | Manual (`DRIVE_MODE_MANUAL`) | RC `v`, `w` 입력으로 주행 |
 | `>= 1700 us` | Auto (`DRIVE_MODE_AUTO`) | ROS-UART command packet으로 `v_milli_mps`, `w_milli_radps` 수신 |
 
-`mode_state`는 위 STOP/MANUAL/AUTO 구동 source를 선택합니다. 이 값과 별도로 `serial_mode`는 정상 제어/상태 통신인 CONTROL과 raw CAN tunnel인 BRIDGE를 선택합니다. 두 변수는 우선순위가 같은 주행 모드가 아니라, `serial_mode`가 바깥쪽 통신 동작을 정하고 `mode_state`가 CONTROL 안에서만 구동 source를 고르는 중첩 구조입니다.
+`mode_state`는 위 POWERDOWN/STOP/MANUAL/AUTO 구동 source를 선택합니다. 이 값과 별도로 `serial_mode`는 정상 제어/상태 통신인 CONTROL과 raw CAN tunnel인 BRIDGE를 선택합니다. 두 변수는 우선순위가 같은 주행 모드가 아니라, `serial_mode`가 바깥쪽 통신 동작을 정하고 `mode_state`가 CONTROL 안에서만 구동 source를 고르는 중첩 구조입니다.
 
 ```text
 serial_mode
 ├── CONTROL
-│   ├── mode_state == STOP   → 주기적인 PID 174 TQ-OFF
+│   ├── mode_state == STOP/POWERDOWN → 주기적인 PID 174 TQ-OFF
 │   ├── mode_state == MANUAL → RC PWM으로 PID 207 목표 계산
 │   └── mode_state == AUTO   → 마지막 정상 0x01 command로 PID 207 목표 계산
 └── BRIDGE
@@ -292,7 +295,7 @@ serial_mode
     └── 0x21 반복 benchmark와 0xA1 sample 결과 처리
 ```
 
-BRIDGE 진입은 `mode_state == AUTO`로 제한되지 않습니다. STOP, MANUAL, AUTO 어느 위치에서도 유효한 `0x20` 또는 `0x21` packet을 받으면 BRIDGE로 전환합니다. BRIDGE에서는 RC mode switch가 계속 갱신되더라도 그 값에 따라 CAN 자동 출력이 다시 시작되거나 CONTROL로 복귀하지 않습니다. 유효한 `0x01` command를 받아야 CONTROL로 복귀하며, 복귀 직후 실제 출력은 그때의 `mode_state`가 결정합니다. 따라서 STOP이면 TQ-OFF, MANUAL이면 RC 명령, AUTO이면 수신한 `0x01` 명령을 적용합니다.
+BRIDGE 진입은 `mode_state == AUTO`로 제한되지 않습니다. POWERDOWN, STOP, MANUAL, AUTO 어느 위치에서도 유효한 `0x20` 또는 `0x21` packet을 받으면 BRIDGE로 전환합니다. BRIDGE에서는 RC mode switch가 계속 갱신되더라도 그 값에 따라 CAN 자동 출력이 다시 시작되거나 CONTROL로 복귀하지 않습니다. 유효한 `0x01` command를 받아야 CONTROL로 복귀하며, 복귀 직후 실제 출력은 그때의 `mode_state`가 결정합니다. 따라서 STOP/POWERDOWN이면 TQ-OFF, MANUAL이면 RC 명령, AUTO이면 수신한 `0x01` 명령을 적용합니다.
 
 CONTROL이라고 항상 ROS target을 사용하는 것은 아닙니다. `mode_state == AUTO`일 때만 저장된 ROS command가 모터 출력에 적용됩니다. STOP과 MANUAL에서도 유효한 `0x01`은 AUTO용 command로 저장되고 BRIDGE 상태였다면 CONTROL 복귀를 일으키지만, 현재 CAN 출력에는 ROS target이 섞이지 않습니다.
 

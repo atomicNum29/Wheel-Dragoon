@@ -10,7 +10,7 @@
 #define _DEBUG 0
 
 // car width and wheel radius
-const float W = 0.485; // m
+const float W = 0.485;       // m
 const float R = 0.13 / 2.0f; // m
 
 // Command packet protocol: AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
@@ -96,7 +96,8 @@ typedef enum
 {
     DRIVE_MODE_STOP = 0,
     DRIVE_MODE_MANUAL = 1,
-    DRIVE_MODE_AUTO = 2
+    DRIVE_MODE_AUTO = 2,
+    DRIVE_MODE_POWERDOWN = 3
 } DriveMode;
 
 typedef enum
@@ -145,6 +146,8 @@ typedef enum
 const int w_speed_controller_pin = 0;
 const int v_speed_controller_pin = 1;
 const int mode_control_pin = 2;
+const int driver_a_power_relay_pin = 5;
+const int driver_b_power_relay_pin = 6;
 
 volatile unsigned int v_pulseWidth = 0;
 volatile unsigned int w_pulseWidth = 0;
@@ -405,6 +408,12 @@ static DriverVoltageTelemetry driver_b_voltage = {0u, 0u, false};
 
 void setup()
 {
+    // STOP is the initial mode: close both PWR_SW contacts before RC interrupts.
+    pinMode(driver_a_power_relay_pin, OUTPUT);
+    pinMode(driver_b_power_relay_pin, OUTPUT);
+    digitalWrite(driver_a_power_relay_pin, HIGH);
+    digitalWrite(driver_b_power_relay_pin, HIGH);
+
     Serial.begin(115200);
 
     pinMode(v_speed_controller_pin, INPUT);
@@ -437,6 +446,9 @@ void loop()
     // The ISR-owned values are sampled once so one loop iteration cannot mix
     // two RC modes or partially updated manual inputs.
     const DriveMode drive_mode = mode_state;
+    const int relay_level = drive_mode == DRIVE_MODE_POWERDOWN ? LOW : HIGH;
+    digitalWrite(driver_a_power_relay_pin, relay_level);
+    digitalWrite(driver_b_power_relay_pin, relay_level);
     const unsigned int v_pwm = v_pulseWidth;
     const unsigned int w_pwm = w_pulseWidth;
 
@@ -527,7 +539,7 @@ static void update_effective_motor_command(DriveMode drive_mode,
         return;
     }
 
-    if (drive_mode == DRIVE_MODE_STOP)
+    if (drive_mode == DRIVE_MODE_STOP || drive_mode == DRIVE_MODE_POWERDOWN)
     {
         command_timeout = false;
         estop_active = false;
@@ -1134,14 +1146,14 @@ static bool md200t_response_window_open(uint8_t driver_id, uint32_t rx_timestamp
         return can_tx_scheduler.driver_a_command_sent &&
                !can_tx_scheduler.driver_a_response_checked &&
                !can_tx_response_window_expired(can_tx_scheduler.driver_a_tx_us,
-                                                rx_timestamp_us);
+                                               rx_timestamp_us);
     }
     if (driver_id == MD200T_DRIVER_B_ID)
     {
         return can_tx_scheduler.driver_b_command_sent &&
                !can_tx_scheduler.driver_b_response_checked &&
                !can_tx_response_window_expired(can_tx_scheduler.driver_b_tx_us,
-                                                rx_timestamp_us);
+                                               rx_timestamp_us);
     }
     return false;
 }
@@ -1257,7 +1269,6 @@ static void md200t_update_telemetry_health(unsigned long now)
     if (driver_a_voltage.valid && driver_b_voltage.valid &&
         (driver_a_voltage.millivolts < BATTERY_LOW_THRESHOLD_MV || driver_b_voltage.millivolts < BATTERY_LOW_THRESHOLD_MV))
         battery_low_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
-
 }
 
 static void latch_safety_can_tx_failure(void)
@@ -1791,13 +1802,13 @@ void can_transmit_if_due(uint32_t now_us)
 void v_decodePWM()
 {
     static unsigned long prevTime = 0;
-    static unsigned long dataA[10] = {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
+    static long dataA[10] = {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
     static unsigned int idx = 0;
-    static unsigned long sum = 15000;
+    static long sum = 15000;
 
     if ((prevTime != 0) && !digitalRead(v_speed_controller_pin))
     {
-        unsigned long tmp = micros() - prevTime;
+        long tmp = micros() - prevTime;
         if (tmp > 2000)
             return;
         sum += tmp - dataA[idx];
@@ -1815,13 +1826,13 @@ void v_decodePWM()
 void w_decodePWM()
 {
     static unsigned long prevTime = 0;
-    static unsigned long dataA[10] = {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
+    static long dataA[10] = {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
     static unsigned int idx = 0;
-    static unsigned long sum = 15000;
+    static long sum = 15000;
 
     if ((prevTime != 0) && !digitalRead(w_speed_controller_pin))
     {
-        unsigned long tmp = micros() - prevTime;
+        long tmp = micros() - prevTime;
         if (tmp > 2000)
             return;
         sum += tmp - dataA[idx];
@@ -1838,29 +1849,33 @@ void w_decodePWM()
 
 void mode_decodePWM()
 {
-    static unsigned long prevTime = 0;
-    static unsigned long dataA[10] = {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
+    static uint32_t rise_time_us = 0;
+    static long dataA[10] = {1200, 1200, 1200, 1200, 1200, 1200, 1200, 1200, 1200, 1200};
     static unsigned int idx = 0;
-    static unsigned long sum = 15000;
+    static long sum = 12000;
 
-    if ((prevTime != 0) && !digitalRead(mode_control_pin))
+    // Each rising edge starts a fresh measurement.
+    if (digitalRead(mode_control_pin))
     {
-        unsigned long tmp = micros() - prevTime;
-        if (tmp > 2000)
-            return;
-        sum += tmp - dataA[idx];
-        dataA[idx] = tmp;
-        idx = (idx + 1) % 10;
-        if (sum / 10 < 1300)
-            mode_state = DRIVE_MODE_STOP;
-        else if (sum / 10 < 1700)
-            mode_state = DRIVE_MODE_MANUAL;
-        else
-            mode_state = DRIVE_MODE_AUTO;
-        prevTime = 0;
+        rise_time_us = micros();
+        return;
     }
+
+    // Here, the falling edge completes a measurement. Ignore any pulse widths outside the expected range.
+    const long pulse_width_us = (long)micros() - rise_time_us;
+    if (pulse_width_us < 800 || pulse_width_us > 2200)
+        return;
+
+    sum += pulse_width_us - dataA[idx];
+    dataA[idx] = pulse_width_us;
+    idx = (idx + 1) % 10;
+    const long mode_pulseWidth = sum / 10;
+    if (mode_pulseWidth < 1100)
+        mode_state = DRIVE_MODE_POWERDOWN;
+    else if (mode_pulseWidth < 1300)
+        mode_state = DRIVE_MODE_STOP;
+    else if (mode_pulseWidth < 1700)
+        mode_state = DRIVE_MODE_MANUAL;
     else
-    {
-        prevTime = micros();
-    }
+        mode_state = DRIVE_MODE_AUTO;
 }

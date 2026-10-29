@@ -369,8 +369,115 @@ static void test_persistent_battery_and_stale_voltage_reload()
     assert(send_status_error_bits() == 0u);
 }
 
+static void test_rc_powerdown_and_relays()
+{
+    reset_test();
+    mode_state = DRIVE_MODE_STOP;
+    setup();
+    assert(mode_state == DRIVE_MODE_STOP);
+    assert(fake_pin_modes()[5] == OUTPUT && fake_pin_modes()[6] == OUTPUT);
+    assert(digitalRead(5) == HIGH && digitalRead(6) == HIGH);
+
+    const unsigned int widths[] = {1000, 1099, 1100, 1200, 1299, 1300, 1500, 1699, 1700, 2000, 2050};
+    const DriveMode expected[] = {DRIVE_MODE_POWERDOWN, DRIVE_MODE_POWERDOWN,
+        DRIVE_MODE_STOP, DRIVE_MODE_STOP, DRIVE_MODE_STOP,
+        DRIVE_MODE_MANUAL, DRIVE_MODE_MANUAL, DRIVE_MODE_MANUAL,
+        DRIVE_MODE_AUTO, DRIVE_MODE_AUTO, DRIVE_MODE_AUTO};
+    for (unsigned int i = 0; i < sizeof(widths) / sizeof(widths[0]); ++i)
+    {
+        for (int sample = 0; sample < 10; ++sample)
+        {
+            fake_clock_us += 20000u;
+            digitalWrite(mode_control_pin, HIGH);
+            mode_decodePWM();
+            fake_clock_us += widths[i];
+            digitalWrite(mode_control_pin, LOW);
+            mode_decodePWM();
+        }
+        assert(mode_state == expected[i]);
+        loop();
+        const int level = expected[i] == DRIVE_MODE_POWERDOWN ? LOW : HIGH;
+        assert(digitalRead(5) == level && digitalRead(6) == level);
+    }
+
+    auto_command = CommandPacket{1000, 0, CMD_FLAG_ENABLE};
+    last_valid_command_ms = millis();
+    motor_enabled = true;
+    motor_set_left_right_rpm(100.0f, 100.0f);
+    update_effective_motor_command(DRIVE_MODE_POWERDOWN, 2000, 2000, millis());
+    assert(!motor_enabled);
+    assert(target_wheel_rpm_cmd.lf_rpm == 0.0f && target_wheel_rpm_cmd.rf_rpm == 0.0f);
+    assert(target_wheel_rpm_cmd.lr_rpm == 0.0f && target_wheel_rpm_cmd.rr_rpm == 0.0f);
+    serial_mode = SERIAL_MODE_BRIDGE;
+    mode_state = DRIVE_MODE_POWERDOWN;
+    loop();
+    assert(digitalRead(5) == LOW && digitalRead(6) == LOW);
+    mode_state = DRIVE_MODE_STOP;
+    loop();
+    assert(digitalRead(5) == HIGH && digitalRead(6) == HIGH);
+}
+
+static void mode_edge(uint64_t time_us, int level)
+{
+    fake_clock_us = time_us;
+    digitalWrite(mode_control_pin, level);
+    mode_decodePWM();
+}
+
+static void test_mode_pwm_resynchronization()
+{
+    // Establish a known average before each fault, then verify recovery.
+    for (int fault = 0; fault < 6; ++fault)
+    {
+        uint64_t t = fake_clock_us + 20000u;
+        for (int i = 0; i < 10; ++i, t += 20000u)
+        {
+            mode_edge(t, HIGH);
+            mode_edge(t + 1200u, LOW);
+        }
+        assert(mode_state == DRIVE_MODE_STOP);
+        switch (fault)
+        {
+        case 0: // Rising interrupt missed: falling edge must not start a pulse.
+            mode_edge(t + 1000u, LOW);
+            break;
+        case 1: // Falling interrupt missed: next rise replaces the old timestamp.
+            mode_edge(t, HIGH);
+            break;
+        case 2: // Rising interrupt missed after a missed falling interrupt.
+            mode_edge(t, HIGH);
+            mode_edge(t + 21000u, LOW);
+            break;
+        case 3: // Out-of-range short pulse.
+            mode_edge(t, HIGH);
+            mode_edge(t + 100u, LOW);
+            break;
+        case 4: // Out-of-range long pulse.
+            mode_edge(t, HIGH);
+            mode_edge(t + 5000u, LOW);
+            break;
+        case 5: // Timestamp zero is valid; subtraction also handles wraparound.
+            mode_edge(0u, HIGH);
+            mode_edge(1200u, LOW);
+            mode_edge(UINT32_MAX - 499u, HIGH);
+            mode_edge(uint64_t{UINT32_MAX} + 701u, LOW);
+            break;
+        }
+        assert(mode_state == DRIVE_MODE_STOP);
+        t = fake_clock_us + 20000u;
+        for (int i = 0; i < 10; ++i, t += 20000u)
+        {
+            mode_edge(t, HIGH);
+            mode_edge(t + 1000u, LOW);
+        }
+        assert(mode_state == DRIVE_MODE_POWERDOWN);
+    }
+}
+
 int main()
 {
+    test_rc_powerdown_and_relays();
+    test_mode_pwm_resynchronization();
     test_receive_and_timestamp();
     test_invalid_duplicate_and_missing_response();
     test_clock_wrap_and_session_reset();
