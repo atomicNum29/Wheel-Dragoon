@@ -289,6 +289,11 @@ void can_rx_overrun_report_sent()
         --g_rx_overrun_reports_remaining;
 }
 
+void can_clear_rx_overrun_reports()
+{
+    g_rx_overrun_reports_remaining = 0;
+}
+
 bool can_is_initialized()
 {
     return g_can_initialized;

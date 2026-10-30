@@ -16,4 +16,6 @@ bool can_receive(CanFrame &frame, uint32_t timeout_us);
 bool can_rx_overrun_detected();
 // Consume one overrun report after transmitting a canonical 0x82 packet.
 void can_rx_overrun_report_sent();
+// Clear historical RX overrun reports when starting a control session.
+void can_clear_rx_overrun_reports();
 bool can_is_initialized();

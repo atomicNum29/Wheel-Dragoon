@@ -18,7 +18,9 @@ static std::deque<TimedFrame> rx_frames;
 static std::vector<CanFrame> tx_frames;
 static int fake_overrun_reports_remaining = 0;
 
-bool can_begin(uint32_t) { return true; }
+static bool fake_can_begin_ok = true;
+bool can_begin(uint32_t) { return fake_can_begin_ok; }
+void can_clear_rx_overrun_reports() { fake_overrun_reports_remaining = 0; }
 bool can_is_initialized() { return true; }
 bool can_rx_overrun_detected() { return fake_overrun_reports_remaining > 0; }
 void can_rx_overrun_report_sent()
@@ -56,6 +58,10 @@ static CanFrame monitor(uint8_t driver, uint8_t pid, int16_t rpm, int32_t count,
 
 static void reset_test()
 {
+    driver_powerdown = false;
+    driver_starting = false;
+    driver_power_on_ms = 0;
+    mode_state = DRIVE_MODE_STOP;
     fake_clock_us = 10000u;
     command_timeout = false;
     estop_active = false;
@@ -311,11 +317,11 @@ static void test_retrigger_and_independent_countdowns()
     assert(send_status_error_bits() == 0u);
     latch_safety_can_tx_failure();
     initialize_control_session(millis());
-    assert(safety_can_tx_failure_reports_remaining == 10);
-    // A new control session must not clear an unreported diagnostic either.
+    assert(safety_can_tx_failure_reports_remaining == 0);
+    // Starting a new session clears diagnostic-only errors too.
     voltage_request_can_tx_failure_reports_remaining = 7;
     initialize_control_session(millis());
-    assert(voltage_request_can_tx_failure_reports_remaining == 7);
+    assert(voltage_request_can_tx_failure_reports_remaining == 0);
 }
 
 static void test_live_inputs_reload_without_delaying_input_release()
@@ -474,8 +480,164 @@ static void test_mode_pwm_resynchronization()
     }
 }
 
+static void test_powerdown_stops_can_and_reports_usb()
+{
+    reset_test();
+    serial_mode = SERIAL_MODE_BRIDGE;
+    can_benchmark.active = true;
+    can_benchmark.waiting_for_response = true;
+    lf_telemetry.valid = true;
+    driver_a_voltage = DriverVoltageTelemetry{24000u, 10u, true};
+    mode_state = DRIVE_MODE_POWERDOWN;
+    loop();
+    assert(driver_powerdown && serial_mode == SERIAL_MODE_CONTROL);
+    assert(!can_benchmark.active && !can_benchmark.waiting_for_response);
+    assert(!lf_telemetry.valid && !driver_a_voltage.valid);
+    assert(tx_frames.empty());
+    assert(digitalRead(5) == LOW && digitalRead(6) == LOW);
+
+    // Even beyond the normal stale/response deadlines, only USB status runs.
+    for (int i = 0; i < 400; ++i)
+    {
+        fake_clock_us += 10000u;
+        Serial.space = 64;
+        Serial.output.clear();
+        loop();
+        assert(tx_frames.empty());
+        assert(Serial.output.size() == SYSTEM_STATUS_PACKET_SIZE);
+        assert(Serial.output[6] == MOTOR_STATE_DRIVER_POWERDOWN);
+        assert(Serial.output[9] == 0u);
+        assert(little_endian::read_u16(&Serial.output[7]) == 0u);
+    }
+
+    // Valid raw and benchmark packets cannot bypass POWERDOWN.
+    uint8_t bridge[CAN_BRIDGE_PACKET_SIZE] = {};
+    little_endian::write_u16(&bridge[5], 1u);
+    bridge[7] = 2u;
+    bridge[8] = 4u;
+    bridge[9] = 143u;
+    bridge[CAN_BRIDGE_PACKET_SIZE - 1] = protocol_xor_checksum(bridge, CAN_BRIDGE_PACKET_SIZE - 1);
+    Serial.space = 64;
+    Serial.output.clear();
+    parse_complete_can_bridge_frame(bridge);
+    assert(Serial.output[5] == CAN_BRIDGE_STATUS_INVALID_REQUEST);
+    assert(serial_mode == SERIAL_MODE_CONTROL && tx_frames.empty());
+    uint8_t benchmark[CAN_BENCHMARK_PACKET_SIZE] = {};
+    little_endian::write_u16(&benchmark[5], 1u);
+    little_endian::write_u16(&benchmark[16], 0x701u);
+    benchmark[18] = 143u;
+    benchmark[19] = 10u;
+    benchmark[21] = 1u;
+    benchmark[23] = 1u;
+    benchmark[25] = 1u;
+    benchmark[CAN_BENCHMARK_PACKET_SIZE - 1] = protocol_xor_checksum(benchmark, CAN_BENCHMARK_PACKET_SIZE - 1);
+    parse_complete_can_benchmark_frame(benchmark);
+    assert(!can_benchmark.active);
+    assert(can_benchmark_result.status == CAN_BENCHMARK_STATUS_INVALID_REQUEST);
+    assert(serial_mode == SERIAL_MODE_CONTROL && tx_frames.empty());
+
+    // POWERDOWN remains visible even while old diagnostics finish reporting.
+    safety_can_tx_failure_reports_remaining = 2;
+    assert(motor_get_current_state() == MOTOR_STATE_DRIVER_POWERDOWN);
+    safety_can_tx_failure_reports_remaining = 0;
+    mode_state = DRIVE_MODE_STOP;
+    Serial.space = 0;
+    loop();
+    assert(!driver_powerdown);
+    assert(digitalRead(5) == HIGH && digitalRead(6) == HIGH);
+    assert(driver_starting && tx_frames.empty());
+    const uint64_t power_on_us = fake_clock_us;
+    for (int i = 1; i <= 99; ++i)
+    {
+        fake_clock_us = power_on_us + i * 10000u;
+        Serial.space = 64;
+        Serial.output.clear();
+        loop();
+        assert(driver_starting && tx_frames.empty());
+        assert(!motor_enabled);
+        assert(Serial.output.size() == SYSTEM_STATUS_PACKET_SIZE);
+        assert(Serial.output[6] == MOTOR_STATE_BOOTING);
+        assert(little_endian::read_u16(&Serial.output[7]) == 0u);
+    }
+    fake_clock_us = power_on_us + 999000u;
+    loop();
+    assert(driver_starting && tx_frames.empty());
+    fake_clock_us = power_on_us + 1000000u;
+    loop();
+    assert(!driver_starting && !tx_frames.empty());
+    assert(!voltage_telemetry_is_stale(millis()));
+    assert(driver_rx_timeout_reports_remaining == 0);
+}
+
+static void test_powerdown_skips_voltage_health_checks()
+{
+    reset_test();
+    driver_powerdown = true;
+    // Verify the health checker itself skips both freshness and low-voltage
+    // detection, without relying on entry having already cleared telemetry.
+    driver_a_voltage = DriverVoltageTelemetry{20000u, 10u, true};
+    driver_b_voltage = DriverVoltageTelemetry{24000u, 10u, true};
+    driver_rx_timeout_reports_remaining = 3;
+    voltage_stale_reports_remaining = 4;
+    md200t_update_telemetry_health(10u);
+    assert(battery_low_reports_remaining == 0);
+    md200t_update_telemetry_health(4000u);
+    assert(driver_a_voltage.valid && driver_b_voltage.valid);
+    assert(!voltage_telemetry_is_stale(4000u));
+    assert(driver_rx_timeout_reports_remaining == 3);
+    assert(voltage_stale_reports_remaining == 4);
+
+    driver_powerdown = false;
+    md200t_update_telemetry_health(10u);
+    assert(battery_low_reports_remaining == ERROR_REPORT_REPEAT_COUNT);
+    md200t_update_telemetry_health(4000u);
+    assert(!driver_a_voltage.valid && !driver_b_voltage.valid);
+    assert(voltage_telemetry_is_stale(4000u));
+}
+
+static void test_session_clears_all_error_reports()
+{
+    reset_test();
+    int *const reports[] = {
+        &safety_can_tx_failure_reports_remaining,
+        &voltage_request_can_tx_failure_reports_remaining,
+        &driver_status_fault_reports_remaining,
+        &driver_rx_timeout_reports_remaining,
+        &battery_low_reports_remaining,
+        &watchdog_reset_reports_remaining,
+        &checksum_error_reports_remaining,
+        &serial_framing_error_reports_remaining,
+        &command_out_of_range_reports_remaining,
+        &command_timeout_reports_remaining,
+        &estop_reports_remaining,
+        &voltage_stale_reports_remaining,
+    };
+    for (int *report : reports)
+        *report = 7;
+    fake_overrun_reports_remaining = 7;
+    initialize_control_session(millis());
+    for (int *report : reports)
+        assert(*report == 0);
+    assert(!can_rx_overrun_detected());
+    assert(send_status_error_bits() == 0u);
+
+    // Active inputs are detected again, even after historical reports clear.
+    command_timeout = true;
+    estop_active = true;
+    initialize_control_session(millis());
+    assert(send_status_error_bits() == (SYSTEM_ERR_COMMAND_TIMEOUT | SYSTEM_ERR_EMERGENCY_STOP_ACTIVE));
+    reset_test();
+    fake_can_begin_ok = false;
+    setup();
+    assert(safety_can_tx_failure_reports_remaining == ERROR_REPORT_REPEAT_COUNT);
+    fake_can_begin_ok = true;
+}
+
 int main()
 {
+    test_session_clears_all_error_reports();
+    test_powerdown_skips_voltage_health_checks();
+    test_powerdown_stops_can_and_reports_usb();
     test_rc_powerdown_and_relays();
     test_mode_pwm_resynchronization();
     test_receive_and_timestamp();

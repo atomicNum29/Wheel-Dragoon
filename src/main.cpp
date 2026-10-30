@@ -89,7 +89,8 @@ typedef enum
     MOTOR_STATE_ESTOP = 3,
     MOTOR_STATE_FAULT = 4,
     MOTOR_STATE_BOOTING = 5,
-    MOTOR_STATE_CALIBRATION = 6
+    MOTOR_STATE_CALIBRATION = 6,
+    MOTOR_STATE_DRIVER_POWERDOWN = 7
 } MotorState;
 
 typedef enum
@@ -152,6 +153,10 @@ const int driver_b_power_relay_pin = 6;
 volatile unsigned int v_pulseWidth = 0;
 volatile unsigned int w_pulseWidth = 0;
 volatile DriveMode mode_state = DRIVE_MODE_STOP;
+static bool driver_powerdown = false;
+static bool driver_starting = false;
+static uint32_t driver_power_on_ms = 0;
+const uint32_t DRIVER_STARTUP_DELAY_MS = 1000;
 
 struct WheelRpmCommand
 {
@@ -427,15 +432,14 @@ void setup()
     digitalWrite(LED_BUILTIN, LOW);
     delay(100);
 
+    // Clear previous diagnostics before CAN init so a new init failure survives.
+    initialize_control_session(millis());
+
     if (!can_begin(MD200T_CAN_BITRATE))
     {
         latch_safety_can_tx_failure();
         digitalWrite(LED_BUILTIN, HIGH);
     }
-
-    // Start the 10 ms reporting timeline even after CAN initialization fails,
-    // so the host continues to receive the failure diagnostic at 100 Hz.
-    initialize_control_session(millis());
 
     booting = false;
 }
@@ -446,9 +450,26 @@ void loop()
     // The ISR-owned values are sampled once so one loop iteration cannot mix
     // two RC modes or partially updated manual inputs.
     const DriveMode drive_mode = mode_state;
-    const int relay_level = drive_mode == DRIVE_MODE_POWERDOWN ? LOW : HIGH;
+    const bool powerdown = drive_mode == DRIVE_MODE_POWERDOWN;
+    if (powerdown != driver_powerdown)
+    {
+        driver_powerdown = powerdown;
+        driver_starting = !powerdown;
+        driver_power_on_ms = static_cast<uint32_t>(now);
+        cancel_can_benchmark();
+        // POWERDOWN always reports USB status, including when entered from BRIDGE.
+        serial_mode = SERIAL_MODE_CONTROL;
+        initialize_control_session(now);
+    }
+    const int relay_level = driver_powerdown ? LOW : HIGH;
     digitalWrite(driver_a_power_relay_pin, relay_level);
     digitalWrite(driver_b_power_relay_pin, relay_level);
+    if (driver_starting &&
+        static_cast<uint32_t>(now - driver_power_on_ms) >= DRIVER_STARTUP_DELAY_MS)
+    {
+        driver_starting = false;
+        initialize_control_session(now);
+    }
     const unsigned int v_pwm = v_pulseWidth;
     const unsigned int w_pwm = w_pulseWidth;
 
@@ -539,7 +560,7 @@ static void update_effective_motor_command(DriveMode drive_mode,
         return;
     }
 
-    if (drive_mode == DRIVE_MODE_STOP || drive_mode == DRIVE_MODE_POWERDOWN)
+    if (driver_starting || drive_mode == DRIVE_MODE_STOP || drive_mode == DRIVE_MODE_POWERDOWN)
     {
         command_timeout = false;
         estop_active = false;
@@ -617,7 +638,8 @@ static void perform_mcu_reset(void)
     motor_stop_all();
 
     const Md200tDriverCommand torque_off = {0.0f, 0.0f, false};
-    md200t_send_driver_commands(torque_off, torque_off);
+    if (!driver_powerdown && !driver_starting)
+        md200t_send_driver_commands(torque_off, torque_off);
 
     // Teensy 3.2 / Cortex-M4 system reset request. Disable interrupts after
     // both CAN transmissions so no ISR can run between the request and reset.
@@ -804,7 +826,7 @@ static bool can_benchmark_consume_rx(const CanFrame &frame, uint32_t rx_timestam
 
 static void can_benchmark_update(uint32_t now_us)
 {
-    if (!can_benchmark.active || can_benchmark_result.pending)
+    if (driver_powerdown || driver_starting || !can_benchmark.active || can_benchmark_result.pending)
         return;
 
     if (can_benchmark.waiting_for_response)
@@ -866,7 +888,7 @@ static void parse_complete_can_benchmark_frame(const uint8_t *packet)
     const uint8_t response_count = packet[25];
     const uint8_t response_pid_2 = packet[26];
 
-    if (request.id > 0x7FFu || request.dlc > 8u || response_can_id > 0x7FFu ||
+    if (driver_powerdown || driver_starting || request.id > 0x7FFu || request.dlc > 8u || response_can_id > 0x7FFu ||
         repeat_count == 0u || period_ms == 0u || timeout_ms == 0u ||
         timeout_ms > period_ms || static_cast<uint32_t>(timeout_ms) * 1000u > CAN_BRIDGE_MAX_RX_TIMEOUT_US ||
         response_count == 0u || response_count > 2u ||
@@ -910,7 +932,7 @@ static void parse_complete_can_bridge_frame(const uint8_t *packet)
     CanFrame tx = {};
     tx.id = little_endian::read_u16(&packet[5]);
     tx.dlc = packet[7];
-    if (tx.id > 0x7FFu || tx.dlc > 8u)
+    if (driver_powerdown || driver_starting || tx.id > 0x7FFu || tx.dlc > 8u)
     {
         send_can_bridge_response(seq, CAN_BRIDGE_STATUS_INVALID_REQUEST, nullptr);
         return;
@@ -1074,6 +1096,19 @@ static void initialize_control_session(unsigned long now)
     // A new control session must not reuse telemetry received before bridge
     // mode. Freshness grace periods start from this timestamp as well.
     reset_telemetry_validity();
+    safety_can_tx_failure_reports_remaining = 0;
+    voltage_request_can_tx_failure_reports_remaining = 0;
+    driver_status_fault_reports_remaining = 0;
+    driver_rx_timeout_reports_remaining = 0;
+    battery_low_reports_remaining = 0;
+    watchdog_reset_reports_remaining = 0;
+    checksum_error_reports_remaining = 0;
+    serial_framing_error_reports_remaining = 0;
+    command_out_of_range_reports_remaining = 0;
+    command_timeout_reports_remaining = 0;
+    estop_reports_remaining = 0;
+    voltage_stale_reports_remaining = 0;
+    can_clear_rx_overrun_reports();
     system_status_pending = false;
     control_mode_started_ms = now;
     reset_can_tx_scheduler(micros());
@@ -1097,6 +1132,9 @@ static void enter_bridge_mode(void)
     serial_mode = SERIAL_MODE_BRIDGE;
     motor_enabled = false;
     motor_stop_all();
+
+    if (driver_powerdown || driver_starting)
+        return;
 
     // Automatic traffic is disabled before this back-to-back safety pair.
     const bool driver_a_ok = md200t_torque_off(MD200T_DRIVER_A_ID);
@@ -1240,6 +1278,9 @@ static void md200t_drain_rx(unsigned long now)
         if (!can_receive(frame, 0u))
             break;
 
+        if (driver_powerdown || driver_starting)
+            continue;
+
         const uint32_t rx_timestamp_us = micros();
         if (serial_mode == SERIAL_MODE_BRIDGE)
         {
@@ -1263,6 +1304,9 @@ static bool telemetry_is_fresh(bool valid, unsigned long last_update_ms, unsigne
 
 static void md200t_update_telemetry_health(unsigned long now)
 {
+    if (driver_powerdown || driver_starting)
+        return;
+
     driver_a_voltage.valid = telemetry_is_fresh(driver_a_voltage.valid, driver_a_voltage.last_update_ms, now, VOLTAGE_TIMEOUT_MS);
     driver_b_voltage.valid = telemetry_is_fresh(driver_b_voltage.valid, driver_b_voltage.last_update_ms, now, VOLTAGE_TIMEOUT_MS);
 
@@ -1287,7 +1331,7 @@ static bool motor_has_driver_fault(void)
 
 static bool voltage_telemetry_is_stale(unsigned long now)
 {
-    return serial_mode == SERIAL_MODE_CONTROL &&
+    return !driver_powerdown && !driver_starting && serial_mode == SERIAL_MODE_CONTROL &&
            now - control_mode_started_ms >= VOLTAGE_TIMEOUT_MS &&
            (!driver_a_voltage.valid || !driver_b_voltage.valid);
 }
@@ -1403,11 +1447,13 @@ MotorState motor_get_current_state(void)
 
 static MotorState resolve_motor_state(const FaultSnapshot &fault)
 {
+    if (driver_powerdown)
+        return MOTOR_STATE_DRIVER_POWERDOWN;
     if (fault.driver_fault || fault.battery_low)
         return MOTOR_STATE_FAULT;
     if (fault.emergency_stop_input_active)
         return MOTOR_STATE_ESTOP;
-    if (booting)
+    if (booting || driver_starting)
         return MOTOR_STATE_BOOTING;
     if (calibration_active)
         return MOTOR_STATE_CALIBRATION;
@@ -1664,6 +1710,17 @@ void can_transmit_if_due(uint32_t now_us)
 {
     if (serial_mode != SERIAL_MODE_CONTROL || !can_tx_scheduler.initialized)
         return;
+
+    if (driver_powerdown || driver_starting)
+    {
+        // Keep USB status at 100 Hz without opening CAN response windows.
+        if (static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us) >= CAN_TX_COMMAND_PERIOD_US)
+        {
+            can_tx_scheduler.cycle_start_us = now_us;
+            system_status_pending = true;
+        }
+        return;
+    }
 
     // Advance directly to the current cycle. A round that did not collect all
     // four responses still queues one fallback status so diagnostics remain

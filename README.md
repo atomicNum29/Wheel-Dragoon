@@ -273,6 +273,8 @@ MD200T A/B는 이미 `500 kbit/s`로 설정된 상태를 전제로 한다. 펌�
 
 모드 채널의 최근 유효 PWM 10개 평균값으로 주행 모드를 선택합니다. 800–2200 us 범위의 펄스를 측정에 사용하며, 이 범위 밖의 펄스는 무시합니다. 초기 모드와 평균 버퍼는 STOP(1200 us)으로 시작합니다. POWERDOWN에서만 GPIO 5·6을 LOW로 출력하며, STOP/MANUAL/AUTO에서는 HIGH로 출력해 두 드라이버의 PWR_SW 접점을 닫습니다. 릴레이 출력은 CONTROL/BRIDGE와 관계없이 RC 모드를 따릅니다.
 
+POWERDOWN에서는 주행·전압 조회·raw bridge·벤치마크 CAN 송신을 중단합니다. 진행 중 벤치마크를 취소하고 CONTROL로 전환하여 USB `0x82` 상태를 100 Hz로 계속 보고합니다. 새 bridge/benchmark 요청은 invalid request로 거절합니다. 드라이버 telemetry는 무효화하며, 전원 차단 중 응답 timeout과 voltage stale을 새로 발생시키지 않습니다. `initialize_control_session()`은 POWERDOWN 진입·해제 및 BRIDGE→CONTROL 복귀 시 모든 오류 잔여 보고(CAN RX overrun 포함)를 초기화합니다. 현재 활성인 오류 조건은 이후 검사에서 다시 보고합니다. POWERDOWN 해제 시 릴레이를 HIGH로 올리고 1초 동안 드라이버 부팅을 기다립니다. 이 동안 CAN 송신·응답 timeout·전압 health 검사를 보류하고 USB `mcu_state=BOOTING`을 보고합니다. 새 bridge/benchmark 요청도 거절합니다. 1초 후 CAN 스케줄과 telemetry 유효성 및 freshness 기준 시각을 초기화하여 통신을 재개합니다. `DRIVER_POWERDOWN=7`은 릴레이 명령 상태이며 실제 전원 차단 확인을 의미하지 않습니다. 패킷 크기와 버전은 그대로입니다.
+
 | PWM 범위 | 모드 | 동작 |
 | --- | --- | --- |
 | `< 1100 us` | Powerdown (`DRIVE_MODE_POWERDOWN`) | GPIO 5·6 LOW, 드라이버 전원 차단 및 목표 RPM `0` |
@@ -295,7 +297,7 @@ serial_mode
     └── 0x21 반복 benchmark와 0xA1 sample 결과 처리
 ```
 
-BRIDGE 진입은 `mode_state == AUTO`로 제한되지 않습니다. POWERDOWN, STOP, MANUAL, AUTO 어느 위치에서도 유효한 `0x20` 또는 `0x21` packet을 받으면 BRIDGE로 전환합니다. BRIDGE에서는 RC mode switch가 계속 갱신되더라도 그 값에 따라 CAN 자동 출력이 다시 시작되거나 CONTROL로 복귀하지 않습니다. 유효한 `0x01` command를 받아야 CONTROL로 복귀하며, 복귀 직후 실제 출력은 그때의 `mode_state`가 결정합니다. 따라서 STOP/POWERDOWN이면 TQ-OFF, MANUAL이면 RC 명령, AUTO이면 수신한 `0x01` 명령을 적용합니다.
+BRIDGE 진입은 `mode_state == AUTO`로 제한되지 않습니다. STOP, MANUAL, AUTO 위치에서 유효한 `0x20` 또는 `0x21` packet을 받으면 BRIDGE로 전환합니다. BRIDGE에서는 RC mode switch가 계속 갱신되더라도 STOP/MANUAL/AUTO 전환만으로 CAN 자동 출력이 다시 시작되거나 CONTROL로 복귀하지 않습니다. POWERDOWN 진입 또는 유효한 `0x01` command 수신 시 CONTROL로 복귀하며, 복귀 직후 실제 출력은 그때의 `mode_state`가 결정합니다. 따라서 STOP/POWERDOWN이면 TQ-OFF, MANUAL이면 RC 명령, AUTO이면 수신한 `0x01` 명령을 적용합니다.
 
 CONTROL이라고 항상 ROS target을 사용하는 것은 아닙니다. `mode_state == AUTO`일 때만 저장된 ROS command가 모터 출력에 적용됩니다. STOP과 MANUAL에서도 유효한 `0x01`은 AUTO용 command로 저장되고 BRIDGE 상태였다면 CONTROL 복귀를 일으키지만, 현재 CAN 출력에는 ROS target이 섞이지 않습니다.
 
@@ -511,8 +513,9 @@ AA 55 07 81 seq state error_lo error_hi batt_lo batt_hi checksum
 | `4` | `FAULT` | 드라이버 fault 또는 심각 오류 상태 |
 | `5` | `BOOTING` | MCU 부팅 또는 초기화 중 |
 | `6` | `CALIBRATION` | 보정 또는 설정 동작 중 |
+| `7` | `DRIVER_POWERDOWN` | 릴레이 LOW로 드라이버 전원 차단 명령 중 |
 
-상태 우선순위는 `FAULT > ESTOP > BOOTING > CALIBRATION > TIMEOUT_STOP > DISABLED > ENABLED`입니다.
+상태 우선순위는 `DRIVER_POWERDOWN > FAULT > ESTOP > BOOTING > CALIBRATION > TIMEOUT_STOP > DISABLED > ENABLED`입니다.
 
 ### Legacy Basic Status error (`0x81`)
 
