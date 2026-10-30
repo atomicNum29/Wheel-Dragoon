@@ -77,7 +77,7 @@ static void reset_test()
     fake_overrun_reports_remaining = 0;
     Serial = {};
     serial_mode = SERIAL_MODE_CONTROL;
-    system_status_pending = false;
+    system_status_tx_pending = false;
     system_status_tx_seq = 0u;
     driver_status_fault_reports_remaining = 0;
     driver_rx_timeout_reports_remaining = 0;
@@ -119,7 +119,7 @@ static void test_receive_and_timestamp()
     assert(rf_telemetry.rx_timestamp_us == 13700u);
     assert(lr_telemetry.rx_timestamp_us == 14100u);
     assert(telemetry_validity_bits() == 0x0Fu);
-    assert(system_status_pending && can_tx_scheduler.driver_a_response_checked &&
+    assert(system_status_tx_pending && can_tx_scheduler.driver_a_response_checked &&
            can_tx_scheduler.driver_b_response_checked);
 }
 

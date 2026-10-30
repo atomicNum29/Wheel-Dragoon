@@ -205,7 +205,7 @@ struct CanTxScheduler
     Md200tDriverCommand pending_driver_b_command;
     uint8_t expected_wheel_mask;
     uint8_t received_wheel_mask;
-    bool round_status_queued;
+    bool round_status_tx_requested;
 };
 
 struct CanBenchmarkState
@@ -245,7 +245,7 @@ struct CanBenchmarkResult
     uint8_t flags;
     uint8_t response_count;
     uint8_t received_mask;
-    bool pending;
+    bool tx_pending;
 };
 
 // One side-effect-free view of all live inputs and remaining error reports. Legacy
@@ -396,7 +396,7 @@ static uint8_t status_tx_seq = 0;
 static uint8_t system_status_tx_seq = 0;
 static uint8_t bridge_tunnel_seq = 0;
 static SerialMode serial_mode = SERIAL_MODE_CONTROL;
-static bool system_status_pending = false;
+static bool system_status_tx_pending = false;
 
 static WheelRpmCommand target_wheel_rpm_cmd = {0.0f, 0.0f, 0.0f, 0.0f};
 static CommandPacket auto_command = {0, 0, 0u};
@@ -708,7 +708,7 @@ static void queue_invalid_can_benchmark_result(uint8_t seq)
     can_benchmark_result.seq = seq;
     can_benchmark_result.status = CAN_BENCHMARK_STATUS_INVALID_REQUEST;
     can_benchmark_result.flags = CAN_BENCHMARK_FLAG_FINAL;
-    can_benchmark_result.pending = true;
+    can_benchmark_result.tx_pending = true;
 }
 
 static void complete_can_benchmark_attempt(uint8_t status)
@@ -735,7 +735,7 @@ static void complete_can_benchmark_attempt(uint8_t status)
     can_benchmark_result.flags = final ? CAN_BENCHMARK_FLAG_FINAL : 0u;
     can_benchmark_result.response_count = can_benchmark.response_count;
     can_benchmark_result.received_mask = can_benchmark.received_mask;
-    can_benchmark_result.pending = true;
+    can_benchmark_result.tx_pending = true;
 
     can_benchmark.waiting_for_response = false;
     if (final)
@@ -744,7 +744,7 @@ static void complete_can_benchmark_attempt(uint8_t status)
 
 static void can_benchmark_flush_result(void)
 {
-    if (!can_benchmark_result.pending || Serial.availableForWrite() < CAN_BENCHMARK_RESULT_SIZE)
+    if (!can_benchmark_result.tx_pending || Serial.availableForWrite() < CAN_BENCHMARK_RESULT_SIZE)
         return;
 
     uint8_t packet[CAN_BENCHMARK_RESULT_SIZE] = {};
@@ -779,14 +779,14 @@ static void can_benchmark_flush_result(void)
     packet[55] = protocol_xor_checksum(packet, CAN_BENCHMARK_RESULT_SIZE - 1u);
 
     Serial.write(packet, CAN_BENCHMARK_RESULT_SIZE);
-    can_benchmark_result.pending = false;
+    can_benchmark_result.tx_pending = false;
 }
 
 static void cancel_can_benchmark(void)
 {
     can_benchmark.active = false;
     can_benchmark.waiting_for_response = false;
-    can_benchmark_result.pending = false;
+    can_benchmark_result.tx_pending = false;
 }
 
 static bool can_benchmark_consume_rx(const CanFrame &frame, uint32_t rx_timestamp_us)
@@ -826,7 +826,7 @@ static bool can_benchmark_consume_rx(const CanFrame &frame, uint32_t rx_timestam
 
 static void can_benchmark_update(uint32_t now_us)
 {
-    if (driver_powerdown || driver_starting || !can_benchmark.active || can_benchmark_result.pending)
+    if (driver_powerdown || driver_starting || !can_benchmark.active || can_benchmark_result.tx_pending)
         return;
 
     if (can_benchmark.waiting_for_response)
@@ -1109,7 +1109,7 @@ static void initialize_control_session(unsigned long now)
     estop_reports_remaining = 0;
     voltage_stale_reports_remaining = 0;
     can_clear_rx_overrun_reports();
-    system_status_pending = false;
+    system_status_tx_pending = false;
     control_mode_started_ms = now;
     reset_can_tx_scheduler(micros());
 }
@@ -1225,7 +1225,7 @@ static void md200t_process_rx_frame(const CanFrame &frame,
 
         // With user-configured PID149=7, PID207/174 returns PID196/201. Count those
         // four command-triggered frames in the current 10 ms command round and
-        // queue the combined USB status as soon as all wheels are present.
+        // request combined USB status transmission as soon as all wheels are present.
         if (serial_mode == SERIAL_MODE_CONTROL &&
             can_tx_scheduler.initialized &&
             (can_tx_scheduler.expected_wheel_mask & wheel_mask) != 0u)
@@ -1237,12 +1237,12 @@ static void md200t_process_rx_frame(const CanFrame &frame,
             if (can_tx_response_pair_complete(CAN_TX_DRIVER_B_WHEELS_MASK,
                                               can_tx_scheduler.received_wheel_mask))
                 can_tx_scheduler.driver_b_response_checked = true;
-            if (!can_tx_scheduler.round_status_queued &&
+            if (!can_tx_scheduler.round_status_tx_requested &&
                 can_tx_wheel_round_complete(can_tx_scheduler.expected_wheel_mask,
                                             can_tx_scheduler.received_wheel_mask))
             {
-                can_tx_scheduler.round_status_queued = true;
-                system_status_pending = true;
+                can_tx_scheduler.round_status_tx_requested = true;
+                system_status_tx_pending = true;
             }
         }
         return;
@@ -1620,13 +1620,13 @@ void protocol_send_basic_status_if_due(void)
 
 void protocol_send_system_status_if_ready(void)
 {
-    if (serial_mode != SERIAL_MODE_CONTROL || !system_status_pending)
+    if (serial_mode != SERIAL_MODE_CONTROL || !system_status_tx_pending)
         return;
 
-    // Keep the pending flag set if the USB TX buffer is temporarily full. A
+    // Keep the TX pending flag set if the USB TX buffer is temporarily full. A
     // later loop sends the newest telemetry snapshot instead of blocking CAN.
     if (protocol_send_system_status())
-        system_status_pending = false;
+        system_status_tx_pending = false;
 }
 
 void motor_set_left_right_rpm(float left_rpm, float right_rpm)
@@ -1717,13 +1717,13 @@ void can_transmit_if_due(uint32_t now_us)
         if (static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us) >= CAN_TX_COMMAND_PERIOD_US)
         {
             can_tx_scheduler.cycle_start_us = now_us;
-            system_status_pending = true;
+            system_status_tx_pending = true;
         }
         return;
     }
 
     // Advance directly to the current cycle. A round that did not collect all
-    // four responses still queues one fallback status so diagnostics remain
+    // four responses still requests one fallback status so diagnostics remain
     // visible, but missed CAN events are never replayed across cycle boundaries.
     const uint32_t elapsed_us = static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us);
     if (elapsed_us >= CAN_TX_COMMAND_PERIOD_US)
@@ -1745,8 +1745,8 @@ void can_transmit_if_due(uint32_t now_us)
             close_driver_response_window(MD200T_DRIVER_B_ID);
         }
 
-        if (!can_tx_scheduler.round_status_queued)
-            system_status_pending = true;
+        if (!can_tx_scheduler.round_status_tx_requested)
+            system_status_tx_pending = true;
 
         const uint32_t skipped_cycles = elapsed_us / CAN_TX_COMMAND_PERIOD_US;
         can_tx_scheduler.cycle_start_us += skipped_cycles * CAN_TX_COMMAND_PERIOD_US;
@@ -1760,7 +1760,7 @@ void can_transmit_if_due(uint32_t now_us)
         can_tx_scheduler.voltage_poll_handled = false;
         can_tx_scheduler.expected_wheel_mask = 0u;
         can_tx_scheduler.received_wheel_mask = 0u;
-        can_tx_scheduler.round_status_queued = false;
+        can_tx_scheduler.round_status_tx_requested = false;
     }
 
     const uint32_t cycle_phase_us = static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us);
@@ -1828,12 +1828,12 @@ void can_transmit_if_due(uint32_t now_us)
     if (!can_tx_scheduler.driver_b_response_checked)
         close_driver_response_window(MD200T_DRIVER_B_ID);
 
-    // A complete pair queues 0x82 from RX immediately. A partial/empty pair
-    // reaches here at the deadline and queues one fallback with timeout bits.
-    if (!can_tx_scheduler.round_status_queued)
+    // A complete pair requests 0x82 transmission from RX immediately. A partial/empty
+    // pair requests one fallback with timeout bits here at the deadline.
+    if (!can_tx_scheduler.round_status_tx_requested)
     {
-        can_tx_scheduler.round_status_queued = true;
-        system_status_pending = true;
+        can_tx_scheduler.round_status_tx_requested = true;
+        system_status_tx_pending = true;
     }
 
     if (!can_tx_scheduler.voltage_poll_handled)
