@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <kinetis.h>
+#include "vehicle_motion.hpp"
 #include "timing_diagnostics.hpp"
 
 #include "can_tx_schedule.hpp"
@@ -9,10 +10,6 @@
 #include "md200t_can.hpp"
 
 #define _DEBUG 0
-
-// car width and wheel radius
-const float W = 0.485;       // m
-const float R = 0.13 / 2.0f; // m
 
 // Command packet protocol: AA 55 07 01 seq v_lo v_hi w_lo w_hi flags checksum
 const uint8_t PKT_HEADER_0 = 0xAA;
@@ -52,6 +49,9 @@ const int16_t CMD_ANGULAR_MILLI_RADPS_MAX = 5000;
 const float CMD_MILLI_UNIT_SCALE = 1000.0f;
 const int32_t RC_PWM_CENTER_US = 1500;
 const int32_t RC_PWM_DEADBAND_US = 50;
+const unsigned int RC_PWM_MIN_US = 1000;
+const unsigned int RC_PWM_MAX_US = 2000;
+const float RC_PWM_ACTIVE_SPAN_US = 450.0f; // 500 us half-range minus 50 us deadband.
 const uint8_t CMD_FLAG_ENABLE = 0x01;
 const uint8_t CMD_FLAG_ESTOP = 0x02;
 const uint8_t CAN_BRIDGE_STATUS_OK = 0;
@@ -306,19 +306,13 @@ void motor_stop_all(void);
 void can_transmit_if_due(uint32_t now_us);
 // Check whether command packet velocity fields are inside supported physical limits.
 static bool command_in_range(const CommandPacket &command);
-// Convert linear wheel speed in m/s to wheel RPM.
-static float vel_mps_to_rpm(float v_mps);
 // Convert floating-point target RPM to MD200T int16 command data.
 static int16_t rpm_to_i16(float rpm);
 // Return the signed RC PWM offset, or zero while inside the neutral deadband.
 static int32_t rc_pwm_offset_with_deadband(unsigned int pulse_width_us);
-// Convert packet milli-m/s linear velocity to m/s.
-static float milli_mps_to_mps(int16_t milli_mps);
-// Convert packet milli-rad/s angular velocity to rad/s.
-static float milli_radps_to_radps(int16_t milli_radps);
 // Reset command frame parser to wait for the next packet header.
 static void command_parser_reset(CommandFrameParser &parser);
-// Store a validated ROS command for use only while the RC switch selects AUTO.
+// Retain host packet/status compatibility; AUTO drive is disabled.
 static void apply_command_packet(const CommandPacket &command, unsigned long now);
 // Parse a complete command frame buffer and apply it when valid.
 static void parse_complete_command_frame(const uint8_t *packet, unsigned long now);
@@ -400,6 +394,10 @@ static uint8_t bridge_tunnel_seq = 0;
 static SerialMode serial_mode = SERIAL_MODE_CONTROL;
 static bool system_status_tx_pending = false;
 
+static vehicle::MotionController motion(vehicle::MotionConfig{}, vehicle::left_servo, vehicle::right_servo);
+static void update_vehicle_output(vehicle::RcCommand command, unsigned long now);
+static void steering_output();
+
 static WheelRpmCommand target_wheel_rpm_cmd = {0.0f, 0.0f, 0.0f, 0.0f};
 static CommandPacket auto_command = {0, 0, 0u};
 static CanTxScheduler can_tx_scheduler = {};
@@ -450,6 +448,17 @@ void setup()
     ARM_DEMCR |= ARM_DEMCR_TRCENA;
     ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
 #endif
+    // Hardware PWM avoids a library's default pulse before calibrated neutral.
+    // Pins 9/10 share FTM0; both use the same 50 Hz frame frequency.
+    if (motion.calibrated()) {
+        analogWriteResolution(16);
+        for (int i=0;i<2;++i) {
+            const auto &c=motion.calibration[i];
+            analogWriteFrequency(c.pin, vehicle::servo_frequency_hz);
+            analogWrite(c.pin, vehicle::pwm_duty(vehicle::pulse_for_angle(c, 0.0f)));
+        }
+    }
+    motion.update({0,0}, millis(), false);
 
     pinMode(v_speed_controller_pin, INPUT);
     pinMode(w_speed_controller_pin, INPUT);
@@ -523,6 +532,7 @@ void loop()
     profile_step(timing::ERRORS, [&]() { refresh_live_error_reports(now); });
     profile_step(timing::CAN_SCHEDULE, [&]() { can_transmit_if_due(micros()); });
     profile_step(timing::SYSTEM_TX, [&]() { protocol_send_system_status_if_ready(); });
+    steering_output();
 #if FIRMWARE_TIMING_DIAGNOSTICS
     profile_step(timing::DIAGNOSTIC_TX, [&]() { timing_publish_if_due(); });
     timing_live.stages[timing::LOOP_BODY].add(ARM_DWT_CYCCNT - loop_start);
@@ -539,17 +549,12 @@ static inline bool command_in_range(const CommandPacket &command)
            command.w_milli_radps <= CMD_ANGULAR_MILLI_RADPS_MAX;
 }
 
-// Helper: m/s -> wheel RPM
-static inline float vel_mps_to_rpm(float v_mps)
-{
-    // wheel angular speed (rad/s) = v / R
-    float omega = v_mps / (float)R;
-    // RPM = omega * 60 / (2*pi)
-    return omega * 60.0f / (2.0f * 3.1415926535f);
-}
-
 static inline int16_t rpm_to_i16(float rpm)
 {
+    if (!isfinite(rpm)) return 0;
+    const float limit = fminf(motion.config.rpm_limit, vehicle::mdh100_maximum_rpm);
+    if (!isfinite(limit) || limit <= 0) return 0;
+    rpm = vehicle::clamp(rpm, -limit, limit);
     if (rpm > 32767.0f)
         return 32767;
     if (rpm < -32768.0f)
@@ -560,20 +565,13 @@ static inline int16_t rpm_to_i16(float rpm)
 
 static inline int32_t rc_pwm_offset_with_deadband(unsigned int pulse_width_us)
 {
-    const int32_t offset_us = static_cast<int32_t>(pulse_width_us) - RC_PWM_CENTER_US;
+    if (pulse_width_us < RC_PWM_MIN_US) pulse_width_us = RC_PWM_MIN_US;
+    if (pulse_width_us > RC_PWM_MAX_US) pulse_width_us = RC_PWM_MAX_US;
+    int32_t offset_us = static_cast<int32_t>(pulse_width_us) - RC_PWM_CENTER_US;
     if (offset_us >= -RC_PWM_DEADBAND_US && offset_us <= RC_PWM_DEADBAND_US)
         return 0;
+    offset_us = (offset_us > 0) ? (offset_us - RC_PWM_DEADBAND_US) : (offset_us + RC_PWM_DEADBAND_US);
     return offset_us;
-}
-
-static inline float milli_mps_to_mps(int16_t milli_mps)
-{
-    return (float)milli_mps / CMD_MILLI_UNIT_SCALE;
-}
-
-static inline float milli_radps_to_radps(int16_t milli_radps)
-{
-    return (float)milli_radps / CMD_MILLI_UNIT_SCALE;
 }
 
 static void command_parser_reset(CommandFrameParser &parser)
@@ -584,8 +582,7 @@ static void command_parser_reset(CommandFrameParser &parser)
 
 static void apply_command_packet(const CommandPacket &command, unsigned long now)
 {
-    // Keep AUTO input separate from the effective output. STOP and MANUAL
-    // therefore cannot leak a just-received ROS target into the CAN scheduler.
+    // Preserve reception/status bookkeeping without granting host drive authority.
     auto_command = command;
     last_valid_command_ms = now;
 }
@@ -619,31 +616,22 @@ static void update_effective_motor_command(DriveMode drive_mode,
         estop_active = false;
         motor_enabled = true;
 
-        // Suppress receiver/joystick noise independently on both axes. Outside
-        // the neutral band, preserve the existing scaling and direction signs.
+        // Clamp receiver range, remove the inclusive 1450..1550 us deadband,
+        // and map each remaining 450 us continuously to the full steering range.
+        // Keep the previous throttle scale: endpoints request +/-1.8 m/s before RPM limiting.
         const float v_velocity = static_cast<float>(rc_pwm_offset_with_deadband(v_pwm)) / 250.0f;
-        const float w_velocity = static_cast<float>(rc_pwm_offset_with_deadband(w_pwm)) / 100.0f;
-        const float left_velocity = v_velocity - w_velocity * W / 2.0f;
-        const float right_velocity = v_velocity + w_velocity * W / 2.0f;
-        motor_set_left_right_rpm(vel_mps_to_rpm(left_velocity), vel_mps_to_rpm(right_velocity));
+        const float steering_input = static_cast<float>(rc_pwm_offset_with_deadband(w_pwm)) / RC_PWM_ACTIVE_SPAN_US;
+        const float inner_angle = steering_input * vehicle::rc_maximum_inner_angle;
+        const float curvature = vehicle::curvature_from_inner_angle(inner_angle, motion.config.geometry);
+        update_vehicle_output({v_velocity, curvature}, now);
         return;
     }
 
+    // RC-only firmware: AUTO packets remain parseable, but never enable drive.
     command_timeout = (last_valid_command_ms == 0u) || (now - last_valid_command_ms > COMMAND_TIMEOUT_MS);
     estop_active = (auto_command.flags & CMD_FLAG_ESTOP) != 0u;
-    motor_enabled = ((auto_command.flags & CMD_FLAG_ENABLE) != 0u) && !estop_active && !command_timeout;
-
-    if (!motor_enabled)
-    {
-        motor_stop_all();
-        return;
-    }
-
-    const float v_velocity = milli_mps_to_mps(auto_command.v_milli_mps);
-    const float w_velocity = milli_radps_to_radps(auto_command.w_milli_radps);
-    const float left_velocity = v_velocity - w_velocity * W / 2.0f;
-    const float right_velocity = v_velocity + w_velocity * W / 2.0f;
-    motor_set_left_right_rpm(vel_mps_to_rpm(left_velocity), vel_mps_to_rpm(right_velocity));
+    motor_enabled = false;
+    motor_stop_all();
 }
 
 static void parse_complete_command_frame(const uint8_t *packet, unsigned long now)
@@ -1718,6 +1706,7 @@ void motor_set_left_right_rpm(float left_rpm, float right_rpm)
 
 void motor_stop_all(void)
 {
+    motion.update({0,0}, millis(), false);
     motor_set_left_right_rpm(0.0f, 0.0f);
 }
 
@@ -1908,7 +1897,7 @@ void can_transmit_if_due(uint32_t now_us)
 
         // A response timeout or any other safety fault detected during the
         // first window changes Driver B's scheduled frame to TQ-OFF.
-        if (motor_has_driver_fault() || battery_low_reports_remaining || estop_active || command_timeout)
+        if (!motor_enabled || motor_has_driver_fault() || battery_low_reports_remaining || estop_active || command_timeout)
             can_tx_scheduler.pending_driver_b_command.enabled = false;
 
         can_tx_scheduler.driver_b_command_sent = true;
@@ -2035,6 +2024,26 @@ void mode_decodePWM()
         mode_state = DRIVE_MODE_MANUAL;
     else
         mode_state = DRIVE_MODE_AUTO;
+}
+
+// Hardware boundary: kinematics uses wheel rolling signs; retain existing positive
+// channel signs on A1=FL, A2=RR, B1=FR, B2=RL without new shaft inversions.
+static void update_vehicle_output(vehicle::RcCommand command, unsigned long now)
+{
+    const bool allowed = !motor_has_driver_fault() && !battery_low_reports_remaining;
+    motion.update(command, static_cast<uint32_t>(now), allowed);
+    motor_enabled = motor_enabled && motion.ready && allowed;
+    target_wheel_rpm_cmd = {motion.rpm[0], motion.rpm[2], motion.rpm[1], motion.rpm[3]};
+}
+
+static void steering_output()
+{
+    if (!motion.calibrated()) return;
+    for (int i = 0; i < 2; ++i) {
+        const auto &c = motion.calibration[i];
+        const int pulse_us = vehicle::pulse_for_angle(c, motion.angle[i]);
+        analogWrite(c.pin, vehicle::pwm_duty(pulse_us));
+    }
 }
 
 #if FIRMWARE_TIMING_DIAGNOSTICS

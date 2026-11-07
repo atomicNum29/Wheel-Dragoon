@@ -1,3 +1,8 @@
+> 현재 펌웨어는 RC MANUAL 전용 전륜 조향·4륜 구동입니다. AUTO는 구동을 차단합니다.
+> [RC 설정·PWM 보정·제어 정책](docs/rc-steering.ko.md)을 참고하세요.
+> 라즈베리파이에서 이어갈 때는 [작업 인계 문서](docs/raspberry-pi-handoff.ko.md)부터 확인하세요.
+> 아래 ROS/AUTO·스키드 설명은 기존 커밋의 기록이며 현재 RC 전용 동작과 다릅니다.
+
 # Wheel-Dragoon
 
 Windows CAN CLI 실행 방법과 PID 196/201 벤치마크 설정은

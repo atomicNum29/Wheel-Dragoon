@@ -14,6 +14,9 @@ inline int *fake_pin_levels() { static int levels[64] = {}; return levels; }
 inline int *fake_pin_modes() { static int modes[64] = {}; return modes; }
 inline void pinMode(int pin, int mode) { fake_pin_modes()[pin] = mode; }
 inline void digitalWrite(int pin, int level) { fake_pin_levels()[pin] = level; }
+inline void analogWriteResolution(int) {}
+inline void analogWriteFrequency(int, float) {}
+inline void analogWrite(int pin, int duty) { fake_pin_levels()[pin] = duty; }
 inline int digitalRead(int pin) { return fake_pin_levels()[pin]; }
 inline int digitalPinToInterrupt(int pin) { return pin; }
 inline void attachInterrupt(int, void (*)(), int) {}

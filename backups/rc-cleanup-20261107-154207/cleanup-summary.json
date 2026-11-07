@@ -1,0 +1,28 @@
+{
+  "base_commit": "025b28119e39c45647f3f8efedb0928a8c3ef94b",
+  "restored_to_head": [
+    ".vscode/extensions.json",
+    "docs/timing-diagnostics.md",
+    "include/timing_diagnostics.hpp",
+    "src/can_cli.py",
+    "test/run_host_tests.sh",
+    "test/test_firmware_odometry.cpp"
+  ],
+  "moved_to_removed_files": [
+    "docs/change-groups.md",
+    "docs/independent-steering.md",
+    "docs/independent-steering.ko.md",
+    "test/test_motion_transitions.cpp",
+    "test/test_vehicle_motion.cpp"
+  ],
+  "updated_rc_files": [
+    "include/vehicle_kinematics.hpp",
+    "include/vehicle_motion.hpp",
+    "include/steering_config.hpp",
+    "src/main.cpp",
+    "README.md",
+    "docs/rc-steering.ko.md"
+  ],
+  "retained_test_support": "test/fakes/Arduino.h: three analogWrite declarations",
+  "validation": "source inspection only; no tests, builds or hardware operations"
+}
