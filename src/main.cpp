@@ -72,7 +72,7 @@ const uint32_t CAN_BRIDGE_MAX_RX_TIMEOUT_US = 100000;
 // their automatic PID 193/200 frames before the first measured request.
 const uint32_t CAN_BENCHMARK_START_SETTLE_US = 5000;
 const unsigned long VOLTAGE_TIMEOUT_MS = 3000;
-const uint8_t CAN_RX_DRAIN_LIMIT = 8;
+const uint8_t CAN_RX_DRAIN_LIMIT = CAN_RX_QUEUE_CAPACITY;
 
 struct CommandPacket
 {
@@ -357,6 +357,7 @@ static void md200t_process_rx_frame(const CanFrame &frame,
                                     unsigned long now,
                                     uint32_t rx_timestamp_us);
 static void md200t_drain_rx(unsigned long now);
+static void md200t_process_queued_rx(unsigned long now);
 static void md200t_update_telemetry_health(unsigned long now);
 static void initialize_control_session(unsigned long now);
 static void enter_control_mode(unsigned long now);
@@ -808,6 +809,9 @@ static bool can_benchmark_consume_rx(const CanFrame &frame, uint32_t rx_timestam
     if (response_index >= can_benchmark.response_count)
         return false;
 
+    // A queued frame from an earlier attempt must not fail the current attempt.
+    if (static_cast<int32_t>(rx_timestamp_us - can_benchmark.tx_timestamp_us) < 0)
+        return false;
     if (static_cast<uint32_t>(rx_timestamp_us - can_benchmark.tx_timestamp_us) >= can_benchmark.timeout_us)
     {
         ++can_benchmark.timeout_count;
@@ -833,6 +837,9 @@ static void can_benchmark_update(uint32_t now_us)
     {
         if (static_cast<uint32_t>(now_us - can_benchmark.tx_timestamp_us) >= can_benchmark.timeout_us)
         {
+            md200t_process_queued_rx(millis());
+            if (!can_benchmark.waiting_for_response)
+                return;
             ++can_benchmark.timeout_count;
             complete_can_benchmark_attempt(CAN_BENCHMARK_STATUS_RX_TIMEOUT);
         }
@@ -1272,16 +1279,21 @@ static void md200t_process_rx_frame(const CanFrame &frame,
 
 static void md200t_drain_rx(unsigned long now)
 {
+    md200t_process_queued_rx(now);
+}
+
+static void md200t_process_queued_rx(unsigned long now)
+{
     CanFrame frame = {};
+    uint32_t rx_timestamp_us = 0;
     for (uint8_t count = 0u; count < CAN_RX_DRAIN_LIMIT; ++count)
     {
-        if (!can_receive(frame, 0u))
+        if (!can_receive_timed(frame, rx_timestamp_us, 0u))
             break;
 
         if (driver_powerdown || driver_starting)
             continue;
 
-        const uint32_t rx_timestamp_us = micros();
         if (serial_mode == SERIAL_MODE_BRIDGE)
         {
             if (!can_benchmark_consume_rx(frame, rx_timestamp_us))
@@ -1679,6 +1691,9 @@ static void invalidate_wheel_telemetry(uint8_t wheel_mask)
 
 static void close_driver_response_window(uint8_t driver_id)
 {
+    // RX can arrive during other work after the loop's earlier drain.
+    // Process already queued responses using ISR timestamps before declaring loss.
+    md200t_process_queued_rx(millis());
     const uint8_t expected_mask = driver_id == MD200T_DRIVER_A_ID
                                       ? CAN_TX_DRIVER_A_WHEELS_MASK
                                       : CAN_TX_DRIVER_B_WHEELS_MASK;

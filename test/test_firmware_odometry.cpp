@@ -43,6 +43,13 @@ bool can_receive(CanFrame &frame, uint32_t)
     return true;
 }
 
+bool can_receive_timed(CanFrame &frame, uint32_t &received_us, uint32_t timeout_us)
+{
+    if (!can_receive(frame, timeout_us)) return false;
+    received_us = micros();
+    return true;
+}
+
 static CanFrame monitor(uint8_t driver, uint8_t pid, int16_t rpm, int32_t count,
                         uint8_t status = 0u)
 {
