@@ -4,13 +4,18 @@ import select
 import shlex
 import statistics
 import sys
-import termios
 import time
 from dataclasses import dataclass, field
 from typing import Optional
 
 import serial
 import serial.tools.list_ports
+
+IS_WINDOWS = os.name == "nt"
+if IS_WINDOWS:
+    import msvcrt
+else:
+    import termios
 
 
 HEADER = b"\xaa\x55"
@@ -317,41 +322,76 @@ class TerminalUi:
     PROMPT = "can> "
 
     def __init__(self) -> None:
-        self.fd = sys.stdin.fileno()
+        self.fd: Optional[int] = None
         self.saved_attributes: Optional[list] = None
         self.input_buffer = ""
         self.escape_state = 0
+        self.windows_special_key = False
+        self.prompt_width = 0
 
     def __enter__(self) -> "TerminalUi":
         if not sys.stdin.isatty() or not sys.stdout.isatty():
             raise RuntimeError("interactive CLI requires a terminal")
 
-        self.saved_attributes = termios.tcgetattr(self.fd)
-        attributes = termios.tcgetattr(self.fd)
-        attributes[3] &= ~(termios.ICANON | termios.ECHO)
-        attributes[6][termios.VMIN] = 0
-        attributes[6][termios.VTIME] = 0
-        termios.tcsetattr(self.fd, termios.TCSANOW, attributes)
+        if not IS_WINDOWS:
+            self.fd = sys.stdin.fileno()
+            self.saved_attributes = termios.tcgetattr(self.fd)
+            attributes = termios.tcgetattr(self.fd)
+            attributes[3] &= ~(termios.ICANON | termios.ECHO)
+            attributes[6][termios.VMIN] = 0
+            attributes[6][termios.VTIME] = 0
+            termios.tcsetattr(self.fd, termios.TCSANOW, attributes)
         self.redraw()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         if self.saved_attributes is not None:
             termios.tcsetattr(self.fd, termios.TCSANOW, self.saved_attributes)
-        sys.stdout.write("\r\x1b[2K")
+        self.clear_prompt()
         sys.stdout.flush()
 
+    def clear_prompt(self) -> None:
+        # Classic Windows consoles need not have ANSI/VT processing enabled.
+        if IS_WINDOWS:
+            sys.stdout.write("\r" + " " * self.prompt_width + "\r")
+        else:
+            sys.stdout.write("\r\x1b[2K")
+        self.prompt_width = 0
+
     def redraw(self) -> None:
-        sys.stdout.write(f"\r\x1b[2K{self.PROMPT}{self.input_buffer}")
+        self.clear_prompt()
+        prompt = self.PROMPT + self.input_buffer
+        sys.stdout.write(prompt)
+        self.prompt_width = len(prompt)
         sys.stdout.flush()
 
     def log(self, message: str) -> None:
-        sys.stdout.write(f"\r\x1b[2K{message}\n")
+        self.clear_prompt()
+        sys.stdout.write(f"{message}\n")
         self.redraw()
+
+    def read_characters(self) -> str:
+        if not IS_WINDOWS:
+            return os.read(self.fd, 64).decode("ascii", errors="ignore")
+        characters: list[str] = []
+        # Bound keyboard work so a paste cannot starve serial reception.
+        for _ in range(64):
+            if not msvcrt.kbhit():
+                break
+            character = msvcrt.getwch()
+            if self.windows_special_key:
+                self.windows_special_key = False
+            elif character in ("\x00", "\xe0"):
+                # Arrow/function keys have a two-character console encoding.
+                self.windows_special_key = True
+            else:
+                characters.append(character)
+        return "".join(characters)
 
     def read_lines(self) -> list[str]:
         lines: list[str] = []
-        for byte in os.read(self.fd, 64):
+        for character in self.read_characters():
+            byte = ord(character)
             if self.escape_state == 1:
                 self.escape_state = 2 if byte == ord("[") else 0
                 continue
@@ -372,10 +412,25 @@ class TerminalUi:
                 self.input_buffer = ""
             elif byte == 0x04:  # Ctrl-D
                 raise ExitRequested
+            elif byte == 0x03:  # Ctrl-C (also handled as KeyboardInterrupt)
+                raise KeyboardInterrupt
             elif 0x20 <= byte <= 0x7E:
                 self.input_buffer += chr(byte)
         self.redraw()
         return lines
+
+
+def wait_for_activity(ser: serial.Serial, ui: TerminalUi) -> tuple[bool, bool]:
+    if IS_WINDOWS:
+        # Windows select() accepts sockets, not COM handles or console input.
+        serial_ready = ser.in_waiting > 0
+        input_ready = bool(msvcrt.kbhit())
+        if not serial_ready and not input_ready:
+            time.sleep(0.005)
+        return serial_ready, input_ready
+    serial_fd = ser.fileno()
+    readable, _, _ = select.select([serial_fd, ui.fd], [], [], 0.1)
+    return serial_fd in readable, ui.fd in readable
 
 
 def xor_checksum(data: bytes | bytearray | memoryview) -> int:
@@ -404,13 +459,18 @@ def parse_can_id(value: str) -> int:
 
 
 def find_teensy_port() -> Optional[str]:
-    for port in serial.tools.list_ports.comports():
+    ports = list(serial.tools.list_ports.comports())
+    candidates = []
+    for port in ports:
         desc = (port.description or "").lower()
         name = (port.device or "").lower()
-        if "teensy" in desc or "teensy" in name:
-            return port.device
+        # Windows may expose Teensy as a generic "USB Serial Device (COMx)".
+        if "teensy" in desc or "teensy" in name or port.vid == 0x16C0:
+            candidates.append(port.device)
+    if candidates:
+        return candidates[0] if len(candidates) == 1 else None
 
-    for port in serial.tools.list_ports.comports():
+    for port in ports:
         name = (port.device or "").lower()
         if (
             "usbmodem" in name
@@ -804,8 +864,8 @@ def monitor(
             seq = send_and_track(ser, initial_command, seq, ui)
 
         while True:
-            readable, _, _ = select.select([ser.fileno(), sys.stdin.fileno()], [], [], 0.1)
-            if ser.fileno() in readable:
+            serial_ready, input_ready = wait_for_activity(ser, ui)
+            if serial_ready:
                 received = ser.read(max(1, ser.in_waiting))
                 for packet in stream_parser.feed(received):
                     ui.log(format_packet(packet))
@@ -813,7 +873,7 @@ def monitor(
                     if summary is not None:
                         ui.log(summary)
 
-            if sys.stdin.fileno() in readable:
+            if input_ready:
                 for line in ui.read_lines():
                     try:
                         command = parse_interactive_command(line, default_timeout_ms)
@@ -903,7 +963,7 @@ def main(argv: list[str]) -> int:
 
     port = args.port or find_teensy_port()
     if port is None:
-        print("Error: Teensy port not found. Provide --port explicitly.", file=sys.stderr)
+        print("Error: No unique Teensy port found. Provide --port explicitly (e.g. COM5 or /dev/ttyACM0).", file=sys.stderr)
         return 1
 
     try:

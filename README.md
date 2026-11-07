@@ -1,5 +1,8 @@
 # Wheel-Dragoon
 
+Windows CAN CLI 실행 방법과 PID 196/201 벤치마크 설정은
+[Windows CAN CLI 가이드](docs/can-cli-windows.md)를 참고하세요.
+
 Teensy 3.2 기반 4륜 skid-steer 로봇 MCU 펌웨어입니다. 목표 하드웨어는 MDROBOT `MDH100` 인휠 모터 4개와 `MD200T` 듀얼채널 모터 드라이버 2개입니다. ROS와 Teensy 사이의 USB Serial(UART) command/status packet 연결은 유지하고, Teensy는 계산한 휠 목표 속도를 CAN bus로 두 개의 MD200T에 전달합니다.
 
 이 README는 MD200T/CAN 제어 구조와 ROS 패키지 연동 프로토콜을 함께 기록합니다. ROS용 command packet을 수신하고 canonical System Status v2 packet을 송신하는 현재 `src/main.cpp` 구현을 기준으로 합니다.

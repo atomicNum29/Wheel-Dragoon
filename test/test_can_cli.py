@@ -1,6 +1,9 @@
+import io
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -84,6 +87,19 @@ class BridgeRequestTests(unittest.TestCase):
 
 
 class BenchmarkRequestTests(unittest.TestCase):
+    def test_current_monitor_pair_with_windows_port(self) -> None:
+        args = can_cli.build_main_parser().parse_args(
+            "benchmark 1 174 1 1 --dlc 8 --response-pid 196 --response-pid2 201 "
+            "--count 1000 --period-ms 10 --timeout-ms 3 --port COM12".split()
+        )
+        command = can_cli.command_from_namespace(args, args.timeout_ms)
+        request = can_cli.build_benchmark_request(command, 7)
+        self.assertEqual(args.port, "COM12")
+        self.assertEqual(command.response_can_id, 0x701)
+        self.assertEqual(command.response_pids, (196, 201))
+        self.assertEqual(request[18], 196)
+        self.assertEqual(request[23:27], bytes([3, 0, 2, 201]))
+
     def test_benchmark_layout_and_md200t_matcher(self) -> None:
         command = can_cli.parse_interactive_command(
             "benchmark 1 4 143 --dlc 8 --count 3 --period-ms 10 --timeout-ms 5", 100
@@ -329,6 +345,123 @@ class InteractiveCommandTests(unittest.TestCase):
 
         self.assertEqual(args.port, "/dev/ttyACM0")
         self.assertEqual(can_cli.command_from_namespace(args, args.timeout_ms).data[0], 143)
+
+
+class WindowsConsoleTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.keys: list[str] = []
+        self.console = SimpleNamespace(
+            kbhit=lambda: bool(self.keys), getwch=lambda: self.keys.pop(0)
+        )
+        self.stdin = Mock()
+        self.stdin.isatty.return_value = True
+        self.stdin.fileno.side_effect = AssertionError("Windows must not use fileno")
+        self.stdout = io.StringIO()
+        self.stdout.isatty = lambda: True
+        for context in (
+            patch.object(can_cli, "IS_WINDOWS", True),
+            patch.object(can_cli, "msvcrt", self.console, create=True),
+            patch.object(can_cli.sys, "stdin", self.stdin),
+            patch.object(can_cli.sys, "stdout", self.stdout),
+            patch.object(can_cli.select, "select", side_effect=AssertionError("Windows select")),
+        ):
+            context.start()
+            self.addCleanup(context.stop)
+
+    def test_editing_special_keys_and_console_cleanup(self) -> None:
+        with can_cli.TerminalUi() as ui:
+            self.keys.extend("wrong\x15pid 1 144\b3\xe0K\r")
+            self.assertEqual(ui.read_lines(), ["pid 1 143"])
+            self.keys.extend("\x00")
+            self.assertEqual(ui.read_lines(), [])
+            self.keys.extend(";help\r")  # Function-key suffix must not become command text.
+            self.assertEqual(ui.read_lines(), ["help"])
+            ui.log("received")
+        self.assertNotIn("\x1b", self.stdout.getvalue())
+        self.assertIn("received", self.stdout.getvalue())
+        self.stdin.fileno.assert_not_called()
+
+    def test_control_keys(self) -> None:
+        with can_cli.TerminalUi() as ui:
+            for key, exception in (("\x03", KeyboardInterrupt), ("\x04", can_cli.ExitRequested)):
+                self.keys.append(key)
+                with self.assertRaises(exception):
+                    ui.read_lines()
+
+    def test_serial_polling_and_idle_wait(self) -> None:
+        ser = Mock(in_waiting=12)
+        with can_cli.TerminalUi() as ui, patch.object(can_cli.time, "sleep") as sleep:
+            self.assertEqual(can_cli.wait_for_activity(ser, ui), (True, False))
+            sleep.assert_not_called()
+            ser.in_waiting = 0
+            self.assertEqual(can_cli.wait_for_activity(ser, ui), (False, False))
+            sleep.assert_called_once_with(0.005)
+            self.keys.append("h")
+            self.assertEqual(can_cli.wait_for_activity(ser, ui), (False, True))
+        ser.fileno.assert_not_called()
+
+    def test_monitor_receives_fragmented_benchmark_result_and_quits(self) -> None:
+        packet = make_benchmark_result(
+            7, 1, 2, True, 700, timeout_count=1,
+            response_pids=(196, 201), received_mask=1,
+        )
+        chunks = [packet[:13], packet[13:]]
+        keys = self.keys
+
+        class FakeSerial:
+            def __init__(self, *args, **kwargs):
+                self.writes = []
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+            @property
+            def in_waiting(self):
+                return len(chunks[0]) if chunks else 0
+
+            def read(self, size):
+                chunk = chunks.pop(0)
+                if not chunks:
+                    keys.extend("quit\r")
+                return chunk
+
+            def write(self, data):
+                self.writes.append(data)
+
+            def flush(self):
+                pass
+
+        command = can_cli.parse_interactive_command(
+            "benchmark 1 174 1 1 --dlc 8 --response-pid 196 --response-pid2 201 "
+            "--count 1 --timeout-ms 3", 10
+        )
+        ser = FakeSerial()
+        with patch.object(can_cli.serial, "Serial", return_value=ser):
+            with self.assertRaises(can_cli.ExitRequested):
+                can_cli.monitor("COM12", 115200, 7, 10, 0, command)
+        self.assertEqual(ser.writes, [can_cli.build_benchmark_request(command, 7)])
+        self.assertIn("partial_rounds=1", self.stdout.getvalue())
+        self.assertIn("pid196_rtt_us[n=1", self.stdout.getvalue())
+        self.assertIn("pid201_rtt_us[n=0]", self.stdout.getvalue())
+
+
+class PortDetectionTests(unittest.TestCase):
+    def test_windows_generic_teensy_description(self) -> None:
+        ports = [
+            SimpleNamespace(device="COM1", description="Serial Port", vid=None),
+            SimpleNamespace(device="COM12", description="USB Serial Device", vid=0x16C0),
+        ]
+        with patch.object(can_cli.serial.tools.list_ports, "comports", return_value=ports):
+            self.assertEqual(can_cli.find_teensy_port(), "COM12")
+
+    def test_ambiguous_devices_require_explicit_port(self) -> None:
+        ports = [SimpleNamespace(device=p, description="Teensy", vid=0x16C0)
+                 for p in ("COM5", "COM12")]
+        with patch.object(can_cli.serial.tools.list_ports, "comports", return_value=ports):
+            self.assertIsNone(can_cli.find_teensy_port())
 
 
 if __name__ == "__main__":
