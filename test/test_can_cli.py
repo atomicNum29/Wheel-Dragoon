@@ -464,5 +464,25 @@ class PortDetectionTests(unittest.TestCase):
             self.assertIsNone(can_cli.find_teensy_port())
 
 
+class TimingPacketTests(unittest.TestCase):
+    def test_observer_option_does_not_create_command(self) -> None:
+        args = can_cli.build_main_parser().parse_args(["--port", "COM5", "--timing-only"])
+        self.assertTrue(args.timing_only)
+        self.assertIsNone(args.command)
+
+    def test_64_bit_total_and_zero_count(self) -> None:
+        payload = bytearray(59)
+        payload[0:4] = bytes([0x84, 1, 1, 7])  # Stage record, motion.
+        payload[13:17] = (72000000).to_bytes(4, "little")
+        payload[17:21] = (2).to_bytes(4, "little")
+        payload[21:29] = (7200000000).to_bytes(8, "little")
+        payload[29:33] = (3600000000).to_bytes(4, "little")
+        text = can_cli.format_packet(make_packet(payload))
+        self.assertIn("avg_us=50000000.000", text)
+        self.assertIn("total_ms=100000.000", text)
+        payload[17:33] = bytes(16)
+        self.assertIn("n=0 avg_us=0.000", can_cli.format_packet(make_packet(payload)))
+
+
 if __name__ == "__main__":
     unittest.main()

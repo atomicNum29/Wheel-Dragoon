@@ -28,6 +28,14 @@ CAN_BENCHMARK_REQUEST_TYPE = 0x21
 CAN_BENCHMARK_RESULT_LENGTH = 52
 CAN_BENCHMARK_RESULT_TYPE = 0xA1
 MAX_PACKET_LENGTH = 64
+TIMING_PACKET_TYPE = 0x84
+TIMING_PACKET_LENGTH = 59
+TIMING_STAGES = (
+    "power", "serial_rx", "bench_tx_pre", "can_rx", "bench_update", "bench_tx_post",
+    "health", "motion", "errors", "can_schedule", "system_tx", "steering",
+    "diagnostic_tx", "loop_body", "loop_period",
+)
+TIMING_WHEELS = ("A/PID196", "A/PID201", "B/PID196", "B/PID201")
 
 BRIDGE_STATUS_NAMES = {
     0: "ok",
@@ -735,8 +743,45 @@ def format_data(data: list[int], dlc: int) -> str:
     return " ".join(f"{byte:02X}" for byte in padded)
 
 
+def format_timing_packet(packet: bytes) -> str:
+    def u32(offset: int) -> int:
+        return int.from_bytes(packet[offset:offset + 4], "little")
+
+    if packet[4] != 1:
+        return f"TIMING unsupported_version={packet[4]}"
+    kind, index = packet[5:7]
+    prefix = f"TIMING snapshot={u32(8)} at_ms={u32(12)}"
+    count, maximum = u32(20), u32(32)
+    total = int.from_bytes(packet[24:32], "little")
+    if kind == 0:
+        average = total / count if count else 0
+        return (f"{prefix} cumulative rx_poll_gap_us[avg={average:.2f} max={maximum} n={count}] "
+                f"overrun_observations={u32(36)} control_loops={u32(40)} "
+                f"bridge_loops={u32(44)} records={packet[48]}")
+    if kind == 1 and index < len(TIMING_STAGES):
+        cpu_hz = u32(16)
+        if not cpu_hz:
+            return f"{prefix} invalid_cpu_hz=0"
+        cycles_per_us = cpu_hz / 1_000_000
+        average = total / count / cycles_per_us if count else 0
+        return (f"{prefix} stage={TIMING_STAGES[index]} n={count} "
+                f"avg_us={average:.3f} max_us={maximum / cycles_per_us:.3f} "
+                f"total_ms={total / cycles_per_us / 1000:.3f}")
+    if kind == 2 and index < len(TIMING_WHEELS):
+        return (f"{prefix} {TIMING_WHEELS[index]} received={u32(20)} accepted={u32(24)} "
+                f"outside_window={u32(28)} short_frame={u32(32)} max_read_age_us={u32(36)} "
+                f"missing={u32(40)} last_rx_us={u32(44)}")
+    if kind == 3 and index < 2:
+        return (f"{prefix} driver={'AB'[index]} timeouts={u32(20)} "
+                f"pending_at_timeout={u32(24)} last_missing_mask=0x{u32(28):02X} "
+                f"last_age_us={u32(32)} last_timeout_us={u32(36)} last_pending={u32(40)}")
+    return f"{prefix} unknown_record={kind}/{index}"
+
+
 def format_packet(packet: bytes) -> str:
     timestamp = time.strftime("%H:%M:%S")
+    if packet[3] == TIMING_PACKET_TYPE and packet[2] == TIMING_PACKET_LENGTH:
+        return f"[{timestamp}] {format_timing_packet(packet)}"
     if packet[3] == CAN_BENCHMARK_RESULT_TYPE and packet[2] == CAN_BENCHMARK_RESULT_LENGTH:
         seq = packet[4]
         iteration = int.from_bytes(packet[5:7], "little")
@@ -839,6 +884,7 @@ def monitor(
     default_timeout_ms: int,
     settle_s: float,
     initial_command: Optional[BridgeCommand | BenchmarkCommand],
+    timing_only: bool = False,
 ) -> None:
     stream_parser = PacketStreamParser()
     benchmark_statistics = BenchmarkStatistics()
@@ -868,7 +914,8 @@ def monitor(
             if serial_ready:
                 received = ser.read(max(1, ser.in_waiting))
                 for packet in stream_parser.feed(received):
-                    ui.log(format_packet(packet))
+                    if not timing_only or packet[3] == TIMING_PACKET_TYPE:
+                        ui.log(format_packet(packet))
                     summary = benchmark_statistics.consume(packet)
                     if summary is not None:
                         ui.log(summary)
@@ -892,6 +939,11 @@ def add_connection_options(
     parser.add_argument("--port", "-p", default=default, help="serial port; auto-detected if omitted")
     parser.add_argument("--baud", "-b", type=int, default=argparse.SUPPRESS if suppress_defaults else 115200)
     parser.add_argument("--seq", type=parse_byte, default=argparse.SUPPRESS if suppress_defaults else 0)
+    parser.add_argument(
+        "--timing-only", action="store_true",
+        default=argparse.SUPPRESS if suppress_defaults else False,
+        help="display only firmware 0x84 timing records (does not send a request or change mode)",
+    )
     if include_timeout:
         parser.add_argument(
             "--timeout-ms",
@@ -967,7 +1019,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     try:
-        monitor(port, args.baud, args.seq, args.timeout_ms, args.settle_s, initial_command)
+        monitor(port, args.baud, args.seq, args.timeout_ms, args.settle_s, initial_command, args.timing_only)
     except (ExitRequested, KeyboardInterrupt):
         print("CAN bridge monitor stopped.")
     except Exception as exc:

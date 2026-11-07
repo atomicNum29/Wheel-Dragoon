@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <kinetis.h>
+#include "timing_diagnostics.hpp"
 
 #include "can_tx_schedule.hpp"
 #include "flexcan0.hpp"
@@ -412,6 +413,29 @@ static MotorTelemetry rr_telemetry = {0, 0u, 0u, 0u, 0u, false};
 static DriverVoltageTelemetry driver_a_voltage = {0u, 0u, false};
 static DriverVoltageTelemetry driver_b_voltage = {0u, 0u, false};
 
+#if FIRMWARE_TIMING_DIAGNOSTICS
+static timing::Snapshot timing_live, timing_snapshot;
+static uint32_t timing_previous_loop = 0, timing_previous_rx_us = 0;
+static bool timing_have_loop = false, timing_have_rx = false;
+static uint32_t timing_sequence = 0, timing_captured_ms = 0, timing_last_packet_ms = 0;
+static uint8_t timing_record = timing::RECORD_COUNT, timing_snapshot_mode = 0;
+static void timing_publish_if_due();
+#endif
+
+template <typename Action>
+static inline void profile_step(timing::Stage stage, Action action)
+{
+#if FIRMWARE_TIMING_DIAGNOSTICS
+    const uint32_t start = ARM_DWT_CYCCNT;
+    action();
+    const uint32_t elapsed = ARM_DWT_CYCCNT - start;
+    timing_live.stages[stage].add(elapsed);
+#else
+    (void)stage;
+    action();
+#endif
+}
+
 void setup()
 {
     // STOP is the initial mode: close both PWR_SW contacts before RC interrupts.
@@ -421,6 +445,11 @@ void setup()
     digitalWrite(driver_b_power_relay_pin, HIGH);
 
     Serial.begin(115200);
+#if FIRMWARE_TIMING_DIAGNOSTICS
+    // Dedicated CPU cycle counter: does not reconfigure FTM, CAN, or SysTick.
+    ARM_DEMCR |= ARM_DEMCR_TRCENA;
+    ARM_DWT_CTRL |= ARM_DWT_CTRL_CYCCNTENA;
+#endif
 
     pinMode(v_speed_controller_pin, INPUT);
     pinMode(w_speed_controller_pin, INPUT);
@@ -447,43 +476,57 @@ void setup()
 
 void loop()
 {
+#if FIRMWARE_TIMING_DIAGNOSTICS
+    const uint32_t loop_start = ARM_DWT_CYCCNT;
+    if (timing_have_loop) timing_live.stages[timing::LOOP_PERIOD].add(loop_start - timing_previous_loop);
+    timing_previous_loop = loop_start;
+    timing_have_loop = true;
+    if (serial_mode == SERIAL_MODE_CONTROL) ++timing_live.control_loops;
+    else ++timing_live.bridge_loops;
+#endif
     const unsigned long now = millis();
     // The ISR-owned values are sampled once so one loop iteration cannot mix
     // two RC modes or partially updated manual inputs.
     const DriveMode drive_mode = mode_state;
-    const bool powerdown = drive_mode == DRIVE_MODE_POWERDOWN;
-    if (powerdown != driver_powerdown)
-    {
-        driver_powerdown = powerdown;
-        driver_starting = !powerdown;
-        driver_power_on_ms = static_cast<uint32_t>(now);
-        cancel_can_benchmark();
-        // POWERDOWN always reports USB status, including when entered from BRIDGE.
-        serial_mode = SERIAL_MODE_CONTROL;
-        initialize_control_session(now);
-    }
-    const int relay_level = driver_powerdown ? LOW : HIGH;
-    digitalWrite(driver_a_power_relay_pin, relay_level);
-    digitalWrite(driver_b_power_relay_pin, relay_level);
-    if (driver_starting &&
-        static_cast<uint32_t>(now - driver_power_on_ms) >= DRIVER_STARTUP_DELAY_MS)
-    {
-        driver_starting = false;
-        initialize_control_session(now);
-    }
+    profile_step(timing::POWER, [&]() {
+        const bool powerdown = drive_mode == DRIVE_MODE_POWERDOWN;
+        if (powerdown != driver_powerdown)
+        {
+            driver_powerdown = powerdown;
+            driver_starting = !powerdown;
+            driver_power_on_ms = static_cast<uint32_t>(now);
+            cancel_can_benchmark();
+            // POWERDOWN always reports USB status, including when entered from BRIDGE.
+            serial_mode = SERIAL_MODE_CONTROL;
+            initialize_control_session(now);
+        }
+        const int relay_level = driver_powerdown ? LOW : HIGH;
+        digitalWrite(driver_a_power_relay_pin, relay_level);
+        digitalWrite(driver_b_power_relay_pin, relay_level);
+        if (driver_starting &&
+            static_cast<uint32_t>(now - driver_power_on_ms) >= DRIVER_STARTUP_DELAY_MS)
+        {
+            driver_starting = false;
+            initialize_control_session(now);
+        }
+    });
     const unsigned int v_pwm = v_pulseWidth;
     const unsigned int w_pwm = w_pulseWidth;
 
-    serial_drain_command_packets(now);
-    can_benchmark_flush_result();
-    md200t_drain_rx(now);
-    can_benchmark_update(micros());
-    can_benchmark_flush_result();
-    md200t_update_telemetry_health(now);
-    update_effective_motor_command(drive_mode, v_pwm, w_pwm, now);
-    refresh_live_error_reports(now);
-    can_transmit_if_due(micros());
-    protocol_send_system_status_if_ready();
+    profile_step(timing::SERIAL_RX, [&]() { serial_drain_command_packets(now); });
+    profile_step(timing::BENCH_TX_PRE, [&]() { can_benchmark_flush_result(); });
+    profile_step(timing::CAN_RX, [&]() { md200t_drain_rx(now); });
+    profile_step(timing::BENCH_UPDATE, [&]() { can_benchmark_update(micros()); });
+    profile_step(timing::BENCH_TX_POST, [&]() { can_benchmark_flush_result(); });
+    profile_step(timing::HEALTH, [&]() { md200t_update_telemetry_health(now); });
+    profile_step(timing::MOTION, [&]() { update_effective_motor_command(drive_mode, v_pwm, w_pwm, now); });
+    profile_step(timing::ERRORS, [&]() { refresh_live_error_reports(now); });
+    profile_step(timing::CAN_SCHEDULE, [&]() { can_transmit_if_due(micros()); });
+    profile_step(timing::SYSTEM_TX, [&]() { protocol_send_system_status_if_ready(); });
+#if FIRMWARE_TIMING_DIAGNOSTICS
+    profile_step(timing::DIAGNOSTIC_TX, [&]() { timing_publish_if_due(); });
+    timing_live.stages[timing::LOOP_BODY].add(ARM_DWT_CYCCNT - loop_start);
+#endif
     // Legacy 0x81 output is intentionally disabled; 0x82 is canonical.
     // protocol_send_basic_status_if_due();
 }
@@ -1216,6 +1259,24 @@ static void md200t_process_rx_frame(const CanFrame &frame,
     MotorTelemetry *motor = md200t_find_motor_telemetry(driver_id, pid, wheel_mask);
     if (motor != nullptr)
     {
+#if FIRMWARE_TIMING_DIAGNOSTICS
+        const uint8_t slot = (driver_id == MD200T_DRIVER_A_ID ? 0u : 2u) +
+                             (pid == MD200T_PID_MONITOR2 ? 1u : 0u);
+        timing::Wheel &diagnostic = timing_live.wheels[slot];
+        ++diagnostic.received;
+        diagnostic.last_rx_us = rx_timestamp_us;
+        const bool sent = driver_id == MD200T_DRIVER_A_ID
+                            ? can_tx_scheduler.driver_a_command_sent : can_tx_scheduler.driver_b_command_sent;
+        const uint32_t tx_us = driver_id == MD200T_DRIVER_A_ID
+                            ? can_tx_scheduler.driver_a_tx_us : can_tx_scheduler.driver_b_tx_us;
+        if (sent) {
+            const uint32_t age = rx_timestamp_us - tx_us;
+            if (age > diagnostic.max_read_age_us) diagnostic.max_read_age_us = age;
+        }
+        if (frame.dlc < 8u) ++diagnostic.short_frame;
+        else if (!md200t_response_window_open(driver_id, rx_timestamp_us)) ++diagnostic.outside_window;
+        else ++diagnostic.accepted;
+#endif
         // Only a complete response received inside the 3 ms window belonging
         // to this driver's latest command can refresh wheel telemetry.
         if (frame.dlc < 8u || !md200t_response_window_open(driver_id, rx_timestamp_us))
@@ -1279,6 +1340,12 @@ static void md200t_process_rx_frame(const CanFrame &frame,
 
 static void md200t_drain_rx(unsigned long now)
 {
+#if FIRMWARE_TIMING_DIAGNOSTICS
+    const uint32_t poll_us = micros();
+    if (timing_have_rx) timing_live.rx_poll_gap.add(poll_us - timing_previous_rx_us);
+    timing_previous_rx_us = poll_us;
+    timing_have_rx = true;
+#endif
     md200t_process_queued_rx(now);
 }
 
@@ -1701,6 +1768,24 @@ static void close_driver_response_window(uint8_t driver_id)
         expected_mask & static_cast<uint8_t>(~can_tx_scheduler.received_wheel_mask));
     if (missing_mask != 0u)
     {
+#if FIRMWARE_TIMING_DIAGNOSTICS
+        // Observe pending RAM/FIFO state without consuming a frame.
+        const bool pending = can_rx_pending();
+        const uint32_t timeout_us = micros();
+        const uint8_t driver_index = driver_id == MD200T_DRIVER_A_ID ? 0u : 1u;
+        timing::Driver &diagnostic = timing_live.drivers[driver_index];
+        ++diagnostic.timeouts;
+        if (pending) ++diagnostic.pending_at_timeout;
+        diagnostic.last_missing_mask = missing_mask;
+        diagnostic.last_pending = pending;
+        diagnostic.last_timeout_us = timeout_us;
+        diagnostic.last_age_us = timeout_us - (driver_index == 0
+            ? can_tx_scheduler.driver_a_tx_us : can_tx_scheduler.driver_b_tx_us);
+        const uint8_t masks[4] = {CAN_TX_WHEEL_LF_MASK, CAN_TX_WHEEL_RR_MASK,
+                                 CAN_TX_WHEEL_RF_MASK, CAN_TX_WHEEL_LR_MASK};
+        for (uint8_t i = 0; i < 4; ++i)
+            if (missing_mask & masks[i]) ++timing_live.wheels[i].missing;
+#endif
         invalidate_wheel_telemetry(missing_mask);
         driver_rx_timeout_reports_remaining = ERROR_REPORT_REPEAT_COUNT;
     }
@@ -1951,3 +2036,55 @@ void mode_decodePWM()
     else
         mode_state = DRIVE_MODE_AUTO;
 }
+
+#if FIRMWARE_TIMING_DIAGNOSTICS
+static void timing_publish_if_due()
+{
+    // Diagnostics never switch modes, issue CAN requests, or wait for USB space.
+    if (serial_mode != SERIAL_MODE_CONTROL || !can_tx_scheduler.initialized)
+        return;
+    const uint32_t now_ms = millis();
+    if (now_ms - timing_last_packet_ms < 20u)
+        return;
+    if (!driver_powerdown && !driver_starting) {
+        const uint32_t phase = micros() - can_tx_scheduler.cycle_start_us;
+        // Preserve wheel response windows and prioritize the existing voltage poll.
+        if (phase < 7000u || phase >= CAN_TX_COMMAND_PERIOD_US ||
+            !can_tx_scheduler.driver_a_response_checked ||
+            !can_tx_scheduler.driver_b_response_checked ||
+            !can_tx_scheduler.voltage_poll_handled)
+            return;
+    }
+    const bool new_snapshot = timing_record >= timing::RECORD_COUNT;
+    if (new_snapshot && now_ms - timing_captured_ms < 1000u)
+        return;
+
+    int writable = Serial.availableForWrite();
+    if (writable > 0 && writable < timing::PACKET_SIZE) {
+        // Teensy reports only the remaining space in its current 64-byte USB
+        // packet. A 63-byte 0x82 at cycle +6 ms leaves one byte until its 5-ms
+        // auto-flush, permanently excluding diagnostics from +7..10 ms.
+        // send_now() only queues that partial packet; it does not wait for the
+        // host, insert bytes, or alter CAN scheduling. Still honor backpressure.
+        Serial.send_now();
+        writable = Serial.availableForWrite();
+    }
+    if (writable < timing::PACKET_SIZE)
+        return;
+    if (new_snapshot) {
+        timing_live.overrun_observations = can_rx_overrun_count();
+        timing_snapshot = timing_live;
+        timing_captured_ms = now_ms;
+        timing_snapshot_mode = static_cast<uint8_t>(serial_mode);
+        ++timing_sequence;
+        timing_record = 0;
+    }
+    uint8_t packet[timing::PACKET_SIZE];
+    timing::encode(timing_snapshot, timing_record, timing_sequence, timing_captured_ms,
+                   F_CPU, timing_snapshot_mode, packet);
+    if (Serial.write(packet, sizeof(packet)) == sizeof(packet)) {
+        ++timing_record;
+        timing_last_packet_ms = now_ms;
+    }
+}
+#endif

@@ -24,13 +24,31 @@ struct FakeSerial
     int space = 0;
     bool reject_write = false;
     uint32_t write_time_us = 0u;
+    uint32_t auto_flush_us = 0u; // Optional Teensy partial USB packet model.
+    uint64_t flush_deadline_us = 0u;
+    uint32_t send_now_calls = 0u;
+    int space_after_send_now = 64;
     std::vector<uint8_t> output;
     std::vector<size_t> write_requests;
 
     void begin(int) {}
     int available() { return 0; }
     int read() { return -1; }
-    int availableForWrite() { return space; }
+    int availableForWrite() {
+        if (auto_flush_us && flush_deadline_us && fake_clock_us >= flush_deadline_us) {
+            space = 64;
+            flush_deadline_us = 0;
+        }
+        return space;
+    }
+    void send_now() {
+        ++send_now_calls;
+        // Enqueue the current partial packet without changing stream contents.
+        if (space > 0 && space < 64) {
+            space = space_after_send_now;
+            flush_deadline_us = 0;
+        }
+    }
     size_t write(const uint8_t *data, size_t size)
     {
         assert(size <= static_cast<size_t>(space));
@@ -42,7 +60,10 @@ struct FakeSerial
         output.insert(output.end(), data, data + count);
         space -= static_cast<int>(count);
         if (count != 0u)
+        {
             fake_clock_us += write_time_us;
+            if (auto_flush_us) flush_deadline_us = fake_clock_us + auto_flush_us;
+        }
         return count;
     }
 };
