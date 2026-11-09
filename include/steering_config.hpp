@@ -45,21 +45,18 @@ inline int pulse_for_angle(const ServoCalibration &c, float angle) {
     }
     return c.maximum_us;
 }
-// Provisional, user-enabled mapping for measurement, NOT measured wheel angles.
-// Receiver observation: approximately +/-90 degrees. Assume 1000/1500/2000 us
-// corresponds to -90/0/+90 degrees, giving rounded +/-70 endpoints 1111/1889 us.
-// Both installed servos run opposite to the vehicle angle sign: invert at output.
-// Neutral adjusted separately: left 1540 us, right 1420 us. Endpoints remain provisional.
-// Measure each installed wheel independently and replace this table afterwards.
-// Both verified flags gate output; true here permits the requested provisional use.
+// User-measured vehicle angles (-70/0/+70 degrees), 2026-11-09:
+// left 2100/1577/1044 us; right 1990/1443/908 us.
+// Both outputs decrease with vehicle angle. Store increasing PWM against
+// actuator angle and invert the vehicle angle before table lookup.
 constexpr float rc_maximum_inner_angle = 70 * deg;
 static const ServoCalibration left_servo = {
     // verified, pin, minimum_us, maximum_us, inverted, minimum_angle, maximum_angle
-    true, 9, 1111, 1889, true, -70*deg, 70*deg,
-    {{-70*deg,1111},{0,1540},{70*deg,1889},{0,0},{0,0}}, 3};
+    true, 9, 1044, 2100, true, -70*deg, 70*deg,
+    {{-70*deg,1044},{0,1577},{70*deg,2100},{0,0},{0,0}}, 3};
 static const ServoCalibration right_servo = {
-    true, 10, 1111, 1889, true, -70*deg, 70*deg,
-    {{-70*deg,1111},{0,1420},{70*deg,1889},{0,0},{0,0}}, 3};
+    true, 10, 908, 1990, true, -70*deg, 70*deg,
+    {{-70*deg,908},{0,1443},{70*deg,1990},{0,0},{0,0}}, 3};
 constexpr float mdh100_maximum_rpm = 400.0f;
 struct MotionConfig {
     Geometry geometry;
