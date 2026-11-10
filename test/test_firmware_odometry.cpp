@@ -391,11 +391,11 @@ static void test_rc_powerdown_and_relays()
     assert(fake_pin_modes()[5] == OUTPUT && fake_pin_modes()[6] == OUTPUT);
     assert(digitalRead(5) == HIGH && digitalRead(6) == HIGH);
 
-    const unsigned int widths[] = {1000, 1099, 1100, 1200, 1299, 1300, 1500, 1699, 1700, 2000, 2050};
+    const unsigned int widths[] = {1000, 1099, 1100, 1200, 1299, 1300, 1500, 1599, 1600, 1700, 1799, 1800, 2000, 2050};
     const DriveMode expected[] = {DRIVE_MODE_POWERDOWN, DRIVE_MODE_POWERDOWN,
         DRIVE_MODE_STOP, DRIVE_MODE_STOP, DRIVE_MODE_STOP,
         DRIVE_MODE_MANUAL, DRIVE_MODE_MANUAL, DRIVE_MODE_MANUAL,
-        DRIVE_MODE_AUTO, DRIVE_MODE_AUTO, DRIVE_MODE_AUTO};
+        DRIVE_MODE_PIVOT, DRIVE_MODE_PIVOT, DRIVE_MODE_PIVOT, DRIVE_MODE_AUTO, DRIVE_MODE_AUTO, DRIVE_MODE_AUTO};
     for (unsigned int i = 0; i < sizeof(widths) / sizeof(widths[0]); ++i)
     {
         for (int sample = 0; sample < 10; ++sample)
@@ -640,8 +640,44 @@ static void test_session_clears_all_error_reports()
     fake_can_begin_ok = true;
 }
 
+static void test_pivot_control()
+{
+    reset_test();
+    motion = vehicle::MotionController(vehicle::MotionConfig{}, vehicle::left_servo, vehicle::right_servo);
+    update_effective_motor_command(DRIVE_MODE_PIVOT, 2000, 1500, 0);
+    update_effective_motor_command(DRIVE_MODE_PIVOT, 1000, 1500, 1500);
+    const float expected = atan2f(motion.config.geometry.wheelbase, motion.config.geometry.front_track / 2);
+    assert(fabsf(motion.angle[0] + expected) < 1e-6f);
+    assert(fabsf(motion.angle[1] - expected) < 1e-6f);
+    assert(motion.stopped());
+    for (unsigned long t = 1510; t <= 5000; t += 10)
+        update_effective_motor_command(DRIVE_MODE_PIVOT, 2000, 2000, t);
+    assert(motion.feasible && motor_enabled);
+    assert(motion.rpm[0] < 0 && motion.rpm[1] > 0);
+    assert(motion.rpm[2] < 0 && motion.rpm[3] > 0);
+    assert(fabsf(motion.rpm[0] + motion.rpm[1]) < .001f);
+    assert(fabsf(motion.rpm[0]) <= motion.config.rpm_limit);
+    const float ratio = hypotf(motion.config.geometry.wheelbase, motion.config.geometry.front_track / 2)
+                        / (motion.config.geometry.rear_track / 2);
+    assert(fabsf(motion.rpm[0] / motion.rpm[2] - ratio) < .001f);
+    const float previous = motion.rpm[0];
+    update_effective_motor_command(DRIVE_MODE_PIVOT, 1000, 2000, 5010);
+    assert(fabsf(motion.rpm[0] - previous) < .001f); // v is ignored
+    for (unsigned long t = 5020; t <= 9000; t += 10)
+        update_effective_motor_command(DRIVE_MODE_PIVOT, 1500, 1000, t);
+    assert(motion.rpm[0] > 0 && motion.rpm[1] < 0);
+    assert(motion.rpm[2] > 0 && motion.rpm[3] < 0);
+    assert(fabsf(motion.angle[0] + expected) < 1e-6f);
+    for (unsigned long t = 9010; t <= 11000; t += 10)
+        update_effective_motor_command(DRIVE_MODE_PIVOT, 2000, 1500, t);
+    assert(motion.stopped());
+    update_effective_motor_command(DRIVE_MODE_MANUAL, 1500, 1500, 11010);
+    assert(motion.transition == vehicle::Transition::BRAKING);
+}
+
 int main()
 {
+    test_pivot_control();
     test_session_clears_all_error_reports();
     test_powerdown_skips_voltage_health_checks();
     test_powerdown_stops_can_and_reports_usb();

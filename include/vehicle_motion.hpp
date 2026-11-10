@@ -58,9 +58,15 @@ public:
             limited=true;
             for(float &r:target.rpm) r*=config.rpm_limit/peak; // common scaling preserves curvature
         }
-        bool reversal=false;
+        bool reversal=cmd.pivot != pivot_active;
+        pivot_active=cmd.pivot;
         for(int i=0;i<2;++i) {
             target_angle[i]=target.angle[i];
+            // Pivot mode commands the fixed ICR immediately, even at neutral w.
+            if(cmd.pivot && feasible) {
+                previous_angle[i]=angle[i];
+                angle[i]=target_angle[i];
+            }
         }
         for(int i=0;i<4;++i) reversal |= rpm[i]*target.rpm[i]<-0.01f;
         // Steering-angle changes alone never request braking.
@@ -102,7 +108,7 @@ public:
         if(transition==Transition::DRIVING) ramp(target.rpm,dt);
     }
 private:
-    bool initialized=false, timer_active=false;
+    bool initialized=false, timer_active=false, pivot_active=false;
     uint32_t last_ms=0, startup_at=0, timer_at=0;
     bool elapsed(uint32_t now,uint32_t interval) {
         if(!timer_active) { timer_at=now; timer_active=true; }

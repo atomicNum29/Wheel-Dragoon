@@ -99,7 +99,8 @@ typedef enum
     DRIVE_MODE_STOP = 0,
     DRIVE_MODE_MANUAL = 1,
     DRIVE_MODE_AUTO = 2,
-    DRIVE_MODE_POWERDOWN = 3
+    DRIVE_MODE_POWERDOWN = 3,
+    DRIVE_MODE_PIVOT = 4
 } DriveMode;
 
 typedef enum
@@ -610,11 +611,19 @@ static void update_effective_motor_command(DriveMode drive_mode,
         return;
     }
 
-    if (drive_mode == DRIVE_MODE_MANUAL)
+    if (drive_mode == DRIVE_MODE_MANUAL || drive_mode == DRIVE_MODE_PIVOT)
     {
         command_timeout = false;
         estop_active = false;
         motor_enabled = true;
+
+        if (drive_mode == DRIVE_MODE_PIVOT)
+        {
+            const float angular_velocity = static_cast<float>(rc_pwm_offset_with_deadband(w_pwm)) /
+                RC_PWM_ACTIVE_SPAN_US * (CMD_ANGULAR_MILLI_RADPS_MAX / CMD_MILLI_UNIT_SCALE);
+            update_vehicle_output({0.0f, 0.0f, true, angular_velocity}, now);
+            return;
+        }
 
         // Clamp receiver range, remove the inclusive 1450..1550 us deadband,
         // and map each remaining 450 us continuously to the full steering range.
@@ -2020,8 +2029,10 @@ void mode_decodePWM()
         mode_state = DRIVE_MODE_POWERDOWN;
     else if (mode_pulseWidth < 1300)
         mode_state = DRIVE_MODE_STOP;
-    else if (mode_pulseWidth < 1700)
+    else if (mode_pulseWidth < 1600)
         mode_state = DRIVE_MODE_MANUAL;
+    else if (mode_pulseWidth < 1800)
+        mode_state = DRIVE_MODE_PIVOT;
     else
         mode_state = DRIVE_MODE_AUTO;
 }

@@ -290,8 +290,11 @@ POWERDOWN에서는 주행·전압 조회·raw bridge·벤치마크 CAN 송신을
 | --- | --- | --- |
 | `< 1100 us` | Powerdown (`DRIVE_MODE_POWERDOWN`) | GPIO 5·6 LOW, 드라이버 전원 차단 및 목표 RPM `0` |
 | `1100-1299 us` | Stop (`DRIVE_MODE_STOP`) | 좌/우 목표 RPM을 `0`으로 설정 |
-| `1300-1699 us` | Manual (`DRIVE_MODE_MANUAL`) | RC `v`, `w` 입력으로 주행 |
-| `>= 1700 us` | Auto (`DRIVE_MODE_AUTO`) | ROS-UART command packet으로 `v_milli_mps`, `w_milli_radps` 수신 |
+| `1300-1599 us` | Manual (`DRIVE_MODE_MANUAL`) | RC `v`, `w` 입력으로 주행 |
+| `1600-1799 us` | 제자리 회전 (`DRIVE_MODE_PIVOT`) | RC `v` 무시, `w`만으로 후륜 중심 ICR 회전 |
+| `>= 1800 us` | Auto (`DRIVE_MODE_AUTO`) | ROS-UART command packet으로 `v_milli_mps`, `w_milli_radps` 수신 |
+
+제자리 회전은 `w`의 기존 1450–1550 us 데드밴드를 적용하고 양 끝에서 ±5 rad/s를 요청합니다. 전륜은 좌 -62.4°, 우 +62.4°를 즉시 지령하며 `w=0`에서도 유지합니다. 실제 서보 이동에는 시간이 걸립니다. 모드 전환 시 기존 감속·정지 대기·조향 안정화 절차를 거치고, 바퀴 RPM에는 기존 공통 200 RPM 제한과 가감속 제한을 적용합니다.
 
 `mode_state`는 위 POWERDOWN/STOP/MANUAL/AUTO 구동 source를 선택합니다. 이 값과 별도로 `serial_mode`는 정상 제어/상태 통신인 CONTROL과 raw CAN tunnel인 BRIDGE를 선택합니다. 두 변수는 우선순위가 같은 주행 모드가 아니라, `serial_mode`가 바깥쪽 통신 동작을 정하고 `mode_state`가 CONTROL 안에서만 구동 source를 고르는 중첩 구조입니다.
 
@@ -1030,7 +1033,7 @@ Teensy는 모터를 직접 구동하지 않습니다. ROS 또는 RC 입력에서
 - MD200T A/B의 CH1/CH2 방향 극성은 실제 배선 후 저속 테스트로 검증해야 합니다.
 - CAN 통신에는 Teensy와 MD200T 사이의 CAN transceiver, CAN_H/CAN_L 배선, 공통 GND, 종단저항 검토가 필요합니다.
 - CAN 설정 CLI를 사용할 때도 Teensy FlexCAN0와 MD200T A/B는 모두 `500 kbit/s` 상태여야 합니다. 이 프로젝트는 MD200T baudrate 변경 frame을 보내지 않습니다.
-- Auto 모드를 사용하려면 모드 입력 PWM이 `1700 us` 이상이어야 합니다.
+- Auto 모드를 사용하려면 모드 입력 PWM이 `1800 us` 이상이어야 합니다.
 - RC PWM 입력은 10개 샘플 이동 평균으로 필터링됩니다.
 - 현재 MCU 펌웨어는 ROS command, MCU reset, CAN bridge request 형식의 바이너리 패킷만 인식합니다. 일반 텍스트 `"0.5,0.0"` 형태로 보내면 인식되지 않습니다.
 - status packet, command packet, CAN bridge packet은 같은 Serial 포트를 공유하므로, PC/ROS 수신부는 binary packet framing을 기준으로 파싱해야 합니다.
