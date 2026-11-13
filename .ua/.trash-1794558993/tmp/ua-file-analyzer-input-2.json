@@ -1,0 +1,71 @@
+{
+    "projectRoot":  "C:\\Users\\desktop\\Documents\\WCL\\SLAM\\Wheel-Dragoon",
+    "batchImportData":  {
+                            "include/build_features.hpp":  [
+
+                                                           ],
+                            "include/can_control.hpp":  [
+                                                            "include/build_features.hpp",
+                                                            "include/flexcan0.hpp"
+                                                        ],
+                            "include/can_debug.hpp":  [
+                                                          "include/build_features.hpp",
+                                                          "include/flexcan0.hpp"
+                                                      ],
+                            "include/serial_protocol.hpp":  [
+
+                                                            ],
+                            "src/can_debug.cpp":  [
+                                                      "include/can_control.hpp",
+                                                      "include/can_debug.hpp",
+                                                      "include/control.hpp",
+                                                      "include/little_endian.hpp",
+                                                      "include/serial_protocol.hpp"
+                                                  ],
+                            "src/serial_protocol.cpp":  [
+                                                            "include/can_control.hpp",
+                                                            "include/can_debug.hpp",
+                                                            "include/control.hpp",
+                                                            "include/little_endian.hpp",
+                                                            "include/serial_protocol.hpp"
+                                                        ]
+                        },
+    "batchFiles":  [
+                       {
+                           "path":  "include/build_features.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  13,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/can_control.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  46,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/can_debug.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  17,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/serial_protocol.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  55,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/can_debug.cpp",
+                           "language":  "cpp",
+                           "sizeLines":  405,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/serial_protocol.cpp",
+                           "language":  "cpp",
+                           "sizeLines":  333,
+                           "fileCategory":  "code"
+                       }
+                   ]
+}

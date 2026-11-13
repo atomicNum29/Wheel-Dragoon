@@ -1,0 +1,986 @@
+{
+  "nodes": [
+    {
+      "id": "file:include/vehicle_motion.hpp",
+      "type": "file",
+      "name": "vehicle_motion.hpp",
+      "filePath": "include/vehicle_motion.hpp",
+      "summary": "기동·제동·조향·정착·주행 상태를 관리하고 네 바퀴 RPM을 공통 비율로 제한·램핑한다. PIVOT은 조향 지령을 즉시 고정각으로 바꾸며 일반 조향 지령 속도 제한을 우회한다.",
+      "tags": [
+        "모션",
+        "상태기계",
+        "속도제한"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:include/vehicle_motion.hpp:MotionController",
+      "type": "class",
+      "name": "MotionController",
+      "filePath": "include/vehicle_motion.hpp",
+      "lineRange": [
+        11,
+        135
+      ],
+      "summary": "보정과 기하 제약을 확인하며 모션 상태 전환, 공통 RPM 제한, 가감속 및 조향 지령 생성을 담당한다.",
+      "tags": [
+        "모션",
+        "상태기계",
+        "자료형"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:include/vehicle_motion.hpp:MotionController.MotionController",
+      "type": "function",
+      "name": "MotionController.MotionController",
+      "filePath": "include/vehicle_motion.hpp",
+      "lineRange": [
+        19,
+        20
+      ],
+      "summary": "모션 설정과 좌우 서보 보정표를 복사해 제어기를 구성한다.",
+      "tags": [
+        "모션",
+        "상태기계",
+        "메서드"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_motion.hpp:MotionController.calibrated",
+      "type": "function",
+      "name": "MotionController.calibrated",
+      "filePath": "include/vehicle_motion.hpp",
+      "lineRange": [
+        21,
+        21
+      ],
+      "summary": "좌우 서보 보정표가 모두 유효한지 검사한다.",
+      "tags": [
+        "모션",
+        "상태기계",
+        "메서드"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_motion.hpp:MotionController.valid_configuration",
+      "type": "function",
+      "name": "MotionController.valid_configuration",
+      "filePath": "include/vehicle_motion.hpp",
+      "lineRange": [
+        22,
+        34
+      ],
+      "summary": "차량 기하와 RPM·가감속·조향 속도 및 대기 시간 설정이 유한하고 허용 범위인지 확인한다.",
+      "tags": [
+        "모션",
+        "상태기계",
+        "메서드"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_motion.hpp:MotionController.stopped",
+      "type": "function",
+      "name": "MotionController.stopped",
+      "filePath": "include/vehicle_motion.hpp",
+      "lineRange": [
+        35,
+        38
+      ],
+      "summary": "생성 중인 모든 바퀴 RPM 지령이 정지 허용 오차 이내인지 판정한다. 실제 바퀴 정지 측정값은 아니다.",
+      "tags": [
+        "모션",
+        "상태기계",
+        "메서드"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_motion.hpp:MotionController.inhibit",
+      "type": "function",
+      "name": "MotionController.inhibit",
+      "filePath": "include/vehicle_motion.hpp",
+      "lineRange": [
+        40,
+        44
+      ],
+      "summary": "생성 RPM을 즉시 0으로 만들고 준비 상태에 따라 제동 또는 기동 상태로 전환한다.",
+      "tags": [
+        "모션",
+        "상태기계",
+        "메서드"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_motion.hpp:MotionController.update",
+      "type": "function",
+      "name": "MotionController.update",
+      "filePath": "include/vehicle_motion.hpp",
+      "lineRange": [
+        45,
+        116
+      ],
+      "summary": "기동 지연과 실행 가능성 검사를 거쳐 제동·조향·정착·주행 상태를 진행한다. PIVOT 조향 지령 즉시 반영과 공통 RPM 제한을 적용한다.",
+      "tags": [
+        "모션",
+        "상태기계",
+        "메서드"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:include/vehicle_motion.hpp:MotionController.ramp",
+      "type": "function",
+      "name": "MotionController.ramp",
+      "filePath": "include/vehicle_motion.hpp",
+      "lineRange": [
+        124,
+        134
+      ],
+      "summary": "각 바퀴의 가감속 제한 중 가장 작은 진행 비율을 공통 적용해 RPM 목표에 접근한다.",
+      "tags": [
+        "모션",
+        "상태기계",
+        "메서드"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/main.cpp",
+      "type": "file",
+      "name": "main.cpp",
+      "filePath": "src/main.cpp",
+      "summary": "Arduino setup과 loop에서 전원·RC·USB·CAN·모션·진단 처리 순서를 조정한다. 선택적 디버그 및 타이밍 기능은 빌드 플래그에 따라 호출된다.",
+      "tags": [
+        "진입점",
+        "스케줄링",
+        "펌웨어"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/main.cpp:setup",
+      "type": "function",
+      "name": "setup",
+      "filePath": "src/main.cpp",
+      "lineRange": [
+        13,
+        28
+      ],
+      "summary": "전원·프로토콜·계측·조향·RC 입력을 초기화한 후 세션과 CAN을 시작하고 부팅 상태를 해제한다.",
+      "tags": [
+        "진입점",
+        "스케줄링",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/main.cpp:loop",
+      "type": "function",
+      "name": "loop",
+      "filePath": "src/main.cpp",
+      "lineRange": [
+        30,
+        59
+      ],
+      "summary": "현재 RC 입력을 바탕으로 전원·직렬 수신·CAN 수신·모션·상태 송신·조향 출력 순서로 주기 작업을 실행한다.",
+      "tags": [
+        "진입점",
+        "스케줄링",
+        "함수"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/rc_io.cpp",
+      "type": "file",
+      "name": "rc_io.cpp",
+      "filePath": "src/rc_io.cpp",
+      "summary": "세 RC 채널의 에지 인터럽트에서 펄스폭을 측정하고 10표본 이동평균으로 모드를 선택한다. 보정표를 사용해 전륜 서보 PWM을 출력하며 입력 펄스 만료 검사는 구현하지 않는다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "조향"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src/rc_io.cpp:PulseFilter",
+      "type": "class",
+      "name": "PulseFilter",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        17,
+        32
+      ],
+      "summary": "각 RC 채널에 독립적인 10표본 순환 버퍼와 합계를 유지해 정수 이동평균을 계산한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:PulseFilter.PulseFilter",
+      "type": "function",
+      "name": "PulseFilter.PulseFilter",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        19,
+        21
+      ],
+      "summary": "전체 이동평균 표본을 초기 펄스폭으로 채우고 합계를 초기화한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "메서드"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:PulseFilter.push",
+      "type": "function",
+      "name": "PulseFilter.push",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        22,
+        27
+      ],
+      "summary": "가장 오래된 펄스를 새 값으로 교체하고 합계를 갱신해 10표본 평균을 반환한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "메서드"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:v_decodePWM",
+      "type": "function",
+      "name": "v_decodePWM",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        36,
+        52
+      ],
+      "summary": "속도 RC 핀의 에지 간격을 측정해 최대 펄스폭을 넘지 않는 값만 이동평균에 반영한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:w_decodePWM",
+      "type": "function",
+      "name": "w_decodePWM",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        54,
+        70
+      ],
+      "summary": "조향 RC 핀의 에지 간격을 측정해 최대 펄스폭을 넘지 않는 값만 이동평균에 반영한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:mode_decodePWM",
+      "type": "function",
+      "name": "mode_decodePWM",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        72,
+        99
+      ],
+      "summary": "모드 채널 펄스폭 범위를 검사하고 필터 출력 구간에 따라 POWERDOWN·STOP·MANUAL·PIVOT·AUTO를 선택한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "함수"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/rc_io.cpp:initialize_inputs",
+      "type": "function",
+      "name": "initialize_inputs",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        103,
+        111
+      ],
+      "summary": "속도·조향·모드 입력 핀에 CHANGE 인터럽트를 연결한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:read_mode",
+      "type": "function",
+      "name": "read_mode",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        112,
+        112
+      ],
+      "summary": "ISR이 마지막으로 선택한 RC 구동 모드를 반환한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:read_pwm",
+      "type": "function",
+      "name": "read_pwm",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        113,
+        113
+      ],
+      "summary": "ISR이 보관한 속도와 조향 펄스폭을 개별 읽기로 반환한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:initialize_steering",
+      "type": "function",
+      "name": "initialize_steering",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        115,
+        123
+      ],
+      "summary": "유효한 보정표가 있으면 서보 PWM 해상도·주파수를 설정하고 중립각 펄스를 출력한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:offset_with_deadband",
+      "type": "function",
+      "name": "offset_with_deadband",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        124,
+        133
+      ],
+      "summary": "입력 펄스폭을 허용 범위로 제한하고 중립 ±50 µs 데드밴드를 제거한 부호 있는 오프셋을 반환한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/rc_io.cpp:write_steering",
+      "type": "function",
+      "name": "write_steering",
+      "filePath": "src/rc_io.cpp",
+      "lineRange": [
+        135,
+        143
+      ],
+      "summary": "모션 제어기의 좌우 각도 지령을 서보 보정표와 PWM duty로 변환해 출력한다.",
+      "tags": [
+        "rc",
+        "인터럽트",
+        "함수"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "class:include/vehicle_motion.hpp:MotionController",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "class:include/vehicle_motion.hpp:MotionController",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.MotionController",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:include/vehicle_motion.hpp:MotionController",
+      "target": "function:include/vehicle_motion.hpp:MotionController.MotionController",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.MotionController",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.calibrated",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:include/vehicle_motion.hpp:MotionController",
+      "target": "function:include/vehicle_motion.hpp:MotionController.calibrated",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.calibrated",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.valid_configuration",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:include/vehicle_motion.hpp:MotionController",
+      "target": "function:include/vehicle_motion.hpp:MotionController.valid_configuration",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.valid_configuration",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.stopped",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:include/vehicle_motion.hpp:MotionController",
+      "target": "function:include/vehicle_motion.hpp:MotionController.stopped",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.stopped",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.inhibit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:include/vehicle_motion.hpp:MotionController",
+      "target": "function:include/vehicle_motion.hpp:MotionController.inhibit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.inhibit",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.update",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:include/vehicle_motion.hpp:MotionController",
+      "target": "function:include/vehicle_motion.hpp:MotionController.update",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.update",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "function:include/vehicle_motion.hpp:MotionController.ramp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:include/vehicle_motion.hpp:MotionController",
+      "target": "function:include/vehicle_motion.hpp:MotionController.ramp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_motion.hpp",
+      "target": "file:include/steering_config.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "function:src/main.cpp:setup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "function:src/main.cpp:setup",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "function:src/main.cpp:loop",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "function:src/main.cpp:loop",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "file:include/can_control.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "file:include/can_debug.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "file:include/control.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "file:include/rc_io.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "file:include/serial_protocol.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/main.cpp",
+      "target": "file:include/timing_diagnostics.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "class:src/rc_io.cpp:PulseFilter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "class:src/rc_io.cpp:PulseFilter",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:PulseFilter.PulseFilter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/rc_io.cpp:PulseFilter",
+      "target": "function:src/rc_io.cpp:PulseFilter.PulseFilter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:PulseFilter.PulseFilter",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:PulseFilter.push",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/rc_io.cpp:PulseFilter",
+      "target": "function:src/rc_io.cpp:PulseFilter.push",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:PulseFilter.push",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:v_decodePWM",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:v_decodePWM",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:w_decodePWM",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:w_decodePWM",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:mode_decodePWM",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:mode_decodePWM",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:initialize_inputs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:initialize_inputs",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:read_mode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:read_mode",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:read_pwm",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:read_pwm",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:initialize_steering",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:initialize_steering",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:offset_with_deadband",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:offset_with_deadband",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:write_steering",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "function:src/rc_io.cpp:write_steering",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/rc_io.cpp",
+      "target": "file:include/rc_io.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:include/vehicle_motion.hpp:MotionController.calibrated",
+      "target": "function:include/steering_config.hpp:valid_calibration",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/vehicle_motion.hpp:MotionController.update",
+      "target": "function:include/vehicle_motion.hpp:MotionController.calibrated",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/vehicle_motion.hpp:MotionController.update",
+      "target": "function:include/vehicle_motion.hpp:MotionController.valid_configuration",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/vehicle_motion.hpp:MotionController.update",
+      "target": "function:include/vehicle_motion.hpp:MotionController.inhibit",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/vehicle_motion.hpp:MotionController.update",
+      "target": "function:include/vehicle_kinematics.hpp:inverse",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/vehicle_motion.hpp:MotionController.update",
+      "target": "function:include/vehicle_motion.hpp:MotionController.ramp",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/vehicle_motion.hpp:MotionController.update",
+      "target": "function:include/vehicle_motion.hpp:MotionController.stopped",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main.cpp:setup",
+      "target": "function:src/rc_io.cpp:initialize_steering",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main.cpp:setup",
+      "target": "function:src/rc_io.cpp:initialize_inputs",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main.cpp:loop",
+      "target": "function:src/rc_io.cpp:read_mode",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main.cpp:loop",
+      "target": "function:src/rc_io.cpp:read_pwm",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/main.cpp:loop",
+      "target": "function:src/rc_io.cpp:write_steering",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/rc_io.cpp:v_decodePWM",
+      "target": "function:src/rc_io.cpp:PulseFilter.push",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/rc_io.cpp:w_decodePWM",
+      "target": "function:src/rc_io.cpp:PulseFilter.push",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/rc_io.cpp:mode_decodePWM",
+      "target": "function:src/rc_io.cpp:PulseFilter.push",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/rc_io.cpp:initialize_steering",
+      "target": "function:include/vehicle_motion.hpp:MotionController.calibrated",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/rc_io.cpp:initialize_steering",
+      "target": "function:include/steering_config.hpp:pwm_duty",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/rc_io.cpp:initialize_steering",
+      "target": "function:include/steering_config.hpp:pulse_for_angle",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/rc_io.cpp:write_steering",
+      "target": "function:include/vehicle_motion.hpp:MotionController.calibrated",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/rc_io.cpp:write_steering",
+      "target": "function:include/steering_config.hpp:pulse_for_angle",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/rc_io.cpp:write_steering",
+      "target": "function:include/steering_config.hpp:pwm_duty",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

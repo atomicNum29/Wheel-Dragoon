@@ -1,0 +1,30 @@
+{
+  "issues": [],
+  "warnings": [
+    "Node 'file:.python-version' has no edges (orphan)",
+    "Node 'config:.ua/config.json' has no edges (orphan)",
+    "Node 'file:include/README' has no edges (orphan)",
+    "Node 'file:lib/README' has no edges (orphan)"
+  ],
+  "stats": {
+    "totalNodes": 213,
+    "totalEdges": 547,
+    "totalLayers": 7,
+    "tourSteps": 11,
+    "nodeTypes": {
+      "file": 30,
+      "class": 29,
+      "function": 141,
+      "document": 10,
+      "config": 3
+    },
+    "edgeTypes": {
+      "contains": 188,
+      "exports": 145,
+      "imports": 53,
+      "calls": 108,
+      "documents": 46,
+      "configures": 7
+    }
+  }
+}

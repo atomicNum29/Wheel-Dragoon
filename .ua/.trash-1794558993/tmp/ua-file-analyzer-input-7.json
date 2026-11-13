@@ -1,0 +1,70 @@
+{
+    "projectRoot":  "C:/Users/desktop/Documents/WCL/SLAM/Wheel-Dragoon",
+    "batchImportData":  {
+                            ".python-version":  [
+
+                                                ],
+                            ".ua/config.json":  [
+
+                                                ],
+                            "include/README":  [
+
+                                               ],
+                            "lib/README":  [
+
+                                           ],
+                            "src/can_cli.py":  [
+
+                                               ],
+                            "src/control.py":  [
+
+                                               ],
+                            "src/packet_monitor.py":  [
+
+                                                      ]
+                        },
+    "batchFiles":  [
+                       {
+                           "path":  ".python-version",
+                           "language":  "unknown",
+                           "sizeLines":  1,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  ".ua/config.json",
+                           "language":  "json",
+                           "sizeLines":  3,
+                           "fileCategory":  "config"
+                       },
+                       {
+                           "path":  "include/README",
+                           "language":  "unknown",
+                           "sizeLines":  18,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "lib/README",
+                           "language":  "unknown",
+                           "sizeLines":  10,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/can_cli.py",
+                           "language":  "python",
+                           "sizeLines":  1032,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/control.py",
+                           "language":  "python",
+                           "sizeLines":  262,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/packet_monitor.py",
+                           "language":  "python",
+                           "sizeLines":  80,
+                           "fileCategory":  "code"
+                       }
+                   ]
+}

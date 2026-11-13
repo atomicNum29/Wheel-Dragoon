@@ -1,0 +1,76 @@
+{
+    "projectRoot":  "C:\\Users\\desktop\\Documents\\WCL\\SLAM\\Wheel-Dragoon",
+    "batchImportData":  {
+                            "include/control.hpp":  [
+                                                        "include/build_features.hpp",
+                                                        "include/vehicle_motion.hpp"
+                                                    ],
+                            "include/rc_io.hpp":  [
+                                                      "include/control.hpp"
+                                                  ],
+                            "include/steering_config.hpp":  [
+                                                                "include/vehicle_kinematics.hpp"
+                                                            ],
+                            "include/vehicle_kinematics.hpp":  [
+
+                                                               ],
+                            "include/vehicle_motion.hpp":  [
+                                                               "include/steering_config.hpp"
+                                                           ],
+                            "src/main.cpp":  [
+                                                 "include/can_control.hpp",
+                                                 "include/can_debug.hpp",
+                                                 "include/control.hpp",
+                                                 "include/rc_io.hpp",
+                                                 "include/serial_protocol.hpp",
+                                                 "include/timing_diagnostics.hpp"
+                                             ],
+                            "src/rc_io.cpp":  [
+                                                  "include/rc_io.hpp"
+                                              ]
+                        },
+    "batchFiles":  [
+                       {
+                           "path":  "include/control.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  109,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/rc_io.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  19,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/steering_config.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  77,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/vehicle_kinematics.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  78,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/vehicle_motion.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  136,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/main.cpp",
+                           "language":  "cpp",
+                           "sizeLines":  59,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/rc_io.cpp",
+                           "language":  "cpp",
+                           "sizeLines":  145,
+                           "fileCategory":  "code"
+                       }
+                   ]
+}

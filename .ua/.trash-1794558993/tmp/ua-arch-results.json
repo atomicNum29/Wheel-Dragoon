@@ -1,0 +1,845 @@
+{
+  "scriptCompleted": true,
+  "commonPrefix": "",
+  "directoryGroups": {
+    "include": [
+      "file:include/control.hpp",
+      "file:include/rc_io.hpp",
+      "file:include/steering_config.hpp",
+      "file:include/vehicle_kinematics.hpp",
+      "file:include/vehicle_motion.hpp",
+      "file:include/build_features.hpp",
+      "file:include/can_control.hpp",
+      "file:include/can_debug.hpp",
+      "file:include/serial_protocol.hpp",
+      "file:include/error_report.hpp",
+      "file:include/flexcan0.hpp",
+      "file:include/md200t_can.hpp",
+      "file:include/can_tx_schedule.hpp",
+      "file:include/little_endian.hpp",
+      "file:include/timing_diagnostics.hpp",
+      "file:include/README"
+    ],
+    "src": [
+      "file:src/main.cpp",
+      "file:src/rc_io.cpp",
+      "file:src/can_debug.cpp",
+      "file:src/serial_protocol.cpp",
+      "file:src/control.cpp",
+      "file:src/flexcan0.cpp",
+      "file:src/md200t_can.cpp",
+      "file:src/can_control.cpp",
+      "file:src/timing_diagnostics.cpp",
+      "file:src/can_cli.py",
+      "file:src/control.py",
+      "file:src/packet_monitor.py"
+    ],
+    "root": [
+      "document:README.md",
+      "config:platformio.ini",
+      "config:pyproject.toml",
+      "file:.python-version"
+    ],
+    "docs": [
+      "document:docs/README.md",
+      "document:docs/can-cli-windows.md",
+      "document:docs/can-rx-fifo.md",
+      "document:docs/firmware-architecture.ko.md",
+      "document:docs/raspberry-pi-handoff.ko.md",
+      "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "document:docs/rc-steering.ko.md",
+      "document:docs/timing-diagnostics.md",
+      "document:docs/usb-protocol.ko.md"
+    ],
+    ".ua": [
+      "config:.ua/config.json"
+    ],
+    "lib": [
+      "file:lib/README"
+    ]
+  },
+  "nodeTypeGroups": {
+    "file": [
+      "file:include/control.hpp",
+      "file:include/rc_io.hpp",
+      "file:include/steering_config.hpp",
+      "file:include/vehicle_kinematics.hpp",
+      "file:include/vehicle_motion.hpp",
+      "file:src/main.cpp",
+      "file:src/rc_io.cpp",
+      "file:include/build_features.hpp",
+      "file:include/can_control.hpp",
+      "file:include/can_debug.hpp",
+      "file:include/serial_protocol.hpp",
+      "file:src/can_debug.cpp",
+      "file:src/serial_protocol.cpp",
+      "file:include/error_report.hpp",
+      "file:include/flexcan0.hpp",
+      "file:include/md200t_can.hpp",
+      "file:src/control.cpp",
+      "file:src/flexcan0.cpp",
+      "file:src/md200t_can.cpp",
+      "file:include/can_tx_schedule.hpp",
+      "file:include/little_endian.hpp",
+      "file:include/timing_diagnostics.hpp",
+      "file:src/can_control.cpp",
+      "file:src/timing_diagnostics.cpp",
+      "file:.python-version",
+      "file:include/README",
+      "file:lib/README",
+      "file:src/can_cli.py",
+      "file:src/control.py",
+      "file:src/packet_monitor.py"
+    ],
+    "document": [
+      "document:README.md",
+      "document:docs/README.md",
+      "document:docs/can-cli-windows.md",
+      "document:docs/can-rx-fifo.md",
+      "document:docs/firmware-architecture.ko.md",
+      "document:docs/raspberry-pi-handoff.ko.md",
+      "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "document:docs/rc-steering.ko.md",
+      "document:docs/timing-diagnostics.md",
+      "document:docs/usb-protocol.ko.md"
+    ],
+    "config": [
+      "config:platformio.ini",
+      "config:pyproject.toml",
+      "config:.ua/config.json"
+    ]
+  },
+  "adjacency": {
+    "file:include/control.hpp": [
+      "file:include/build_features.hpp",
+      "file:include/vehicle_motion.hpp"
+    ],
+    "file:include/rc_io.hpp": [
+      "file:include/control.hpp"
+    ],
+    "file:include/steering_config.hpp": [
+      "file:include/vehicle_kinematics.hpp"
+    ],
+    "file:include/vehicle_kinematics.hpp": [],
+    "file:include/vehicle_motion.hpp": [
+      "file:include/steering_config.hpp"
+    ],
+    "file:src/main.cpp": [
+      "file:include/can_control.hpp",
+      "file:include/can_debug.hpp",
+      "file:include/control.hpp",
+      "file:include/rc_io.hpp",
+      "file:include/serial_protocol.hpp",
+      "file:include/timing_diagnostics.hpp"
+    ],
+    "file:src/rc_io.cpp": [
+      "file:include/rc_io.hpp"
+    ],
+    "file:include/build_features.hpp": [],
+    "file:include/can_control.hpp": [
+      "file:include/build_features.hpp",
+      "file:include/flexcan0.hpp"
+    ],
+    "file:include/can_debug.hpp": [
+      "file:include/build_features.hpp",
+      "file:include/flexcan0.hpp"
+    ],
+    "file:include/serial_protocol.hpp": [],
+    "file:src/can_debug.cpp": [
+      "file:include/can_control.hpp",
+      "file:include/can_debug.hpp",
+      "file:include/control.hpp",
+      "file:include/little_endian.hpp",
+      "file:include/serial_protocol.hpp"
+    ],
+    "file:src/serial_protocol.cpp": [
+      "file:include/can_control.hpp",
+      "file:include/can_debug.hpp",
+      "file:include/control.hpp",
+      "file:include/little_endian.hpp",
+      "file:include/serial_protocol.hpp"
+    ],
+    "file:include/error_report.hpp": [],
+    "file:include/flexcan0.hpp": [],
+    "file:include/md200t_can.hpp": [
+      "file:include/flexcan0.hpp"
+    ],
+    "file:src/control.cpp": [
+      "file:include/can_control.hpp",
+      "file:include/can_debug.hpp",
+      "file:include/control.hpp",
+      "file:include/error_report.hpp",
+      "file:include/md200t_can.hpp",
+      "file:include/rc_io.hpp",
+      "file:include/serial_protocol.hpp"
+    ],
+    "file:src/flexcan0.cpp": [
+      "file:include/error_report.hpp",
+      "file:include/flexcan0.hpp"
+    ],
+    "file:src/md200t_can.cpp": [
+      "file:include/flexcan0.hpp",
+      "file:include/little_endian.hpp",
+      "file:include/md200t_can.hpp"
+    ],
+    "file:include/can_tx_schedule.hpp": [
+      "file:include/md200t_can.hpp"
+    ],
+    "file:include/little_endian.hpp": [],
+    "file:include/timing_diagnostics.hpp": [
+      "file:include/build_features.hpp"
+    ],
+    "file:src/can_control.cpp": [
+      "file:include/can_control.hpp",
+      "file:include/can_debug.hpp",
+      "file:include/can_tx_schedule.hpp",
+      "file:include/control.hpp",
+      "file:include/little_endian.hpp",
+      "file:include/timing_diagnostics.hpp"
+    ],
+    "file:src/timing_diagnostics.cpp": [
+      "file:include/can_control.hpp",
+      "file:include/can_tx_schedule.hpp",
+      "file:include/control.hpp",
+      "file:include/little_endian.hpp",
+      "file:include/serial_protocol.hpp",
+      "file:include/timing_diagnostics.hpp"
+    ],
+    "document:README.md": [],
+    "config:platformio.ini": [],
+    "config:pyproject.toml": [],
+    "document:docs/README.md": [],
+    "document:docs/can-cli-windows.md": [],
+    "document:docs/can-rx-fifo.md": [],
+    "document:docs/firmware-architecture.ko.md": [],
+    "document:docs/raspberry-pi-handoff.ko.md": [],
+    "document:docs/rc-loss-of-control-review-2026-11-09.ko.md": [],
+    "document:docs/rc-steering.ko.md": [],
+    "document:docs/timing-diagnostics.md": [],
+    "document:docs/usb-protocol.ko.md": [],
+    "file:.python-version": [],
+    "config:.ua/config.json": [],
+    "file:include/README": [],
+    "file:lib/README": [],
+    "file:src/can_cli.py": [],
+    "file:src/control.py": [],
+    "file:src/packet_monitor.py": []
+  },
+  "groupImports": {
+    "include": [],
+    "src": [
+      "include"
+    ],
+    "root": [],
+    "docs": [],
+    ".ua": [],
+    "lib": []
+  },
+  "groupImportedBy": {
+    "include": [
+      "src"
+    ],
+    "src": [],
+    "root": [],
+    "docs": [],
+    ".ua": [],
+    "lib": []
+  },
+  "crossCategoryEdges": [
+    {
+      "fromType": "file",
+      "toType": "file",
+      "edgeType": "imports",
+      "count": 53
+    },
+    {
+      "fromType": "document",
+      "toType": "file",
+      "edgeType": "documents",
+      "count": 42
+    },
+    {
+      "fromType": "document",
+      "toType": "config",
+      "edgeType": "documents",
+      "count": 4
+    },
+    {
+      "fromType": "config",
+      "toType": "file",
+      "edgeType": "configures",
+      "count": 7
+    }
+  ],
+  "nonCodeConnections": [
+    {
+      "source": "document:README.md",
+      "target": "file:src/main.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:include/steering_config.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:include/can_tx_schedule.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:platformio.ini",
+      "target": "file:src/main.cpp",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:platformio.ini",
+      "target": "file:include/build_features.hpp",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:platformio.ini",
+      "target": "file:src/can_debug.cpp",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:platformio.ini",
+      "target": "file:src/timing_diagnostics.cpp",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:src/can_cli.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:src/control.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:src/packet_monitor.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/main.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/rc_io.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/can_control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/flexcan0.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/serial_protocol.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/can_debug.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/can_cli.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/packet_monitor.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/control.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/timing_diagnostics.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-cli-windows.md",
+      "target": "file:src/can_cli.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-cli-windows.md",
+      "target": "file:src/control.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-cli-windows.md",
+      "target": "file:src/packet_monitor.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-rx-fifo.md",
+      "target": "file:src/can_control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-rx-fifo.md",
+      "target": "file:src/flexcan0.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-rx-fifo.md",
+      "target": "file:src/md200t_can.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-rx-fifo.md",
+      "target": "file:include/can_tx_schedule.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/firmware-architecture.ko.md",
+      "target": "file:src/main.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/firmware-architecture.ko.md",
+      "target": "file:src/control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/firmware-architecture.ko.md",
+      "target": "file:src/serial_protocol.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/firmware-architecture.ko.md",
+      "target": "file:include/build_features.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/rc_io.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/flexcan0.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/can_control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/serial_protocol.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:src/rc_io.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:src/control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:include/steering_config.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:include/vehicle_kinematics.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:include/vehicle_motion.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/timing-diagnostics.md",
+      "target": "file:src/timing_diagnostics.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/timing-diagnostics.md",
+      "target": "file:src/can_cli.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/timing-diagnostics.md",
+      "target": "file:include/timing_diagnostics.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/usb-protocol.ko.md",
+      "target": "file:src/serial_protocol.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/usb-protocol.ko.md",
+      "target": "file:include/serial_protocol.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/usb-protocol.ko.md",
+      "target": "file:src/can_debug.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/usb-protocol.ko.md",
+      "target": "file:src/control.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ],
+  "interGroupImports": [
+    {
+      "from": "src",
+      "to": "include",
+      "count": 41
+    }
+  ],
+  "intraGroupDensity": {
+    "include": {
+      "internalEdges": 12,
+      "totalEdges": 53,
+      "density": 0.22641509433962265
+    },
+    "src": {
+      "internalEdges": 0,
+      "totalEdges": 41,
+      "density": 0
+    },
+    "root": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    "docs": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    ".ua": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    },
+    "lib": {
+      "internalEdges": 0,
+      "totalEdges": 0,
+      "density": 0
+    }
+  },
+  "patternMatches": {
+    "include": null,
+    "src": null,
+    "root": null,
+    "docs": "documentation",
+    ".ua": null,
+    "lib": "service"
+  },
+  "deploymentTopology": {
+    "hasDockerfile": false,
+    "hasCompose": false,
+    "hasK8s": false,
+    "hasTerraform": false,
+    "hasCI": false,
+    "infraFiles": []
+  },
+  "dataPipeline": {
+    "schemaFiles": [],
+    "migrationFiles": [],
+    "dataModelFiles": [],
+    "apiHandlerFiles": []
+  },
+  "docCoverage": {
+    "groupsWithDocs": 5,
+    "totalGroups": 6,
+    "coverageRatio": 0.8333333333333334,
+    "undocumentedGroups": [
+      ".ua"
+    ]
+  },
+  "dependencyDirection": [
+    {
+      "dependent": "src",
+      "dependsOn": "include"
+    }
+  ],
+  "fileStats": {
+    "totalFileNodes": 43,
+    "filesPerGroup": {
+      "include": 16,
+      "src": 12,
+      "root": 4,
+      "docs": 9,
+      ".ua": 1,
+      "lib": 1
+    },
+    "nodeTypeCounts": {
+      "file": 30,
+      "document": 10,
+      "config": 3
+    }
+  },
+  "fileFanIn": {
+    "file:include/control.hpp": 7,
+    "file:include/rc_io.hpp": 3,
+    "file:include/steering_config.hpp": 1,
+    "file:include/vehicle_kinematics.hpp": 1,
+    "file:include/vehicle_motion.hpp": 1,
+    "file:src/main.cpp": 0,
+    "file:src/rc_io.cpp": 0,
+    "file:include/build_features.hpp": 4,
+    "file:include/can_control.hpp": 6,
+    "file:include/can_debug.hpp": 5,
+    "file:include/serial_protocol.hpp": 5,
+    "file:src/can_debug.cpp": 0,
+    "file:src/serial_protocol.cpp": 0,
+    "file:include/error_report.hpp": 2,
+    "file:include/flexcan0.hpp": 5,
+    "file:include/md200t_can.hpp": 3,
+    "file:src/control.cpp": 0,
+    "file:src/flexcan0.cpp": 0,
+    "file:src/md200t_can.cpp": 0,
+    "file:include/can_tx_schedule.hpp": 2,
+    "file:include/little_endian.hpp": 5,
+    "file:include/timing_diagnostics.hpp": 3,
+    "file:src/can_control.cpp": 0,
+    "file:src/timing_diagnostics.cpp": 0,
+    "document:README.md": 0,
+    "config:platformio.ini": 0,
+    "config:pyproject.toml": 0,
+    "document:docs/README.md": 0,
+    "document:docs/can-cli-windows.md": 0,
+    "document:docs/can-rx-fifo.md": 0,
+    "document:docs/firmware-architecture.ko.md": 0,
+    "document:docs/raspberry-pi-handoff.ko.md": 0,
+    "document:docs/rc-loss-of-control-review-2026-11-09.ko.md": 0,
+    "document:docs/rc-steering.ko.md": 0,
+    "document:docs/timing-diagnostics.md": 0,
+    "document:docs/usb-protocol.ko.md": 0,
+    "file:.python-version": 0,
+    "config:.ua/config.json": 0,
+    "file:include/README": 0,
+    "file:lib/README": 0,
+    "file:src/can_cli.py": 0,
+    "file:src/control.py": 0,
+    "file:src/packet_monitor.py": 0
+  },
+  "fileFanOut": {
+    "file:include/control.hpp": 2,
+    "file:include/rc_io.hpp": 1,
+    "file:include/steering_config.hpp": 1,
+    "file:include/vehicle_kinematics.hpp": 0,
+    "file:include/vehicle_motion.hpp": 1,
+    "file:src/main.cpp": 6,
+    "file:src/rc_io.cpp": 1,
+    "file:include/build_features.hpp": 0,
+    "file:include/can_control.hpp": 2,
+    "file:include/can_debug.hpp": 2,
+    "file:include/serial_protocol.hpp": 0,
+    "file:src/can_debug.cpp": 5,
+    "file:src/serial_protocol.cpp": 5,
+    "file:include/error_report.hpp": 0,
+    "file:include/flexcan0.hpp": 0,
+    "file:include/md200t_can.hpp": 1,
+    "file:src/control.cpp": 7,
+    "file:src/flexcan0.cpp": 2,
+    "file:src/md200t_can.cpp": 3,
+    "file:include/can_tx_schedule.hpp": 1,
+    "file:include/little_endian.hpp": 0,
+    "file:include/timing_diagnostics.hpp": 1,
+    "file:src/can_control.cpp": 6,
+    "file:src/timing_diagnostics.cpp": 6,
+    "document:README.md": 0,
+    "config:platformio.ini": 0,
+    "config:pyproject.toml": 0,
+    "document:docs/README.md": 0,
+    "document:docs/can-cli-windows.md": 0,
+    "document:docs/can-rx-fifo.md": 0,
+    "document:docs/firmware-architecture.ko.md": 0,
+    "document:docs/raspberry-pi-handoff.ko.md": 0,
+    "document:docs/rc-loss-of-control-review-2026-11-09.ko.md": 0,
+    "document:docs/rc-steering.ko.md": 0,
+    "document:docs/timing-diagnostics.md": 0,
+    "document:docs/usb-protocol.ko.md": 0,
+    "file:.python-version": 0,
+    "config:.ua/config.json": 0,
+    "file:include/README": 0,
+    "file:lib/README": 0,
+    "file:src/can_cli.py": 0,
+    "file:src/control.py": 0,
+    "file:src/packet_monitor.py": 0
+  },
+  "filePatternMatches": {
+    "include/control.hpp": "types",
+    "include/rc_io.hpp": "types",
+    "include/steering_config.hpp": "types",
+    "include/vehicle_kinematics.hpp": "types",
+    "include/vehicle_motion.hpp": "types",
+    "src/main.cpp": "entry",
+    "src/rc_io.cpp": null,
+    "include/build_features.hpp": "types",
+    "include/can_control.hpp": "types",
+    "include/can_debug.hpp": "types",
+    "include/serial_protocol.hpp": "types",
+    "src/can_debug.cpp": null,
+    "src/serial_protocol.cpp": null,
+    "include/error_report.hpp": "types",
+    "include/flexcan0.hpp": "types",
+    "include/md200t_can.hpp": "types",
+    "src/control.cpp": null,
+    "src/flexcan0.cpp": null,
+    "src/md200t_can.cpp": null,
+    "include/can_tx_schedule.hpp": "types",
+    "include/little_endian.hpp": "types",
+    "include/timing_diagnostics.hpp": "types",
+    "src/can_control.cpp": null,
+    "src/timing_diagnostics.cpp": null,
+    "README.md": "documentation",
+    "platformio.ini": "config",
+    "pyproject.toml": "config",
+    "docs/README.md": "documentation",
+    "docs/can-cli-windows.md": "documentation",
+    "docs/can-rx-fifo.md": "documentation",
+    "docs/firmware-architecture.ko.md": "documentation",
+    "docs/raspberry-pi-handoff.ko.md": "documentation",
+    "docs/rc-loss-of-control-review-2026-11-09.ko.md": "documentation",
+    "docs/rc-steering.ko.md": "documentation",
+    "docs/timing-diagnostics.md": "documentation",
+    "docs/usb-protocol.ko.md": "documentation",
+    ".python-version": "config",
+    ".ua/config.json": "config",
+    "include/README": "documentation",
+    "lib/README": "documentation",
+    "src/can_cli.py": null,
+    "src/control.py": null,
+    "src/packet_monitor.py": null
+  }
+}

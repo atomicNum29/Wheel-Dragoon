@@ -1,0 +1,62 @@
+{
+    "projectRoot":  "C:\\Users\\desktop\\Documents\\WCL\\SLAM\\Wheel-Dragoon",
+    "batchImportData":  {
+                            "include/can_tx_schedule.hpp":  [
+                                                                "include/md200t_can.hpp"
+                                                            ],
+                            "include/little_endian.hpp":  [
+
+                                                          ],
+                            "include/timing_diagnostics.hpp":  [
+                                                                   "include/build_features.hpp"
+                                                               ],
+                            "src/can_control.cpp":  [
+                                                        "include/can_control.hpp",
+                                                        "include/can_debug.hpp",
+                                                        "include/can_tx_schedule.hpp",
+                                                        "include/control.hpp",
+                                                        "include/little_endian.hpp",
+                                                        "include/timing_diagnostics.hpp"
+                                                    ],
+                            "src/timing_diagnostics.cpp":  [
+                                                               "include/can_control.hpp",
+                                                               "include/can_tx_schedule.hpp",
+                                                               "include/control.hpp",
+                                                               "include/little_endian.hpp",
+                                                               "include/serial_protocol.hpp",
+                                                               "include/timing_diagnostics.hpp"
+                                                           ]
+                        },
+    "batchFiles":  [
+                       {
+                           "path":  "include/can_tx_schedule.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  73,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/little_endian.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  56,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/timing_diagnostics.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  52,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/can_control.cpp",
+                           "language":  "cpp",
+                           "sizeLines":  480,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/timing_diagnostics.cpp",
+                           "language":  "cpp",
+                           "sizeLines":  213,
+                           "fileCategory":  "code"
+                       }
+                   ]
+}

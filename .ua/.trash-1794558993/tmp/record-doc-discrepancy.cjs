@@ -1,0 +1,13 @@
+const fs = require('fs');
+const dir = '.ua/intermediate/';
+const read = n => JSON.parse(fs.readFileSync(dir+n,'utf8'));
+const write = (n,x) => fs.writeFileSync(dir+n,JSON.stringify(x,null,2)+'\n');
+const note = '문서/소스 불일치: docs/can-rx-fifo.md:76은 각 FIFO pop 후 CAN0_TIMER를 읽는다고 설명하지만, src/flexcan0.cpp:159–199의 can_rx_isr()에는 해당 읽기가 없고 161–162행 주석은 FIFO BUF5I acknowledge와 mailbox TIMER unlock을 구분한다. 정적 관측이며 어느 구현이 하드웨어상 올바른지는 검증하지 않았다.';
+const graph = read('assembled-graph.json');
+const node = graph.nodes.find(n=>n.id==='document:docs/can-rx-fifo.md');
+if (!node) throw new Error('CAN document node missing');
+node.languageNotes = [node.languageNotes,note].filter(Boolean).join(' ');
+write('assembled-graph.json',graph);
+const review = read('assemble-review.json');
+review.notes.push(note);
+write('assemble-review.json',review);

@@ -1,0 +1,710 @@
+{
+  "nodes": [
+    {
+      "id": "file:include/control.hpp",
+      "type": "file",
+      "name": "control.hpp",
+      "filePath": "include/control.hpp",
+      "summary": "구동 모드·오류·상태 자료형과 제어 모듈의 공개 인터페이스를 정의한다. USB 명령, RC 구동, 전원 전환 및 CAN 오류 보고가 공유하는 계약이다.",
+      "tags": [
+        "제어",
+        "인터페이스",
+        "상태"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:include/control.hpp:CommandPacket",
+      "type": "class",
+      "name": "CommandPacket",
+      "filePath": "include/control.hpp",
+      "lineRange": [
+        6,
+        11
+      ],
+      "summary": "USB 속도 명령의 선속도·각속도 정수 필드와 제어 플래그를 보관한다.",
+      "tags": [
+        "제어",
+        "인터페이스",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/control.hpp:WheelRpmCommand",
+      "type": "class",
+      "name": "WheelRpmCommand",
+      "filePath": "include/control.hpp",
+      "lineRange": [
+        33,
+        39
+      ],
+      "summary": "CAN 드라이버로 전달할 LF·LR·RF·RR 바퀴별 RPM 지령을 담는다.",
+      "tags": [
+        "제어",
+        "인터페이스",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/control.hpp:FaultSnapshot",
+      "type": "class",
+      "name": "FaultSnapshot",
+      "filePath": "include/control.hpp",
+      "lineRange": [
+        41,
+        58
+      ],
+      "summary": "반복 송신할 진단 오류와 현재 활성 입력 상태를 구분해 모터 상태 판정에 전달한다.",
+      "tags": [
+        "제어",
+        "인터페이스",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/control.hpp:Status",
+      "type": "class",
+      "name": "Status",
+      "filePath": "include/control.hpp",
+      "lineRange": [
+        72,
+        82
+      ],
+      "summary": "부팅·드라이버 전원·활성화·정지 상태와 직렬 모드 및 바퀴 RPM 목표를 공유한다.",
+      "tags": [
+        "제어",
+        "인터페이스",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:include/rc_io.hpp",
+      "type": "file",
+      "name": "rc_io.hpp",
+      "filePath": "include/rc_io.hpp",
+      "summary": "RC PWM 입력의 범위·중립 데드밴드와 입력 읽기·조향 출력 인터페이스를 정의한다. 채널별 ISR 값을 읽으며 채널 간 원자적 스냅샷은 보장하지 않는다.",
+      "tags": [
+        "rc",
+        "pwm",
+        "인터페이스"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/rc_io.hpp:PwmInput",
+      "type": "class",
+      "name": "PwmInput",
+      "filePath": "include/rc_io.hpp",
+      "lineRange": [
+        11,
+        11
+      ],
+      "summary": "속도와 조향 RC 채널의 펄스폭 값을 묶어 제어 루프에 전달한다.",
+      "tags": [
+        "rc",
+        "pwm",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:include/steering_config.hpp",
+      "type": "file",
+      "name": "steering_config.hpp",
+      "filePath": "include/steering_config.hpp",
+      "summary": "좌우 서보의 각도–펄스 보정표와 차량 모션 제한값을 정의하고 보정 유효성 검사 및 보간을 제공한다. 소스의 verified 플래그는 이번 분석의 실물 검증 결과가 아니다.",
+      "tags": [
+        "조향",
+        "보정",
+        "설정"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:include/steering_config.hpp:CalibrationPoint",
+      "type": "class",
+      "name": "CalibrationPoint",
+      "filePath": "include/steering_config.hpp",
+      "lineRange": [
+        16,
+        16
+      ],
+      "summary": "서보 보정표의 한 점을 액추에이터 각도와 마이크로초 펄스폭으로 표현한다.",
+      "tags": [
+        "조향",
+        "보정",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/steering_config.hpp:ServoCalibration",
+      "type": "class",
+      "name": "ServoCalibration",
+      "filePath": "include/steering_config.hpp",
+      "lineRange": [
+        17,
+        25
+      ],
+      "summary": "서보 핀·유효 범위·각도 반전·단조 보정점과 확인 플래그를 보관한다.",
+      "tags": [
+        "조향",
+        "보정",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/steering_config.hpp:MotionConfig",
+      "type": "class",
+      "name": "MotionConfig",
+      "filePath": "include/steering_config.hpp",
+      "lineRange": [
+        67,
+        76
+      ],
+      "summary": "차량 기하, RPM 상한, 가감속률, 조향 지령 속도와 기동·정착 대기 시간을 정의한다.",
+      "tags": [
+        "조향",
+        "보정",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/steering_config.hpp:pwm_duty",
+      "type": "function",
+      "name": "pwm_duty",
+      "filePath": "include/steering_config.hpp",
+      "lineRange": [
+        9,
+        11
+      ],
+      "summary": "마이크로초 단위 서보 펄스폭을 설정된 주파수와 해상도의 PWM duty 값으로 변환한다.",
+      "tags": [
+        "조향",
+        "보정",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/steering_config.hpp:valid_calibration",
+      "type": "function",
+      "name": "valid_calibration",
+      "filePath": "include/steering_config.hpp",
+      "lineRange": [
+        26,
+        43
+      ],
+      "summary": "보정점 개수·유한성·단조 증가·중립점과 허용 각도 및 펄스 범위를 검사한다.",
+      "tags": [
+        "조향",
+        "보정",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/steering_config.hpp:pulse_for_angle",
+      "type": "function",
+      "name": "pulse_for_angle",
+      "filePath": "include/steering_config.hpp",
+      "lineRange": [
+        44,
+        54
+      ],
+      "summary": "보정 유효성을 확인한 뒤 차량 각도를 제한·반전하고 인접 보정점 사이를 선형 보간해 펄스폭을 구한다.",
+      "tags": [
+        "조향",
+        "보정",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:include/vehicle_kinematics.hpp",
+      "type": "file",
+      "name": "vehicle_kinematics.hpp",
+      "filePath": "include/vehicle_kinematics.hpp",
+      "summary": "차체 속도·곡률 또는 후륜 중심 PIVOT 각속도를 전륜 조향각과 네 바퀴 RPM 지령으로 변환한다. 조향 범위를 벗어나면 전체 명령을 불가로 표시하고 RPM을 0으로 만든다.",
+      "tags": [
+        "운동학",
+        "ackermann",
+        "pivot"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:include/vehicle_kinematics.hpp:RcCommand",
+      "type": "class",
+      "name": "RcCommand",
+      "filePath": "include/vehicle_kinematics.hpp",
+      "lineRange": [
+        15,
+        22
+      ],
+      "summary": "MANUAL의 선속도·곡률과 PIVOT의 후륜 중심 각속도를 구분해 보관한다.",
+      "tags": [
+        "운동학",
+        "ackermann",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/vehicle_kinematics.hpp:Geometry",
+      "type": "class",
+      "name": "Geometry",
+      "filePath": "include/vehicle_kinematics.hpp",
+      "lineRange": [
+        23,
+        28
+      ],
+      "summary": "휠베이스·전후 윤거·바퀴 반지름을 미터 단위로 보관한다.",
+      "tags": [
+        "운동학",
+        "ackermann",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/vehicle_kinematics.hpp:WheelTargets",
+      "type": "class",
+      "name": "WheelTargets",
+      "filePath": "include/vehicle_kinematics.hpp",
+      "lineRange": [
+        29,
+        33
+      ],
+      "summary": "두 전륜의 조향각 지령과 네 바퀴 RPM 및 기하학적 실행 가능 여부를 담는다.",
+      "tags": [
+        "운동학",
+        "ackermann",
+        "자료형"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_kinematics.hpp:clamp",
+      "type": "function",
+      "name": "clamp",
+      "filePath": "include/vehicle_kinematics.hpp",
+      "lineRange": [
+        13,
+        13
+      ],
+      "summary": "입력 값을 하한과 상한 사이로 제한하는 공통 부동소수점 함수를 제공한다.",
+      "tags": [
+        "운동학",
+        "ackermann",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_kinematics.hpp:RcCommand.RcCommand",
+      "type": "function",
+      "name": "RcCommand.RcCommand",
+      "filePath": "include/vehicle_kinematics.hpp",
+      "lineRange": [
+        20,
+        21
+      ],
+      "summary": "선속도·곡률·PIVOT 여부·각속도를 초기값으로 저장한다.",
+      "tags": [
+        "운동학",
+        "ackermann",
+        "메서드"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_kinematics.hpp:speed_to_rpm",
+      "type": "function",
+      "name": "speed_to_rpm",
+      "filePath": "include/vehicle_kinematics.hpp",
+      "lineRange": [
+        34,
+        36
+      ],
+      "summary": "휠 접선속도를 바퀴 반지름과 분당 초 수를 사용해 RPM으로 환산한다.",
+      "tags": [
+        "운동학",
+        "ackermann",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_kinematics.hpp:curvature_from_inner_angle",
+      "type": "function",
+      "name": "curvature_from_inner_angle",
+      "filePath": "include/vehicle_kinematics.hpp",
+      "lineRange": [
+        39,
+        42
+      ],
+      "summary": "안쪽 전륜 조향각과 차체 기하로 후륜 중심 경로 곡률을 계산한다.",
+      "tags": [
+        "운동학",
+        "ackermann",
+        "함수"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:include/vehicle_kinematics.hpp:inverse",
+      "type": "function",
+      "name": "inverse",
+      "filePath": "include/vehicle_kinematics.hpp",
+      "lineRange": [
+        44,
+        77
+      ],
+      "summary": "MANUAL 또는 PIVOT 명령에서 각 바퀴 속도와 전륜 조향각을 계산한다. 입력 또는 조향 범위가 유효하지 않으면 RPM을 0으로 하고 이전 각도를 유지한다.",
+      "tags": [
+        "운동학",
+        "ackermann",
+        "함수"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:include/control.hpp",
+      "target": "class:include/control.hpp:CommandPacket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/control.hpp",
+      "target": "class:include/control.hpp:CommandPacket",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/control.hpp",
+      "target": "class:include/control.hpp:WheelRpmCommand",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/control.hpp",
+      "target": "class:include/control.hpp:WheelRpmCommand",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/control.hpp",
+      "target": "class:include/control.hpp:FaultSnapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/control.hpp",
+      "target": "class:include/control.hpp:FaultSnapshot",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/control.hpp",
+      "target": "class:include/control.hpp:Status",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/control.hpp",
+      "target": "class:include/control.hpp:Status",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/control.hpp",
+      "target": "file:include/build_features.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:include/control.hpp",
+      "target": "file:include/vehicle_motion.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:include/rc_io.hpp",
+      "target": "class:include/rc_io.hpp:PwmInput",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/rc_io.hpp",
+      "target": "class:include/rc_io.hpp:PwmInput",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/rc_io.hpp",
+      "target": "file:include/control.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "class:include/steering_config.hpp:CalibrationPoint",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "class:include/steering_config.hpp:CalibrationPoint",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "class:include/steering_config.hpp:ServoCalibration",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "class:include/steering_config.hpp:ServoCalibration",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "class:include/steering_config.hpp:MotionConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "class:include/steering_config.hpp:MotionConfig",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "function:include/steering_config.hpp:pwm_duty",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "function:include/steering_config.hpp:pwm_duty",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "function:include/steering_config.hpp:valid_calibration",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "function:include/steering_config.hpp:valid_calibration",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "function:include/steering_config.hpp:pulse_for_angle",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "function:include/steering_config.hpp:pulse_for_angle",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/steering_config.hpp",
+      "target": "file:include/vehicle_kinematics.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "class:include/vehicle_kinematics.hpp:RcCommand",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "class:include/vehicle_kinematics.hpp:RcCommand",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "class:include/vehicle_kinematics.hpp:Geometry",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "class:include/vehicle_kinematics.hpp:Geometry",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "class:include/vehicle_kinematics.hpp:WheelTargets",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "class:include/vehicle_kinematics.hpp:WheelTargets",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:clamp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:clamp",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:RcCommand.RcCommand",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:include/vehicle_kinematics.hpp:RcCommand",
+      "target": "function:include/vehicle_kinematics.hpp:RcCommand.RcCommand",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:RcCommand.RcCommand",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:speed_to_rpm",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:speed_to_rpm",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:curvature_from_inner_angle",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:curvature_from_inner_angle",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:inverse",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/vehicle_kinematics.hpp",
+      "target": "function:include/vehicle_kinematics.hpp:inverse",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/steering_config.hpp:pulse_for_angle",
+      "target": "function:include/steering_config.hpp:valid_calibration",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/steering_config.hpp:pulse_for_angle",
+      "target": "function:include/vehicle_kinematics.hpp:clamp",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/vehicle_kinematics.hpp:inverse",
+      "target": "function:include/vehicle_kinematics.hpp:clamp",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:include/vehicle_kinematics.hpp:inverse",
+      "target": "function:include/vehicle_kinematics.hpp:speed_to_rpm",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

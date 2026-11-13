@@ -1,0 +1,493 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 9,
+  "filesSkipped": [],
+  "filesUnreadable": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 9,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 9
+    }
+  },
+  "results": [
+    {
+      "path": "docs/README.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 48,
+      "nonEmptyLines": 36,
+      "sections": [
+        {
+          "heading": "문서 안내",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "목적별 탐색",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "구현의 기준",
+          "level": 2,
+          "line": 21
+        },
+        {
+          "heading": "검증 상태와 해석 범위",
+          "level": 2,
+          "line": 29
+        },
+        {
+          "heading": "사고 분석과 보관 자료",
+          "level": 2,
+          "line": 36
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "docs/can-cli-windows.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 90,
+      "nonEmptyLines": 68,
+      "sections": [
+        {
+          "heading": "호스트 도구: 수신, 단발 명령, CAN 디버깅",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "환경과 선택",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "명령을 보내지 않는 관측",
+          "level": 2,
+          "line": 23
+        },
+        {
+          "heading": "브릿지와 벤치마크",
+          "level": 2,
+          "line": 44
+        },
+        {
+          "heading": "`control.py`의 현재 역할과 제한",
+          "level": 2,
+          "line": 77
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "docs/can-rx-fifo.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 94,
+      "nonEmptyLines": 72,
+      "sections": [
+        {
+          "heading": "CAN 송수신과 응답 유효성",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "버스와 휠 매핑",
+          "level": 2,
+          "line": 8
+        },
+        {
+          "heading": "일반 제어 스케줄",
+          "level": 2,
+          "line": 30
+        },
+        {
+          "heading": "모터 응답과 전압 판정",
+          "level": 2,
+          "line": 45
+        },
+        {
+          "heading": "FIFO → ISR → RAM 큐 → 애플리케이션",
+          "level": 2,
+          "line": 63
+        },
+        {
+          "heading": "진단값과 한계",
+          "level": 2,
+          "line": 83
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "docs/firmware-architecture.ko.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 146,
+      "nonEmptyLines": 117,
+      "sections": [
+        {
+          "heading": "펌웨어 구조와 빌드 프로필",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "네 프로필",
+          "level": 2,
+          "line": 8
+        },
+        {
+          "heading": "모듈과 상태 소유권",
+          "level": 2,
+          "line": 34
+        },
+        {
+          "heading": "실행 흐름",
+          "level": 2,
+          "line": 59
+        },
+        {
+          "heading": "프로필별 프로토콜",
+          "level": 2,
+          "line": 102
+        },
+        {
+          "heading": "설정과 상수의 위치",
+          "level": 2,
+          "line": 129
+        },
+        {
+          "heading": "RC 구동 경로",
+          "level": 2,
+          "line": 137
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "docs/raspberry-pi-handoff.ko.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 44,
+      "nonEmptyLines": 32,
+      "sections": [
+        {
+          "heading": "Raspberry Pi 작업 인계",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "인계 대상 식별",
+          "level": 2,
+          "line": 8
+        },
+        {
+          "heading": "환경과 프로필",
+          "level": 2,
+          "line": 18
+        },
+        {
+          "heading": "현재 동작을 함께 전달할 문서",
+          "level": 2,
+          "line": 32
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 4
+      }
+    },
+    {
+      "path": "docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 239,
+      "nonEmptyLines": 158,
+      "sections": [
+        {
+          "heading": "Wheel-Dragoon 조종 기능 상실 — 펌웨어 정적 검토",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "기록의 범위와 현재 적용 조건",
+          "level": 2,
+          "line": 8
+        },
+        {
+          "heading": "검토 결론과 근거 수준",
+          "level": 2,
+          "line": 26
+        },
+        {
+          "heading": "2026-11-09 검토 범위와 사고 기준",
+          "level": 2,
+          "line": 32
+        },
+        {
+          "heading": "전체 시나리오 비교",
+          "level": 2,
+          "line": 41
+        },
+        {
+          "heading": "A. CAN 송신 취소 기능의 활성화 누락 — 가장 구체적인 코드 결함",
+          "level": 2,
+          "line": 57
+        },
+        {
+          "heading": "B. RC 신호가 없어져도 마지막 구동 명령을 계속 송신",
+          "level": 2,
+          "line": 75
+        },
+        {
+          "heading": "C. MCU가 메인 루프로 돌아오지 않는 경우",
+          "level": 2,
+          "line": 88
+        },
+        {
+          "heading": "D. CAN·드라이버 장애를 감지해도 정지 전달이 보장되지 않음",
+          "level": 2,
+          "line": 104
+        },
+        {
+          "heading": "E. 모든 명령 사이에 3 ms가 보장되는 것은 아님",
+          "level": 2,
+          "line": 120
+        },
+        {
+          "heading": "F. STOP 처리와 물리적 제동은 다름",
+          "level": 2,
+          "line": 141
+        },
+        {
+          "heading": "G. RC 무효값이 안전 정지 대신 극단 명령 또는 이전 명령이 됨",
+          "level": 2,
+          "line": 151
+        },
+        {
+          "heading": "H. USB 전송 성공 횟수가 구동 fault의 수명을 결정함",
+          "level": 2,
+          "line": 164
+        },
+        {
+          "heading": "I. BRIDGE/USB 경로의 제어 우선순위",
+          "level": 2,
+          "line": 176
+        },
+        {
+          "heading": "J. 전원·서보·기구·배선의 복합 장애",
+          "level": 2,
+          "line": 188
+        },
+        {
+          "heading": "K. 검토했지만 현재 사고 원인으로 특정하지 못한 항목",
+          "level": 2,
+          "line": 200
+        },
+        {
+          "heading": "FAULT 표시가 없더라도 안전하다고 볼 수 없는 이유",
+          "level": 2,
+          "line": 211
+        },
+        {
+          "heading": "후속 확인에서 필요한 증거 — 실행하지 않은 항목",
+          "level": 2,
+          "line": 225
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 18
+      }
+    },
+    {
+      "path": "docs/rc-steering.ko.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 134,
+      "nonEmptyLines": 104,
+      "sections": [
+        {
+          "heading": "RC 제어와 전륜 조향",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "핀과 입력 처리",
+          "level": 2,
+          "line": 10
+        },
+        {
+          "heading": "제어 권한과 전원",
+          "level": 2,
+          "line": 34
+        },
+        {
+          "heading": "차량 기하와 보정값",
+          "level": 2,
+          "line": 58
+        },
+        {
+          "heading": "운동학과 모션 제한",
+          "level": 2,
+          "line": 82
+        },
+        {
+          "heading": "PIVOT: 후륜 중심 회전",
+          "level": 2,
+          "line": 104
+        },
+        {
+          "heading": "오류와 정지의 의미",
+          "level": 2,
+          "line": 124
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "docs/timing-diagnostics.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 144,
+      "nonEmptyLines": 115,
+      "sections": [
+        {
+          "heading": "처리시간 및 CAN 응답 진단",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "빌드와 관측",
+          "level": 2,
+          "line": 10
+        },
+        {
+          "heading": "측정값",
+          "level": 2,
+          "line": 33
+        },
+        {
+          "heading": "CAN 누락 구분",
+          "level": 2,
+          "line": 71
+        },
+        {
+          "heading": "출력 부하와 스냅샷 지속",
+          "level": 2,
+          "line": 102
+        },
+        {
+          "heading": "패킷 `0x84`, version 1",
+          "level": 2,
+          "line": 119
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "docs/usb-protocol.ko.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 228,
+      "nonEmptyLines": 189,
+      "sections": [
+        {
+          "heading": "USB 프로토콜",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "공통 프레이밍과 지원 범위",
+          "level": 2,
+          "line": 9
+        },
+        {
+          "heading": "제어 `0x01`",
+          "level": 2,
+          "line": 39
+        },
+        {
+          "heading": "보호 리셋 `0x02`",
+          "level": 2,
+          "line": 60
+        },
+        {
+          "heading": "System Status `0x82`, version 2",
+          "level": 2,
+          "line": 72
+        },
+        {
+          "heading": "MCU state와 오류",
+          "level": 3,
+          "line": 99
+        },
+        {
+          "heading": "CAN 브릿지 `0x20` / `0xA0`",
+          "level": 2,
+          "line": 134
+        },
+        {
+          "heading": "Benchmark `0x21` / `0xA1`",
+          "level": 2,
+          "line": 167
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 8
+      }
+    }
+  ]
+}

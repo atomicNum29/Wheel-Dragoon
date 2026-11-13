@@ -1,0 +1,5 @@
+[
+  "include/timing_diagnostics.hpp: conditional/template declarations missing from structural extraction; file-level semantics retained",
+  "src/timing_diagnostics.cpp: conditional/template declarations missing from structural extraction; file-level semantics retained",
+  "src/can_control.cpp: pointer-returning telemetry and md200t_find_motor_telemetry, plus conditional diagnostic_output_ready, absent from bundled extraction."
+]

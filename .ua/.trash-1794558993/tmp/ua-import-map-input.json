@@ -1,0 +1,263 @@
+{
+    "projectRoot":  "C:/Users/desktop/Documents/WCL/SLAM/Wheel-Dragoon",
+    "files":  [
+                  {
+                      "path":  ".python-version",
+                      "language":  "unknown",
+                      "sizeLines":  1,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  ".ua/config.json",
+                      "language":  "json",
+                      "sizeLines":  3,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "README.md",
+                      "language":  "markdown",
+                      "sizeLines":  58,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "docs/README.md",
+                      "language":  "markdown",
+                      "sizeLines":  48,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "docs/can-cli-windows.md",
+                      "language":  "markdown",
+                      "sizeLines":  90,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "docs/can-rx-fifo.md",
+                      "language":  "markdown",
+                      "sizeLines":  94,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "docs/firmware-architecture.ko.md",
+                      "language":  "markdown",
+                      "sizeLines":  146,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "docs/raspberry-pi-handoff.ko.md",
+                      "language":  "markdown",
+                      "sizeLines":  44,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "docs/rc-loss-of-control-review-2026-11-09.ko.md",
+                      "language":  "markdown",
+                      "sizeLines":  239,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "docs/rc-steering.ko.md",
+                      "language":  "markdown",
+                      "sizeLines":  134,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "docs/timing-diagnostics.md",
+                      "language":  "markdown",
+                      "sizeLines":  144,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "docs/usb-protocol.ko.md",
+                      "language":  "markdown",
+                      "sizeLines":  228,
+                      "fileCategory":  "docs"
+                  },
+                  {
+                      "path":  "include/README",
+                      "language":  "unknown",
+                      "sizeLines":  18,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/build_features.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  13,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/can_control.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  46,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/can_debug.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  17,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/can_tx_schedule.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  73,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/control.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  109,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/error_report.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  5,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/flexcan0.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  40,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/little_endian.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  56,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/md200t_can.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  22,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/rc_io.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  19,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/serial_protocol.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  55,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/steering_config.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  77,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/timing_diagnostics.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  52,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/vehicle_kinematics.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  78,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "include/vehicle_motion.hpp",
+                      "language":  "cpp",
+                      "sizeLines":  136,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "lib/README",
+                      "language":  "unknown",
+                      "sizeLines":  10,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "platformio.ini",
+                      "language":  "config",
+                      "sizeLines":  23,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "pyproject.toml",
+                      "language":  "toml",
+                      "sizeLines":  9,
+                      "fileCategory":  "config"
+                  },
+                  {
+                      "path":  "src/can_cli.py",
+                      "language":  "python",
+                      "sizeLines":  1032,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/can_control.cpp",
+                      "language":  "cpp",
+                      "sizeLines":  480,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/can_debug.cpp",
+                      "language":  "cpp",
+                      "sizeLines":  405,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/control.cpp",
+                      "language":  "cpp",
+                      "sizeLines":  285,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/control.py",
+                      "language":  "python",
+                      "sizeLines":  262,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/flexcan0.cpp",
+                      "language":  "cpp",
+                      "sizeLines":  384,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/main.cpp",
+                      "language":  "cpp",
+                      "sizeLines":  59,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/md200t_can.cpp",
+                      "language":  "cpp",
+                      "sizeLines":  82,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/packet_monitor.py",
+                      "language":  "python",
+                      "sizeLines":  80,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/rc_io.cpp",
+                      "language":  "cpp",
+                      "sizeLines":  145,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/serial_protocol.cpp",
+                      "language":  "cpp",
+                      "sizeLines":  333,
+                      "fileCategory":  "code"
+                  },
+                  {
+                      "path":  "src/timing_diagnostics.cpp",
+                      "language":  "cpp",
+                      "sizeLines":  213,
+                      "fileCategory":  "code"
+                  }
+              ]
+}

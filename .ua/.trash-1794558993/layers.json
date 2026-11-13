@@ -1,0 +1,44 @@
+[
+  {
+    "id": "layer:runtime-control",
+    "name": "실행 루프와 구동 상태",
+    "description": "Arduino 실행 순서와 RC 모드별 구동 권한, 전원 상태, 오류 보고 정책을 조정한다.",
+    "nodeIds": ["file:src/main.cpp", "file:src/control.cpp", "file:include/control.hpp", "file:include/error_report.hpp"]
+  },
+  {
+    "id": "layer:rc-motion",
+    "name": "RC 입력과 차량 모션",
+    "description": "RC 펄스 입력을 해석하고 서보 보정, MANUAL·PIVOT 운동학 및 조향·RPM 지령 전환을 처리한다.",
+    "nodeIds": ["file:include/rc_io.hpp", "file:src/rc_io.cpp", "file:include/steering_config.hpp", "file:include/vehicle_kinematics.hpp", "file:include/vehicle_motion.hpp"]
+  },
+  {
+    "id": "layer:can-motor",
+    "name": "CAN 통신과 모터 텔레메트리",
+    "description": "FlexCAN 레지스터·수신 큐에서 MD200T 명령과 응답 해석까지 연결하고 주기 송신 및 응답 유효성을 관리한다.",
+    "nodeIds": ["file:include/flexcan0.hpp", "file:src/flexcan0.cpp", "file:include/md200t_can.hpp", "file:src/md200t_can.cpp", "file:include/can_tx_schedule.hpp", "file:include/can_control.hpp", "file:src/can_control.cpp"]
+  },
+  {
+    "id": "layer:usb-diagnostics",
+    "name": "USB 프로토콜과 진단",
+    "description": "USB 명령·상태 프레임의 직렬화와 파싱을 담당하고 선택적 CAN 브릿지·반복 요청 측정·타이밍 진단을 제공한다.",
+    "nodeIds": ["file:include/serial_protocol.hpp", "file:src/serial_protocol.cpp", "file:include/little_endian.hpp", "file:include/can_debug.hpp", "file:src/can_debug.cpp", "file:include/timing_diagnostics.hpp", "file:src/timing_diagnostics.cpp"]
+  },
+  {
+    "id": "layer:host-tools",
+    "name": "Python 호스트 도구",
+    "description": "PC에서 USB 수신 전용 관측, 단발 제어 명령 및 대화형 CAN 브릿지·벤치마크 작업을 수행한다.",
+    "nodeIds": ["file:src/packet_monitor.py", "file:src/control.py", "file:src/can_cli.py"]
+  },
+  {
+    "id": "layer:project-config",
+    "name": "빌드와 도구 설정",
+    "description": "Teensy 펌웨어의 네 빌드 프로필과 기능 플래그, Python 의존성·버전 및 분석 도구의 출력 언어를 지정한다.",
+    "nodeIds": ["config:platformio.ini", "file:include/build_features.hpp", "config:pyproject.toml", "file:.python-version", "config:.ua/config.json"]
+  },
+  {
+    "id": "layer:documentation",
+    "name": "운영 문서와 검토 기록",
+    "description": "현재 구조·제어·통신·계측·호스트 도구의 사용 조건과 인계 절차를 설명하고 날짜가 명시된 사고 검토의 확인 범위를 보존한다.",
+    "nodeIds": ["document:README.md", "document:docs/README.md", "document:docs/firmware-architecture.ko.md", "document:docs/rc-steering.ko.md", "document:docs/can-rx-fifo.md", "document:docs/usb-protocol.ko.md", "document:docs/timing-diagnostics.md", "document:docs/can-cli-windows.md", "document:docs/raspberry-pi-handoff.ko.md", "document:docs/rc-loss-of-control-review-2026-11-09.ko.md", "file:include/README", "file:lib/README"]
+  }
+]

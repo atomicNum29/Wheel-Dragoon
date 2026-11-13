@@ -1,0 +1,1187 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "louvain",
+  "totalFiles": 43,
+  "totalBatches": 7,
+  "exportsByPath": {
+    ".python-version": [],
+    "include/README": [],
+    "include/build_features.hpp": [],
+    "include/can_control.hpp": [
+      "MotorTelemetry",
+      "DriverVoltageTelemetry",
+      "Telemetry"
+    ],
+    "include/can_debug.hpp": [],
+    "include/can_tx_schedule.hpp": [
+      "can_tx_wheel_round_complete",
+      "can_tx_response_pair_complete",
+      "can_tx_response_window_expired",
+      "ScheduledVoltageRequest",
+      "scheduled_voltage_poll"
+    ],
+    "include/control.hpp": [
+      "CommandPacket",
+      "WheelRpmCommand",
+      "FaultSnapshot",
+      "Status"
+    ],
+    "include/error_report.hpp": [],
+    "include/flexcan0.hpp": [
+      "CanFrame",
+      "CanRxStats"
+    ],
+    "include/little_endian.hpp": [
+      "read_u16",
+      "read_i16",
+      "read_u32",
+      "read_i32",
+      "write_u16",
+      "write_i16",
+      "write_u32",
+      "write_i32"
+    ],
+    "include/md200t_can.hpp": [],
+    "include/rc_io.hpp": [
+      "PwmInput"
+    ],
+    "include/serial_protocol.hpp": [],
+    "include/steering_config.hpp": [
+      "pwm_duty",
+      "CalibrationPoint",
+      "ServoCalibration",
+      "valid_calibration",
+      "pulse_for_angle",
+      "MotionConfig"
+    ],
+    "include/timing_diagnostics.hpp": [],
+    "include/vehicle_kinematics.hpp": [
+      "clamp",
+      "RcCommand",
+      "RcCommand",
+      "Geometry",
+      "WheelTargets",
+      "speed_to_rpm",
+      "curvature_from_inner_angle",
+      "inverse"
+    ],
+    "include/vehicle_motion.hpp": [
+      "MotionController",
+      "calibrated",
+      "valid_configuration",
+      "stopped",
+      "inhibit",
+      "update",
+      "MotionController"
+    ],
+    "lib/README": [],
+    "src/can_cli.py": [
+      "BridgeCommand",
+      "BenchmarkCommand",
+      "BenchmarkStatistics",
+      "CommandError",
+      "ExitRequested",
+      "RaisingArgumentParser",
+      "PacketStreamParser",
+      "TerminalUi",
+      "wait_for_activity",
+      "xor_checksum",
+      "parse_int",
+      "parse_byte",
+      "parse_can_id",
+      "find_teensy_port",
+      "build_bridge_request",
+      "build_benchmark_request",
+      "build_command_parser",
+      "command_from_namespace",
+      "parse_interactive_command",
+      "interactive_help",
+      "format_data",
+      "format_timing_packet",
+      "format_packet",
+      "send_command",
+      "monitor",
+      "add_connection_options",
+      "build_main_parser",
+      "main"
+    ],
+    "src/can_control.cpp": [
+      "Md200tDriverCommand",
+      "CanTxScheduler",
+      "status_pending",
+      "status_sent",
+      "begin",
+      "drain_rx",
+      "send_torque_off",
+      "process_queued_rx",
+      "update_health",
+      "transmit_if_due",
+      "reset_session"
+    ],
+    "src/can_debug.cpp": [],
+    "src/control.cpp": [
+      "report",
+      "reported",
+      "report_safety_tx_failure",
+      "initialize_power",
+      "finish_boot",
+      "initialize_motion",
+      "initialize_session",
+      "update_power",
+      "consume_error_reports",
+      "rpm_to_i16",
+      "accept_command",
+      "update_drive",
+      "reset_mcu",
+      "enter_control_mode",
+      "has_driver_fault",
+      "refresh_errors",
+      "fault_snapshot",
+      "motor_state"
+    ],
+    "src/control.py": [
+      "xor_checksum",
+      "build_command_packet",
+      "build_reset_packet",
+      "find_teensy_port",
+      "send_packet",
+      "send_command",
+      "send_reset",
+      "main"
+    ],
+    "src/flexcan0.cpp": [
+      "RxEntry",
+      "mb_code",
+      "get_mb_code",
+      "elapsed_us",
+      "wait_until_set",
+      "wait_until_clear",
+      "pack_word",
+      "unpack_word",
+      "can_rx_isr",
+      "abort_tx_mb",
+      "can_begin",
+      "can_transmit",
+      "can_receive",
+      "can_receive_timed",
+      "can_rx_overrun_detected",
+      "can_rx_overrun_report_sent",
+      "can_clear_rx_overrun_reports",
+      "can_is_initialized",
+      "can_rx_pending",
+      "can_rx_overrun_count",
+      "can_rx_stats"
+    ],
+    "src/main.cpp": [
+      "setup",
+      "loop"
+    ],
+    "src/md200t_can.cpp": [
+      "make_standard_id",
+      "send_frame",
+      "md200t_set_velocity",
+      "md200t_torque_off",
+      "md200t_request_pid_data",
+      "md200t_decode_response_id"
+    ],
+    "src/packet_monitor.py": [
+      "extract_packets",
+      "main"
+    ],
+    "src/rc_io.cpp": [
+      "PulseFilter",
+      "push",
+      "PulseFilter",
+      "v_decodePWM",
+      "w_decodePWM",
+      "mode_decodePWM",
+      "initialize_inputs",
+      "read_mode",
+      "read_pwm",
+      "initialize_steering",
+      "offset_with_deadband",
+      "write_steering"
+    ],
+    "src/serial_protocol.cpp": [
+      "CommandFrameParser",
+      "begin",
+      "receive_commands",
+      "xor_checksum",
+      "send_status_if_ready"
+    ],
+    "src/timing_diagnostics.cpp": []
+  },
+  "batches": [
+    {
+      "batchIndex": 1,
+      "files": [
+        {
+          "path": "include/control.hpp",
+          "language": "cpp",
+          "sizeLines": 109,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/rc_io.hpp",
+          "language": "cpp",
+          "sizeLines": 19,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/steering_config.hpp",
+          "language": "cpp",
+          "sizeLines": 77,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/vehicle_kinematics.hpp",
+          "language": "cpp",
+          "sizeLines": 78,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/vehicle_motion.hpp",
+          "language": "cpp",
+          "sizeLines": 136,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/main.cpp",
+          "language": "cpp",
+          "sizeLines": 59,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/rc_io.cpp",
+          "language": "cpp",
+          "sizeLines": 145,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "include/control.hpp": [
+          "include/build_features.hpp",
+          "include/vehicle_motion.hpp"
+        ],
+        "include/rc_io.hpp": [
+          "include/control.hpp"
+        ],
+        "include/steering_config.hpp": [
+          "include/vehicle_kinematics.hpp"
+        ],
+        "include/vehicle_kinematics.hpp": [],
+        "include/vehicle_motion.hpp": [
+          "include/steering_config.hpp"
+        ],
+        "src/main.cpp": [
+          "include/can_control.hpp",
+          "include/can_debug.hpp",
+          "include/control.hpp",
+          "include/rc_io.hpp",
+          "include/serial_protocol.hpp",
+          "include/timing_diagnostics.hpp"
+        ],
+        "src/rc_io.cpp": [
+          "include/rc_io.hpp"
+        ]
+      },
+      "neighborMap": {
+        "include/control.hpp": [
+          {
+            "path": "include/build_features.hpp",
+            "batchIndex": 2,
+            "symbols": []
+          },
+          {
+            "path": "src/can_control.cpp",
+            "batchIndex": 4,
+            "symbols": [
+              "Md200tDriverCommand",
+              "CanTxScheduler",
+              "status_pending",
+              "status_sent",
+              "begin",
+              "drain_rx",
+              "send_torque_off",
+              "process_queued_rx",
+              "update_health",
+              "transmit_if_due",
+              "reset_session"
+            ]
+          },
+          {
+            "path": "src/can_debug.cpp",
+            "batchIndex": 2,
+            "symbols": []
+          },
+          {
+            "path": "src/control.cpp",
+            "batchIndex": 3,
+            "symbols": [
+              "report",
+              "reported",
+              "report_safety_tx_failure",
+              "initialize_power",
+              "finish_boot",
+              "initialize_motion",
+              "initialize_session",
+              "update_power",
+              "consume_error_reports",
+              "rpm_to_i16",
+              "accept_command",
+              "update_drive",
+              "reset_mcu",
+              "enter_control_mode",
+              "has_driver_fault",
+              "refresh_errors",
+              "fault_snapshot",
+              "motor_state"
+            ]
+          },
+          {
+            "path": "src/serial_protocol.cpp",
+            "batchIndex": 2,
+            "symbols": [
+              "CommandFrameParser",
+              "begin",
+              "receive_commands",
+              "xor_checksum",
+              "send_status_if_ready"
+            ]
+          },
+          {
+            "path": "src/timing_diagnostics.cpp",
+            "batchIndex": 4,
+            "symbols": []
+          }
+        ],
+        "include/rc_io.hpp": [
+          {
+            "path": "src/control.cpp",
+            "batchIndex": 3,
+            "symbols": [
+              "report",
+              "reported",
+              "report_safety_tx_failure",
+              "initialize_power",
+              "finish_boot",
+              "initialize_motion",
+              "initialize_session",
+              "update_power",
+              "consume_error_reports",
+              "rpm_to_i16",
+              "accept_command",
+              "update_drive",
+              "reset_mcu",
+              "enter_control_mode",
+              "has_driver_fault",
+              "refresh_errors",
+              "fault_snapshot",
+              "motor_state"
+            ]
+          }
+        ],
+        "src/main.cpp": [
+          {
+            "path": "include/can_control.hpp",
+            "batchIndex": 2,
+            "symbols": [
+              "MotorTelemetry",
+              "DriverVoltageTelemetry",
+              "Telemetry"
+            ]
+          },
+          {
+            "path": "include/can_debug.hpp",
+            "batchIndex": 2,
+            "symbols": []
+          },
+          {
+            "path": "include/serial_protocol.hpp",
+            "batchIndex": 2,
+            "symbols": []
+          },
+          {
+            "path": "include/timing_diagnostics.hpp",
+            "batchIndex": 4,
+            "symbols": []
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 2,
+      "files": [
+        {
+          "path": "include/build_features.hpp",
+          "language": "cpp",
+          "sizeLines": 13,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/can_control.hpp",
+          "language": "cpp",
+          "sizeLines": 46,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/can_debug.hpp",
+          "language": "cpp",
+          "sizeLines": 17,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/serial_protocol.hpp",
+          "language": "cpp",
+          "sizeLines": 55,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/can_debug.cpp",
+          "language": "cpp",
+          "sizeLines": 405,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/serial_protocol.cpp",
+          "language": "cpp",
+          "sizeLines": 333,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "include/build_features.hpp": [],
+        "include/can_control.hpp": [
+          "include/build_features.hpp",
+          "include/flexcan0.hpp"
+        ],
+        "include/can_debug.hpp": [
+          "include/build_features.hpp",
+          "include/flexcan0.hpp"
+        ],
+        "include/serial_protocol.hpp": [],
+        "src/can_debug.cpp": [
+          "include/can_control.hpp",
+          "include/can_debug.hpp",
+          "include/control.hpp",
+          "include/little_endian.hpp",
+          "include/serial_protocol.hpp"
+        ],
+        "src/serial_protocol.cpp": [
+          "include/can_control.hpp",
+          "include/can_debug.hpp",
+          "include/control.hpp",
+          "include/little_endian.hpp",
+          "include/serial_protocol.hpp"
+        ]
+      },
+      "neighborMap": {
+        "include/build_features.hpp": [
+          {
+            "path": "include/control.hpp",
+            "batchIndex": 1,
+            "symbols": [
+              "CommandPacket",
+              "WheelRpmCommand",
+              "FaultSnapshot",
+              "Status"
+            ]
+          },
+          {
+            "path": "include/timing_diagnostics.hpp",
+            "batchIndex": 4,
+            "symbols": []
+          }
+        ],
+        "include/can_control.hpp": [
+          {
+            "path": "include/flexcan0.hpp",
+            "batchIndex": 3,
+            "symbols": [
+              "CanFrame",
+              "CanRxStats"
+            ]
+          },
+          {
+            "path": "src/can_control.cpp",
+            "batchIndex": 4,
+            "symbols": [
+              "Md200tDriverCommand",
+              "CanTxScheduler",
+              "status_pending",
+              "status_sent",
+              "begin",
+              "drain_rx",
+              "send_torque_off",
+              "process_queued_rx",
+              "update_health",
+              "transmit_if_due",
+              "reset_session"
+            ]
+          },
+          {
+            "path": "src/control.cpp",
+            "batchIndex": 3,
+            "symbols": [
+              "report",
+              "reported",
+              "report_safety_tx_failure",
+              "initialize_power",
+              "finish_boot",
+              "initialize_motion",
+              "initialize_session",
+              "update_power",
+              "consume_error_reports",
+              "rpm_to_i16",
+              "accept_command",
+              "update_drive",
+              "reset_mcu",
+              "enter_control_mode",
+              "has_driver_fault",
+              "refresh_errors",
+              "fault_snapshot",
+              "motor_state"
+            ]
+          },
+          {
+            "path": "src/main.cpp",
+            "batchIndex": 1,
+            "symbols": [
+              "setup",
+              "loop"
+            ]
+          },
+          {
+            "path": "src/timing_diagnostics.cpp",
+            "batchIndex": 4,
+            "symbols": []
+          }
+        ],
+        "include/can_debug.hpp": [
+          {
+            "path": "include/flexcan0.hpp",
+            "batchIndex": 3,
+            "symbols": [
+              "CanFrame",
+              "CanRxStats"
+            ]
+          },
+          {
+            "path": "src/can_control.cpp",
+            "batchIndex": 4,
+            "symbols": [
+              "Md200tDriverCommand",
+              "CanTxScheduler",
+              "status_pending",
+              "status_sent",
+              "begin",
+              "drain_rx",
+              "send_torque_off",
+              "process_queued_rx",
+              "update_health",
+              "transmit_if_due",
+              "reset_session"
+            ]
+          },
+          {
+            "path": "src/control.cpp",
+            "batchIndex": 3,
+            "symbols": [
+              "report",
+              "reported",
+              "report_safety_tx_failure",
+              "initialize_power",
+              "finish_boot",
+              "initialize_motion",
+              "initialize_session",
+              "update_power",
+              "consume_error_reports",
+              "rpm_to_i16",
+              "accept_command",
+              "update_drive",
+              "reset_mcu",
+              "enter_control_mode",
+              "has_driver_fault",
+              "refresh_errors",
+              "fault_snapshot",
+              "motor_state"
+            ]
+          },
+          {
+            "path": "src/main.cpp",
+            "batchIndex": 1,
+            "symbols": [
+              "setup",
+              "loop"
+            ]
+          }
+        ],
+        "include/serial_protocol.hpp": [
+          {
+            "path": "src/control.cpp",
+            "batchIndex": 3,
+            "symbols": [
+              "report",
+              "reported",
+              "report_safety_tx_failure",
+              "initialize_power",
+              "finish_boot",
+              "initialize_motion",
+              "initialize_session",
+              "update_power",
+              "consume_error_reports",
+              "rpm_to_i16",
+              "accept_command",
+              "update_drive",
+              "reset_mcu",
+              "enter_control_mode",
+              "has_driver_fault",
+              "refresh_errors",
+              "fault_snapshot",
+              "motor_state"
+            ]
+          },
+          {
+            "path": "src/main.cpp",
+            "batchIndex": 1,
+            "symbols": [
+              "setup",
+              "loop"
+            ]
+          },
+          {
+            "path": "src/timing_diagnostics.cpp",
+            "batchIndex": 4,
+            "symbols": []
+          }
+        ],
+        "src/can_debug.cpp": [
+          {
+            "path": "include/control.hpp",
+            "batchIndex": 1,
+            "symbols": [
+              "CommandPacket",
+              "WheelRpmCommand",
+              "FaultSnapshot",
+              "Status"
+            ]
+          },
+          {
+            "path": "include/little_endian.hpp",
+            "batchIndex": 4,
+            "symbols": [
+              "read_u16",
+              "read_i16",
+              "read_u32",
+              "read_i32",
+              "write_u16",
+              "write_i16",
+              "write_u32",
+              "write_i32"
+            ]
+          }
+        ],
+        "src/serial_protocol.cpp": [
+          {
+            "path": "include/control.hpp",
+            "batchIndex": 1,
+            "symbols": [
+              "CommandPacket",
+              "WheelRpmCommand",
+              "FaultSnapshot",
+              "Status"
+            ]
+          },
+          {
+            "path": "include/little_endian.hpp",
+            "batchIndex": 4,
+            "symbols": [
+              "read_u16",
+              "read_i16",
+              "read_u32",
+              "read_i32",
+              "write_u16",
+              "write_i16",
+              "write_u32",
+              "write_i32"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 3,
+      "files": [
+        {
+          "path": "include/error_report.hpp",
+          "language": "cpp",
+          "sizeLines": 5,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/flexcan0.hpp",
+          "language": "cpp",
+          "sizeLines": 40,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/md200t_can.hpp",
+          "language": "cpp",
+          "sizeLines": 22,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/control.cpp",
+          "language": "cpp",
+          "sizeLines": 285,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/flexcan0.cpp",
+          "language": "cpp",
+          "sizeLines": 384,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/md200t_can.cpp",
+          "language": "cpp",
+          "sizeLines": 82,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "include/error_report.hpp": [],
+        "include/flexcan0.hpp": [],
+        "include/md200t_can.hpp": [
+          "include/flexcan0.hpp"
+        ],
+        "src/control.cpp": [
+          "include/can_control.hpp",
+          "include/can_debug.hpp",
+          "include/control.hpp",
+          "include/error_report.hpp",
+          "include/md200t_can.hpp",
+          "include/rc_io.hpp",
+          "include/serial_protocol.hpp"
+        ],
+        "src/flexcan0.cpp": [
+          "include/error_report.hpp",
+          "include/flexcan0.hpp"
+        ],
+        "src/md200t_can.cpp": [
+          "include/flexcan0.hpp",
+          "include/little_endian.hpp",
+          "include/md200t_can.hpp"
+        ]
+      },
+      "neighborMap": {
+        "include/flexcan0.hpp": [
+          {
+            "path": "include/can_control.hpp",
+            "batchIndex": 2,
+            "symbols": [
+              "MotorTelemetry",
+              "DriverVoltageTelemetry",
+              "Telemetry"
+            ]
+          },
+          {
+            "path": "include/can_debug.hpp",
+            "batchIndex": 2,
+            "symbols": []
+          }
+        ],
+        "include/md200t_can.hpp": [
+          {
+            "path": "include/can_tx_schedule.hpp",
+            "batchIndex": 4,
+            "symbols": [
+              "can_tx_wheel_round_complete",
+              "can_tx_response_pair_complete",
+              "can_tx_response_window_expired",
+              "ScheduledVoltageRequest",
+              "scheduled_voltage_poll"
+            ]
+          }
+        ],
+        "src/control.cpp": [
+          {
+            "path": "include/can_control.hpp",
+            "batchIndex": 2,
+            "symbols": [
+              "MotorTelemetry",
+              "DriverVoltageTelemetry",
+              "Telemetry"
+            ]
+          },
+          {
+            "path": "include/can_debug.hpp",
+            "batchIndex": 2,
+            "symbols": []
+          },
+          {
+            "path": "include/control.hpp",
+            "batchIndex": 1,
+            "symbols": [
+              "CommandPacket",
+              "WheelRpmCommand",
+              "FaultSnapshot",
+              "Status"
+            ]
+          },
+          {
+            "path": "include/rc_io.hpp",
+            "batchIndex": 1,
+            "symbols": [
+              "PwmInput"
+            ]
+          },
+          {
+            "path": "include/serial_protocol.hpp",
+            "batchIndex": 2,
+            "symbols": []
+          }
+        ],
+        "src/md200t_can.cpp": [
+          {
+            "path": "include/little_endian.hpp",
+            "batchIndex": 4,
+            "symbols": [
+              "read_u16",
+              "read_i16",
+              "read_u32",
+              "read_i32",
+              "write_u16",
+              "write_i16",
+              "write_u32",
+              "write_i32"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 4,
+      "files": [
+        {
+          "path": "include/can_tx_schedule.hpp",
+          "language": "cpp",
+          "sizeLines": 73,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/little_endian.hpp",
+          "language": "cpp",
+          "sizeLines": 56,
+          "fileCategory": "code"
+        },
+        {
+          "path": "include/timing_diagnostics.hpp",
+          "language": "cpp",
+          "sizeLines": 52,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/can_control.cpp",
+          "language": "cpp",
+          "sizeLines": 480,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/timing_diagnostics.cpp",
+          "language": "cpp",
+          "sizeLines": 213,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "include/can_tx_schedule.hpp": [
+          "include/md200t_can.hpp"
+        ],
+        "include/little_endian.hpp": [],
+        "include/timing_diagnostics.hpp": [
+          "include/build_features.hpp"
+        ],
+        "src/can_control.cpp": [
+          "include/can_control.hpp",
+          "include/can_debug.hpp",
+          "include/can_tx_schedule.hpp",
+          "include/control.hpp",
+          "include/little_endian.hpp",
+          "include/timing_diagnostics.hpp"
+        ],
+        "src/timing_diagnostics.cpp": [
+          "include/can_control.hpp",
+          "include/can_tx_schedule.hpp",
+          "include/control.hpp",
+          "include/little_endian.hpp",
+          "include/serial_protocol.hpp",
+          "include/timing_diagnostics.hpp"
+        ]
+      },
+      "neighborMap": {
+        "include/can_tx_schedule.hpp": [
+          {
+            "path": "include/md200t_can.hpp",
+            "batchIndex": 3,
+            "symbols": []
+          }
+        ],
+        "include/little_endian.hpp": [
+          {
+            "path": "src/can_debug.cpp",
+            "batchIndex": 2,
+            "symbols": []
+          },
+          {
+            "path": "src/md200t_can.cpp",
+            "batchIndex": 3,
+            "symbols": [
+              "make_standard_id",
+              "send_frame",
+              "md200t_set_velocity",
+              "md200t_torque_off",
+              "md200t_request_pid_data",
+              "md200t_decode_response_id"
+            ]
+          },
+          {
+            "path": "src/serial_protocol.cpp",
+            "batchIndex": 2,
+            "symbols": [
+              "CommandFrameParser",
+              "begin",
+              "receive_commands",
+              "xor_checksum",
+              "send_status_if_ready"
+            ]
+          }
+        ],
+        "include/timing_diagnostics.hpp": [
+          {
+            "path": "include/build_features.hpp",
+            "batchIndex": 2,
+            "symbols": []
+          },
+          {
+            "path": "src/main.cpp",
+            "batchIndex": 1,
+            "symbols": [
+              "setup",
+              "loop"
+            ]
+          }
+        ],
+        "src/can_control.cpp": [
+          {
+            "path": "include/can_control.hpp",
+            "batchIndex": 2,
+            "symbols": [
+              "MotorTelemetry",
+              "DriverVoltageTelemetry",
+              "Telemetry"
+            ]
+          },
+          {
+            "path": "include/can_debug.hpp",
+            "batchIndex": 2,
+            "symbols": []
+          },
+          {
+            "path": "include/control.hpp",
+            "batchIndex": 1,
+            "symbols": [
+              "CommandPacket",
+              "WheelRpmCommand",
+              "FaultSnapshot",
+              "Status"
+            ]
+          }
+        ],
+        "src/timing_diagnostics.cpp": [
+          {
+            "path": "include/can_control.hpp",
+            "batchIndex": 2,
+            "symbols": [
+              "MotorTelemetry",
+              "DriverVoltageTelemetry",
+              "Telemetry"
+            ]
+          },
+          {
+            "path": "include/control.hpp",
+            "batchIndex": 1,
+            "symbols": [
+              "CommandPacket",
+              "WheelRpmCommand",
+              "FaultSnapshot",
+              "Status"
+            ]
+          },
+          {
+            "path": "include/serial_protocol.hpp",
+            "batchIndex": 2,
+            "symbols": []
+          }
+        ]
+      }
+    },
+    {
+      "batchIndex": 5,
+      "files": [
+        {
+          "path": "README.md",
+          "language": "markdown",
+          "sizeLines": 58,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "platformio.ini",
+          "language": "config",
+          "sizeLines": 23,
+          "fileCategory": "config"
+        },
+        {
+          "path": "pyproject.toml",
+          "language": "toml",
+          "sizeLines": 9,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "README.md": [],
+        "platformio.ini": [],
+        "pyproject.toml": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 6,
+      "files": [
+        {
+          "path": "docs/README.md",
+          "language": "markdown",
+          "sizeLines": 48,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/can-cli-windows.md",
+          "language": "markdown",
+          "sizeLines": 90,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/can-rx-fifo.md",
+          "language": "markdown",
+          "sizeLines": 94,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/firmware-architecture.ko.md",
+          "language": "markdown",
+          "sizeLines": 146,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/raspberry-pi-handoff.ko.md",
+          "language": "markdown",
+          "sizeLines": 44,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/rc-loss-of-control-review-2026-11-09.ko.md",
+          "language": "markdown",
+          "sizeLines": 239,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/rc-steering.ko.md",
+          "language": "markdown",
+          "sizeLines": 134,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/timing-diagnostics.md",
+          "language": "markdown",
+          "sizeLines": 144,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/usb-protocol.ko.md",
+          "language": "markdown",
+          "sizeLines": 228,
+          "fileCategory": "docs"
+        }
+      ],
+      "batchImportData": {
+        "docs/README.md": [],
+        "docs/can-cli-windows.md": [],
+        "docs/can-rx-fifo.md": [],
+        "docs/firmware-architecture.ko.md": [],
+        "docs/raspberry-pi-handoff.ko.md": [],
+        "docs/rc-loss-of-control-review-2026-11-09.ko.md": [],
+        "docs/rc-steering.ko.md": [],
+        "docs/timing-diagnostics.md": [],
+        "docs/usb-protocol.ko.md": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 7,
+      "files": [
+        {
+          "path": ".python-version",
+          "language": "unknown",
+          "sizeLines": 1,
+          "fileCategory": "code"
+        },
+        {
+          "path": ".ua/config.json",
+          "language": "json",
+          "sizeLines": 3,
+          "fileCategory": "config"
+        },
+        {
+          "path": "include/README",
+          "language": "unknown",
+          "sizeLines": 18,
+          "fileCategory": "code"
+        },
+        {
+          "path": "lib/README",
+          "language": "unknown",
+          "sizeLines": 10,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/can_cli.py",
+          "language": "python",
+          "sizeLines": 1032,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/control.py",
+          "language": "python",
+          "sizeLines": 262,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/packet_monitor.py",
+          "language": "python",
+          "sizeLines": 80,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        ".python-version": [],
+        ".ua/config.json": [],
+        "include/README": [],
+        "lib/README": [],
+        "src/can_cli.py": [],
+        "src/control.py": [],
+        "src/packet_monitor.py": []
+      },
+      "neighborMap": {}
+    }
+  ]
+}

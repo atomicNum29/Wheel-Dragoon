@@ -1,0 +1,1664 @@
+{
+  "nodes": [
+    {
+      "id": "file:.python-version",
+      "type": "file",
+      "name": ".python-version",
+      "filePath": ".python-version",
+      "summary": "호스트 도구 실행 환경에서 사용할 Python 버전을 3.14로 지정한다.",
+      "tags": [
+        "python",
+        "버전",
+        "환경-설정"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:.ua/config.json",
+      "type": "config",
+      "name": "config.json",
+      "filePath": ".ua/config.json",
+      "summary": "Understand-Anything 분석 결과의 출력 언어를 한국어로 지정한다. 펌웨어의 실행 설정과는 별개의 분석 도구 설정이다.",
+      "tags": [
+        "분석-설정",
+        "한국어",
+        "지식-그래프"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:include/README",
+      "type": "file",
+      "name": "README",
+      "filePath": "include/README",
+      "summary": "헤더별 공개 인터페이스·설정·운동학·CAN 역할과 모듈 내부 상태 소유 원칙을 안내한다.",
+      "tags": [
+        "헤더-안내",
+        "인터페이스",
+        "상태-소유권"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:lib/README",
+      "type": "file",
+      "name": "README",
+      "filePath": "lib/README",
+      "summary": "별도 라이브러리 소스가 없는 디렉터리임을 설명하고 자체 CAN 구현 및 의존성 기준 파일로 안내한다.",
+      "tags": [
+        "라이브러리-안내",
+        "의존성",
+        "구조-안내"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:src/can_cli.py",
+      "type": "file",
+      "name": "can_cli.py",
+      "filePath": "src/can_cli.py",
+      "summary": "Windows와 POSIX에서 CAN 브릿지 명령, 반복 요청 벤치마크, 수신 패킷·타이밍 진단을 처리하는 대화형 호스트 CLI다. 요청 인코딩, 증분 프레임 파싱, 세션별 RTT 통계와 터미널 입력을 한 파일에서 관리한다.",
+      "tags": [
+        "호스트-cli",
+        "can-브릿지",
+        "벤치마크",
+        "패킷-파서"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src/can_cli.py:wait_for_activity",
+      "type": "function",
+      "name": "wait_for_activity",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        431,
+        441
+      ],
+      "summary": "Windows에서는 시리얼 버퍼와 키 입력을 폴링하고 POSIX에서는 select로 수신·입력 준비 상태를 기다린다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:xor_checksum",
+      "type": "function",
+      "name": "xor_checksum",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        444,
+        448
+      ],
+      "summary": "프레임 바이트를 XOR하여 1바이트 체크섬을 계산한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:parse_int",
+      "type": "function",
+      "name": "parse_int",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        451,
+        452
+      ],
+      "summary": "십진수와 접두사가 있는 숫자 문자열을 정수로 변환한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:parse_byte",
+      "type": "function",
+      "name": "parse_byte",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        455,
+        459
+      ],
+      "summary": "명령 인자를 정수로 읽고 0부터 255까지의 바이트 범위를 검증한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:parse_can_id",
+      "type": "function",
+      "name": "parse_can_id",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        462,
+        466
+      ],
+      "summary": "명령 인자를 정수로 읽고 표준 CAN 식별자 범위를 검증한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:find_teensy_port",
+      "type": "function",
+      "name": "find_teensy_port",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        469,
+        490
+      ],
+      "summary": "직렬 포트 목록의 장치 이름과 설명으로 Teensy 연결 후보를 찾는다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:build_bridge_request",
+      "type": "function",
+      "name": "build_bridge_request",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        493,
+        527
+      ],
+      "summary": "CAN 식별자·DLC·데이터·대기시간을 검증하고 0x20 브릿지 요청에 XOR 체크섬을 붙인다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/can_cli.py:build_benchmark_request",
+      "type": "function",
+      "name": "build_benchmark_request",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        530,
+        584
+      ],
+      "summary": "요청 프레임과 응답 PID·반복 횟수·주기·시간제한을 검증하여 0x21 벤치마크 요청으로 직렬화한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/can_cli.py:build_command_parser",
+      "type": "function",
+      "name": "build_command_parser",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        587,
+        618
+      ],
+      "summary": "대화형 pid·frame·benchmark 명령의 argparse 하위 파서와 입력 옵션을 만든다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/can_cli.py:command_from_namespace",
+      "type": "function",
+      "name": "command_from_namespace",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        621,
+        703
+      ],
+      "summary": "파싱한 입력을 검증하고 브릿지 또는 벤치마크 명령 객체로 변환한다. 요청 PID에 따라 기본 응답 PID를 정한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/can_cli.py:parse_interactive_command",
+      "type": "function",
+      "name": "parse_interactive_command",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        706,
+        725
+      ],
+      "summary": "셸 형식의 입력 줄을 토큰화하고 도움말·종료·CAN 명령을 구분한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:interactive_help",
+      "type": "function",
+      "name": "interactive_help",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        728,
+        738
+      ],
+      "summary": "대화형 CAN 명령과 주요 옵션의 도움말을 반환한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:format_data",
+      "type": "function",
+      "name": "format_data",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        741,
+        743
+      ],
+      "summary": "DLC에 맞춰 데이터를 잘라내거나 0으로 채우고 16진수 문자열로 표시한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:format_timing_packet",
+      "type": "function",
+      "name": "format_timing_packet",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        746,
+        778
+      ],
+      "summary": "버전 1의 0x84 기록을 누적·단계별·휠별·드라이버별 진단 텍스트로 해석한다. CPU 주파수로 사이클 수를 시간 단위로 바꾼다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/can_cli.py:format_packet",
+      "type": "function",
+      "name": "format_packet",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        781,
+        845
+      ],
+      "summary": "브릿지 응답·벤치마크 결과·타이밍 기록을 구분해 상태와 수신 데이터를 표시하며 그 외 패킷은 원시 바이트로 표시한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/can_cli.py:send_command",
+      "type": "function",
+      "name": "send_command",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        848,
+        877
+      ],
+      "summary": "명령 객체에 맞는 요청 프레임을 전송하고 로그를 남긴 뒤 8비트 시퀀스를 증가시킨다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:monitor",
+      "type": "function",
+      "name": "monitor",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        880,
+        930
+      ],
+      "summary": "시리얼 수신과 키보드 입력을 반복 처리하며 패킷 표시·벤치마크 통계·대화형 송신을 조율한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/can_cli.py:add_connection_options",
+      "type": "function",
+      "name": "add_connection_options",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        933,
+        959
+      ],
+      "summary": "포트·보드레이트·시퀀스·출력 필터·대기시간에 대한 CLI 옵션을 추가한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:build_main_parser",
+      "type": "function",
+      "name": "build_main_parser",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        962,
+        997
+      ],
+      "summary": "연결 옵션과 초기 pid·frame·benchmark 명령을 갖춘 최상위 CLI 파서를 구성한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/can_cli.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        1000,
+        1028
+      ],
+      "summary": "CLI 인자를 검증하고 포트를 선택한 뒤 모니터 루프를 실행하며 종료·오류 상태를 처리한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/can_cli.py:BridgeCommand",
+      "type": "class",
+      "name": "BridgeCommand",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        59,
+        63
+      ],
+      "summary": "CAN 브릿지 요청의 식별자·데이터·DLC·대기시간을 보관하는 데이터 클래스다.",
+      "tags": [
+        "자료-구조",
+        "호스트-도구",
+        "상태-관리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/can_cli.py:BenchmarkCommand",
+      "type": "class",
+      "name": "BenchmarkCommand",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        67,
+        75
+      ],
+      "summary": "반복 요청 프레임, 응답 식별자·PID, 반복 횟수·주기·시간제한을 보관하는 데이터 클래스다.",
+      "tags": [
+        "자료-구조",
+        "호스트-도구",
+        "상태-관리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/can_cli.py:BenchmarkStatistics",
+      "type": "class",
+      "name": "BenchmarkStatistics",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        79,
+        271
+      ],
+      "summary": "하나의 벤치마크 세션에서 중복 반복 결과를 제외하고 응답별·회차별 RTT와 송수신 간격 분포, 부분 응답·실패 수를 집계한다.",
+      "tags": [
+        "자료-구조",
+        "호스트-도구",
+        "상태-관리"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:src/can_cli.py:CommandError",
+      "type": "class",
+      "name": "CommandError",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        274,
+        275
+      ],
+      "summary": "대화형 입력 오류를 프로그램 종료 없이 보고하기 위한 예외 유형이다.",
+      "tags": [
+        "자료-구조",
+        "호스트-도구",
+        "상태-관리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/can_cli.py:ExitRequested",
+      "type": "class",
+      "name": "ExitRequested",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        278,
+        279
+      ],
+      "summary": "사용자 종료 명령을 모니터 루프 밖으로 전달하는 예외 유형이다.",
+      "tags": [
+        "자료-구조",
+        "호스트-도구",
+        "상태-관리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/can_cli.py:RaisingArgumentParser",
+      "type": "class",
+      "name": "RaisingArgumentParser",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        282,
+        284
+      ],
+      "summary": "argparse 오류를 CommandError 예외로 변환해 대화형 세션을 유지한다.",
+      "tags": [
+        "자료-구조",
+        "호스트-도구",
+        "상태-관리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:src/can_cli.py:PacketStreamParser",
+      "type": "class",
+      "name": "PacketStreamParser",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        287,
+        326
+      ],
+      "summary": "직렬 수신 조각을 누적해 체크섬이 유효한 패킷으로 분리하고 손상 구간을 재동기화한다.",
+      "tags": [
+        "자료-구조",
+        "호스트-도구",
+        "상태-관리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:src/can_cli.py:TerminalUi",
+      "type": "class",
+      "name": "TerminalUi",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        329,
+        428
+      ],
+      "summary": "Windows 콘솔과 POSIX 터미널의 입력·프롬프트·로그 표시를 통합하고 컨텍스트 종료 시 터미널 속성을 복원한다.",
+      "tags": [
+        "자료-구조",
+        "호스트-도구",
+        "상태-관리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/control.py",
+      "type": "file",
+      "name": "control.py",
+      "filePath": "src/control.py",
+      "summary": "속도·각속도 제어 패킷과 보호 리셋 패킷을 생성해 USB 시리얼로 한 번 전송한다. 제어 응답은 텍스트 한 줄로 읽으므로 바이너리 상태 패킷을 해석하는 도구는 아니다.",
+      "tags": [
+        "단발-명령",
+        "usb",
+        "패킷-인코딩"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src/control.py:xor_checksum",
+      "type": "function",
+      "name": "xor_checksum",
+      "filePath": "src/control.py",
+      "lineRange": [
+        24,
+        28
+      ],
+      "summary": "프레임 바이트를 XOR하여 1바이트 체크섬을 계산한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/control.py:build_command_packet",
+      "type": "function",
+      "name": "build_command_packet",
+      "filePath": "src/control.py",
+      "lineRange": [
+        31,
+        70
+      ],
+      "summary": "속도와 각속도의 범위를 확인하고 milli 단위 int16, 제어 플래그, 시퀀스를 리틀엔디언 0x01 패킷으로 인코딩한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/control.py:build_reset_packet",
+      "type": "function",
+      "name": "build_reset_packet",
+      "filePath": "src/control.py",
+      "lineRange": [
+        73,
+        80
+      ],
+      "summary": "보호 매직 바이트와 시퀀스를 포함한 0x02 MCU 리셋 요청 프레임을 만든다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/control.py:find_teensy_port",
+      "type": "function",
+      "name": "find_teensy_port",
+      "filePath": "src/control.py",
+      "lineRange": [
+        83,
+        103
+      ],
+      "summary": "직렬 포트 목록의 장치 이름과 설명으로 Teensy 연결 후보를 찾는다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/control.py:send_packet",
+      "type": "function",
+      "name": "send_packet",
+      "filePath": "src/control.py",
+      "lineRange": [
+        106,
+        129
+      ],
+      "summary": "지정 또는 탐지된 직렬 포트를 열어 패킷을 보내고 선택적으로 응답 한 줄을 읽는다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/control.py:send_command",
+      "type": "function",
+      "name": "send_command",
+      "filePath": "src/control.py",
+      "lineRange": [
+        132,
+        153
+      ],
+      "summary": "속도·각속도·플래그를 제어 프레임으로 만든 뒤 한 번 전송하고 수신한 응답 문자열을 반환한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/control.py:send_reset",
+      "type": "function",
+      "name": "send_reset",
+      "filePath": "src/control.py",
+      "lineRange": [
+        156,
+        164
+      ],
+      "summary": "보호 리셋 패킷을 한 번 전송하고 USB 재연결 특성을 고려해 응답을 기다리지 않는다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/control.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "src/control.py",
+      "lineRange": [
+        167,
+        258
+      ],
+      "summary": "단발 제어 또는 보호 리셋의 CLI 인자를 처리하고 범위 검증·전송·오류 보고를 수행한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/packet_monitor.py",
+      "type": "file",
+      "name": "packet_monitor.py",
+      "filePath": "src/packet_monitor.py",
+      "summary": "명령을 송신하지 않고 MCU 직렬 스트림에서 유효 프레임을 추출해 HEX로 표시한다. 불완전 프레임을 유지하고 길이·XOR 검사 실패 후 헤더를 다시 찾는다.",
+      "tags": [
+        "수신-전용",
+        "패킷-검증",
+        "직렬-관측"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/packet_monitor.py:extract_packets",
+      "type": "function",
+      "name": "extract_packets",
+      "filePath": "src/packet_monitor.py",
+      "lineRange": [
+        17,
+        49
+      ],
+      "summary": "버퍼에서 AA 55 헤더와 길이·XOR가 유효한 완전 프레임만 추출한다. 분할 헤더와 미완성 프레임을 보존하고 오류 시 한 바이트씩 재동기화한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/packet_monitor.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "src/packet_monitor.py",
+      "lineRange": [
+        52,
+        76
+      ],
+      "summary": "포트와 보드레이트를 받아 수신 전용 루프를 실행하고 유효 프레임의 유형·길이·HEX를 표시한다.",
+      "tags": [
+        "호스트-도구",
+        "함수",
+        "패킷-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:BenchmarkStatistics.start",
+      "type": "function",
+      "name": "BenchmarkStatistics.start",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        99,
+        117
+      ],
+      "summary": "시퀀스·예상 횟수·응답 PID를 설정하고 이전 세션의 통계와 시각을 초기화한다.",
+      "tags": [
+        "메서드",
+        "호스트-도구",
+        "상태-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:BenchmarkStatistics.cancel",
+      "type": "function",
+      "name": "BenchmarkStatistics.cancel",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        119,
+        136
+      ],
+      "summary": "활성 세션 식별자와 누적 표본·시각·오류 수를 초기화한다.",
+      "tags": [
+        "메서드",
+        "호스트-도구",
+        "상태-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:BenchmarkStatistics._format_distribution",
+      "type": "function",
+      "name": "BenchmarkStatistics._format_distribution",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        151,
+        163
+      ],
+      "summary": "표본 수, 최소·평균·백분위·최대·표준편차를 진단 문자열로 만든다.",
+      "tags": [
+        "메서드",
+        "호스트-도구",
+        "상태-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:BenchmarkStatistics.consume",
+      "type": "function",
+      "name": "BenchmarkStatistics.consume",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        165,
+        271
+      ],
+      "summary": "일치하는 세션의 결과만 누적하고 중복 반복을 제외한다. 최종 결과에서 응답별·회차별 시간 분포와 성공·부분 응답·실패 요약을 생성한다.",
+      "tags": [
+        "메서드",
+        "호스트-도구",
+        "상태-처리"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src/can_cli.py:PacketStreamParser.feed",
+      "type": "function",
+      "name": "PacketStreamParser.feed",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        293,
+        326
+      ],
+      "summary": "수신 조각을 누적하여 유효 길이와 XOR를 만족하는 프레임을 반환하고 불완전 데이터는 보존한다.",
+      "tags": [
+        "메서드",
+        "호스트-도구",
+        "상태-처리"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/can_cli.py:TerminalUi.__enter__",
+      "type": "function",
+      "name": "TerminalUi.__enter__",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        340,
+        353
+      ],
+      "summary": "대화형 터미널을 확인하고 POSIX에서는 비정규 입력 모드로 바꾼 뒤 프롬프트를 표시한다.",
+      "tags": [
+        "메서드",
+        "호스트-도구",
+        "상태-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:TerminalUi.read_characters",
+      "type": "function",
+      "name": "TerminalUi.read_characters",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        381,
+        397
+      ],
+      "summary": "운영체제별 입력 API로 문자를 읽는다. Windows에서 한 번에 최대 64문자만 처리하여 직렬 수신을 과도하게 지연시키지 않도록 한다.",
+      "tags": [
+        "메서드",
+        "호스트-도구",
+        "상태-처리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/can_cli.py:TerminalUi.read_lines",
+      "type": "function",
+      "name": "TerminalUi.read_lines",
+      "filePath": "src/can_cli.py",
+      "lineRange": [
+        399,
+        428
+      ],
+      "summary": "입력 문자에서 특수키·지우기·제어문자를 처리하고 완성된 명령 줄을 반환한다.",
+      "tags": [
+        "메서드",
+        "호스트-도구",
+        "상태-처리"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:wait_for_activity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:wait_for_activity",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:xor_checksum",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:xor_checksum",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:parse_int",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:parse_int",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:parse_byte",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:parse_byte",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:parse_can_id",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:parse_can_id",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:find_teensy_port",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:find_teensy_port",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:build_bridge_request",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:build_bridge_request",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:build_benchmark_request",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:build_benchmark_request",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:build_command_parser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:build_command_parser",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:command_from_namespace",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:command_from_namespace",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:parse_interactive_command",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:parse_interactive_command",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:interactive_help",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:interactive_help",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:format_data",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:format_data",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:format_timing_packet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:format_timing_packet",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:format_packet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:format_packet",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:send_command",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:send_command",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:monitor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:monitor",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:add_connection_options",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:add_connection_options",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:build_main_parser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:build_main_parser",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:BridgeCommand",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:BridgeCommand",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:BenchmarkCommand",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:BenchmarkCommand",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:BenchmarkStatistics",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:BenchmarkStatistics",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:CommandError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:CommandError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:ExitRequested",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:ExitRequested",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:RaisingArgumentParser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:RaisingArgumentParser",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:PacketStreamParser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:PacketStreamParser",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:TerminalUi",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "class:src/can_cli.py:TerminalUi",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:xor_checksum",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:xor_checksum",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:build_command_packet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:build_command_packet",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:build_reset_packet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:build_reset_packet",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:find_teensy_port",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:find_teensy_port",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:send_packet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:send_packet",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:send_command",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:send_command",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:send_reset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:send_reset",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/control.py",
+      "target": "function:src/control.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/packet_monitor.py",
+      "target": "function:src/packet_monitor.py:extract_packets",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/packet_monitor.py",
+      "target": "function:src/packet_monitor.py:extract_packets",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/packet_monitor.py",
+      "target": "function:src/packet_monitor.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/packet_monitor.py",
+      "target": "function:src/packet_monitor.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:BenchmarkStatistics.start",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/can_cli.py:BenchmarkStatistics",
+      "target": "function:src/can_cli.py:BenchmarkStatistics.start",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:BenchmarkStatistics.cancel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/can_cli.py:BenchmarkStatistics",
+      "target": "function:src/can_cli.py:BenchmarkStatistics.cancel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:BenchmarkStatistics._format_distribution",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/can_cli.py:BenchmarkStatistics",
+      "target": "function:src/can_cli.py:BenchmarkStatistics._format_distribution",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:BenchmarkStatistics.consume",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/can_cli.py:BenchmarkStatistics",
+      "target": "function:src/can_cli.py:BenchmarkStatistics.consume",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:PacketStreamParser.feed",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/can_cli.py:PacketStreamParser",
+      "target": "function:src/can_cli.py:PacketStreamParser.feed",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:TerminalUi.__enter__",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/can_cli.py:TerminalUi",
+      "target": "function:src/can_cli.py:TerminalUi.__enter__",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:TerminalUi.read_characters",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/can_cli.py:TerminalUi",
+      "target": "function:src/can_cli.py:TerminalUi.read_characters",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/can_cli.py",
+      "target": "function:src/can_cli.py:TerminalUi.read_lines",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "class:src/can_cli.py:TerminalUi",
+      "target": "function:src/can_cli.py:TerminalUi.read_lines",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "function:src/can_cli.py:main",
+      "target": "function:src/can_cli.py:build_main_parser",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:main",
+      "target": "function:src/can_cli.py:command_from_namespace",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:main",
+      "target": "function:src/can_cli.py:find_teensy_port",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:main",
+      "target": "function:src/can_cli.py:monitor",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:monitor",
+      "target": "function:src/can_cli.py:wait_for_activity",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:monitor",
+      "target": "function:src/can_cli.py:parse_interactive_command",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:monitor",
+      "target": "function:src/can_cli.py:format_packet",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:monitor",
+      "target": "function:src/can_cli.py:PacketStreamParser.feed",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:monitor",
+      "target": "function:src/can_cli.py:BenchmarkStatistics.consume",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:send_command",
+      "target": "function:src/can_cli.py:build_bridge_request",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:send_command",
+      "target": "function:src/can_cli.py:build_benchmark_request",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:build_bridge_request",
+      "target": "function:src/can_cli.py:xor_checksum",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:build_benchmark_request",
+      "target": "function:src/can_cli.py:xor_checksum",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:format_packet",
+      "target": "function:src/can_cli.py:format_timing_packet",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/can_cli.py:parse_interactive_command",
+      "target": "function:src/can_cli.py:command_from_namespace",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/control.py:send_command",
+      "target": "function:src/control.py:build_command_packet",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/control.py:send_command",
+      "target": "function:src/control.py:send_packet",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/control.py:send_reset",
+      "target": "function:src/control.py:build_reset_packet",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/control.py:send_reset",
+      "target": "function:src/control.py:send_packet",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/packet_monitor.py:main",
+      "target": "function:src/packet_monitor.py:extract_packets",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+    "projectRoot":  "C:/Users/desktop/Documents/WCL/SLAM/Wheel-Dragoon",
+    "batchImportData":  {
+                            "docs/README.md":  [
+
+                                               ],
+                            "docs/can-cli-windows.md":  [
+
+                                                        ],
+                            "docs/can-rx-fifo.md":  [
+
+                                                    ],
+                            "docs/firmware-architecture.ko.md":  [
+
+                                                                 ],
+                            "docs/raspberry-pi-handoff.ko.md":  [
+
+                                                                ],
+                            "docs/rc-loss-of-control-review-2026-11-09.ko.md":  [
+
+                                                                                ],
+                            "docs/rc-steering.ko.md":  [
+
+                                                       ],
+                            "docs/timing-diagnostics.md":  [
+
+                                                           ],
+                            "docs/usb-protocol.ko.md":  [
+
+                                                        ]
+                        },
+    "batchFiles":  [
+                       {
+                           "path":  "docs/README.md",
+                           "language":  "markdown",
+                           "sizeLines":  48,
+                           "fileCategory":  "docs"
+                       },
+                       {
+                           "path":  "docs/can-cli-windows.md",
+                           "language":  "markdown",
+                           "sizeLines":  90,
+                           "fileCategory":  "docs"
+                       },
+                       {
+                           "path":  "docs/can-rx-fifo.md",
+                           "language":  "markdown",
+                           "sizeLines":  94,
+                           "fileCategory":  "docs"
+                       },
+                       {
+                           "path":  "docs/firmware-architecture.ko.md",
+                           "language":  "markdown",
+                           "sizeLines":  146,
+                           "fileCategory":  "docs"
+                       },
+                       {
+                           "path":  "docs/raspberry-pi-handoff.ko.md",
+                           "language":  "markdown",
+                           "sizeLines":  44,
+                           "fileCategory":  "docs"
+                       },
+                       {
+                           "path":  "docs/rc-loss-of-control-review-2026-11-09.ko.md",
+                           "language":  "markdown",
+                           "sizeLines":  239,
+                           "fileCategory":  "docs"
+                       },
+                       {
+                           "path":  "docs/rc-steering.ko.md",
+                           "language":  "markdown",
+                           "sizeLines":  134,
+                           "fileCategory":  "docs"
+                       },
+                       {
+                           "path":  "docs/timing-diagnostics.md",
+                           "language":  "markdown",
+                           "sizeLines":  144,
+                           "fileCategory":  "docs"
+                       },
+                       {
+                           "path":  "docs/usb-protocol.ko.md",
+                           "language":  "markdown",
+                           "sizeLines":  228,
+                           "fileCategory":  "docs"
+                       }
+                   ]
+}

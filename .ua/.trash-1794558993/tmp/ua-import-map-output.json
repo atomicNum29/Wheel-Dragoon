@@ -1,0 +1,125 @@
+{
+  "scriptCompleted": true,
+  "stats": {
+    "filesScanned": 43,
+    "filesWithImports": 18,
+    "totalEdges": 53
+  },
+  "failures": [],
+  "importMap": {
+    ".python-version": [],
+    ".ua/config.json": [],
+    "README.md": [],
+    "docs/README.md": [],
+    "docs/can-cli-windows.md": [],
+    "docs/can-rx-fifo.md": [],
+    "docs/firmware-architecture.ko.md": [],
+    "docs/raspberry-pi-handoff.ko.md": [],
+    "docs/rc-loss-of-control-review-2026-11-09.ko.md": [],
+    "docs/rc-steering.ko.md": [],
+    "docs/timing-diagnostics.md": [],
+    "docs/usb-protocol.ko.md": [],
+    "include/README": [],
+    "include/build_features.hpp": [],
+    "include/can_control.hpp": [
+      "include/build_features.hpp",
+      "include/flexcan0.hpp"
+    ],
+    "include/can_debug.hpp": [
+      "include/build_features.hpp",
+      "include/flexcan0.hpp"
+    ],
+    "include/can_tx_schedule.hpp": [
+      "include/md200t_can.hpp"
+    ],
+    "include/control.hpp": [
+      "include/build_features.hpp",
+      "include/vehicle_motion.hpp"
+    ],
+    "include/error_report.hpp": [],
+    "include/flexcan0.hpp": [],
+    "include/little_endian.hpp": [],
+    "include/md200t_can.hpp": [
+      "include/flexcan0.hpp"
+    ],
+    "include/rc_io.hpp": [
+      "include/control.hpp"
+    ],
+    "include/serial_protocol.hpp": [],
+    "include/steering_config.hpp": [
+      "include/vehicle_kinematics.hpp"
+    ],
+    "include/timing_diagnostics.hpp": [
+      "include/build_features.hpp"
+    ],
+    "include/vehicle_kinematics.hpp": [],
+    "include/vehicle_motion.hpp": [
+      "include/steering_config.hpp"
+    ],
+    "lib/README": [],
+    "platformio.ini": [],
+    "pyproject.toml": [],
+    "src/can_cli.py": [],
+    "src/can_control.cpp": [
+      "include/can_control.hpp",
+      "include/can_debug.hpp",
+      "include/can_tx_schedule.hpp",
+      "include/control.hpp",
+      "include/little_endian.hpp",
+      "include/timing_diagnostics.hpp"
+    ],
+    "src/can_debug.cpp": [
+      "include/can_control.hpp",
+      "include/can_debug.hpp",
+      "include/control.hpp",
+      "include/little_endian.hpp",
+      "include/serial_protocol.hpp"
+    ],
+    "src/control.cpp": [
+      "include/can_control.hpp",
+      "include/can_debug.hpp",
+      "include/control.hpp",
+      "include/error_report.hpp",
+      "include/md200t_can.hpp",
+      "include/rc_io.hpp",
+      "include/serial_protocol.hpp"
+    ],
+    "src/control.py": [],
+    "src/flexcan0.cpp": [
+      "include/error_report.hpp",
+      "include/flexcan0.hpp"
+    ],
+    "src/main.cpp": [
+      "include/can_control.hpp",
+      "include/can_debug.hpp",
+      "include/control.hpp",
+      "include/rc_io.hpp",
+      "include/serial_protocol.hpp",
+      "include/timing_diagnostics.hpp"
+    ],
+    "src/md200t_can.cpp": [
+      "include/flexcan0.hpp",
+      "include/little_endian.hpp",
+      "include/md200t_can.hpp"
+    ],
+    "src/packet_monitor.py": [],
+    "src/rc_io.cpp": [
+      "include/rc_io.hpp"
+    ],
+    "src/serial_protocol.cpp": [
+      "include/can_control.hpp",
+      "include/can_debug.hpp",
+      "include/control.hpp",
+      "include/little_endian.hpp",
+      "include/serial_protocol.hpp"
+    ],
+    "src/timing_diagnostics.cpp": [
+      "include/can_control.hpp",
+      "include/can_tx_schedule.hpp",
+      "include/control.hpp",
+      "include/little_endian.hpp",
+      "include/serial_protocol.hpp",
+      "include/timing_diagnostics.hpp"
+    ]
+  }
+}

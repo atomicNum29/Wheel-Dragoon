@@ -1,0 +1,561 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-13T08:34:46.122Z",
+  "files": {
+    "README.md": {
+      "overview": "Wheel-Dragoon의 목적과 문서 탐색 시작점을 제공한다. 구동 가능한 RC 모드, 빌드별 선택 기능과 현재 소스의 확인 범위를 먼저 구분하도록 안내한다.",
+      "sections": [
+        {
+          "title": "프로젝트 목적과 문서",
+          "lineRange": [
+            1,
+            18
+          ],
+          "explanation": "Teensy 3.2가 RC 조향과 두 MD200T의 구동을 처리하고 Python 도구가 USB 관측·명령을 담당한다. 목적별 표에서 제어·CAN·USB·호스트 도구의 기준 문서로 이동할 수 있다.",
+          "tourOrder": 1
+        },
+        {
+          "title": "네 가지 빌드 프로필",
+          "lineRange": [
+            20,
+            30
+          ],
+          "explanation": "일반 제어에 CAN 디버그와 타이밍 진단을 독립적으로 더하는 네 조합을 설명한다. 디버그 기능 포함 여부와 부팅 직후 CONTROL 상태는 다른 개념이며, 브릿지 요청이 있어야 BRIDGE로 바뀐다.",
+          "tourOrder": 1
+        },
+        {
+          "title": "현재 파일과 보관 자료",
+          "lineRange": [
+            32,
+            46
+          ],
+          "explanation": "현재 설정·스케줄의 기준 파일과 디렉터리별 역할을 연결한다. backups의 과거 문서·테스트는 당시 기록이므로 현재 동작의 검증 결과로 옮겨 해석하지 않는다.",
+          "tourOrder": 1
+        },
+        {
+          "title": "동작 설명의 확인 범위",
+          "lineRange": [
+            48,
+            58
+          ],
+          "explanation": "STOP과 POWERDOWN의 소프트웨어 동작 및 물리적 정지 확인의 부재를 구분한다. RC 입력 만료 감지와 애플리케이션 watchdog이 없으며, PIVOT의 즉시 조향 지령도 실제 서보 도달을 입증하지 않는다.",
+          "tourOrder": 1
+        }
+      ]
+    },
+    "docs/README.md": {
+      "overview": "기능 설명을 실제 소스 파일에 연결하는 문서 색인이다. 학습 경로의 첫 단계에서 기준일과 검증 상태를 확인하고, 현재 사용 안내와 날짜가 명시된 사고 기록을 구분한다.",
+      "sections": [
+        {
+          "title": "문서에서 코드로 이동",
+          "lineRange": [
+            1,
+            19
+          ],
+          "explanation": "2026-11-13 소스 기준임을 밝히고 구조에서 RC·CAN·USB로 이어지는 읽기 순서를 제시한다. 목적별 표의 코드 링크는 설명의 근거를 확인할 출발점이다.",
+          "tourOrder": 1
+        },
+        {
+          "title": "구현 기준과 검증 상태",
+          "lineRange": [
+            21,
+            34
+          ],
+          "explanation": "프로필·RC·보정·통신의 책임 파일을 지정한다. 현재 작업 트리의 빌드·테스트·실물 통신 및 업로드 바이너리 일치가 미확인임을 명시하므로, 정적 설명과 실제 장비 결과를 구분해야 한다.",
+          "tourOrder": 1
+        },
+        {
+          "title": "사고 기록과 백업",
+          "lineRange": [
+            36,
+            48
+          ],
+          "explanation": "날짜별 사고 검토·복구·초기 설계 기록을 모은다. 과거 테스트나 설치 코어 기록은 해당 시점의 근거이며 현재 소스의 검증 상태를 대신하지 않는다.",
+          "tourOrder": 1
+        }
+      ]
+    },
+    "platformio.ini": {
+      "overview": "Teensy용 Arduino 펌웨어의 기본 환경과 네 빌드 프로필을 정의한다. 전처리 매크로와 소스 필터를 함께 읽으면 각 프로필에 실제로 포함되는 선택 기능을 알 수 있다.",
+      "sections": [
+        {
+          "title": "기본 환경과 대상",
+          "lineRange": [
+            1,
+            7
+          ],
+          "explanation": "기본 환경을 teensy32_control로 선택하고 공통 플랫폼·보드·프레임워크를 지정한다. 각 개별 환경은 이 공통 설정을 바탕으로 기능 조합을 선택한다.",
+          "tourOrder": 2
+        },
+        {
+          "title": "일반 제어와 디버그",
+          "lineRange": [
+            9,
+            15
+          ],
+          "explanation": "control은 두 선택 기능을 모두 끄고 해당 구현 파일을 빌드에서 제외한다. debug는 CAN 디버그만 켜서 브릿지·벤치마크 구현을 포함하고 타이밍 구현은 제외한다.",
+          "tourOrder": 2
+        },
+        {
+          "title": "타이밍 기능 조합",
+          "lineRange": [
+            17,
+            23
+          ],
+          "explanation": "timing은 타이밍만 켜고 debug_timing은 두 기능을 모두 켠다. 매크로 값과 build_src_filter가 함께 있어야 조건부 선언과 컴파일 대상이 일치한다.",
+          "tourOrder": 2
+        }
+      ]
+    },
+    "include/build_features.hpp": {
+      "overview": "선택 기능 매크로의 기본값과 허용값을 제한하는 공통 헤더다. 학습 경로의 프로필 단계에서는 PlatformIO가 값을 전달하는 부분과 이 헤더의 기본 처리 순서를 함께 본다.",
+      "sections": [
+        {
+          "title": "기능 플래그 기본값",
+          "lineRange": [
+            1,
+            9
+          ],
+          "explanation": "외부에서 정의하지 않은 CAN 디버그와 타이밍 진단 매크로를 각각 0으로 둔다. 이미 PlatformIO가 지정한 값은 #ifndef에 의해 덮어쓰지 않는다.",
+          "tourOrder": 2
+        },
+        {
+          "title": "허용값의 컴파일 검사",
+          "lineRange": [
+            10,
+            13
+          ],
+          "explanation": "각 매크로가 0이나 1인지 전처리 단계에서 확인한다. 범위를 벗어나면 #error로 빌드를 중단하므로 실행 중 모드 선택과는 별개의 구성 검사다.",
+          "tourOrder": 2
+        }
+      ]
+    },
+    "docs/firmware-architecture.ko.md": {
+      "overview": "빌드 조합, 모듈별 상태 소유권과 실행 순서를 한 문서에서 연결한다. 선택적 디버그·계측이 공통 RC 제어 경로에 어떻게 들어가는지 살펴보는 지도 역할을 한다.",
+      "sections": [
+        {
+          "title": "프로필과 산출물 구분",
+          "lineRange": [
+            5,
+            32
+          ],
+          "explanation": "네 환경의 기능 포함 범위와 매크로·소스 필터의 역할을 설명한다. 제시된 빌드 명령은 업로드를 포함하지 않으며, 산출물의 소스 버전과 환경을 별도로 식별해야 한다.",
+          "tourOrder": 2
+        },
+        {
+          "title": "모듈별 상태 소유권",
+          "lineRange": [
+            34,
+            57
+          ],
+          "explanation": "각 구현 파일이 소유하는 변경 가능한 상태를 표로 정리한다. 읽기 전용 참조는 메인 루프 내부 관측용이며 ISR이나 별도 태스크에 전달할 원자적 스냅샷을 보장하지 않는다.",
+          "tourOrder": 2
+        },
+        {
+          "title": "실행 순서와 수신 경로",
+          "lineRange": [
+            59,
+            100
+          ],
+          "explanation": "다이어그램과 순서 목록으로 setup·loop가 모듈을 연결하는 방법을 보여준다. CAN 큐 처리와 raw 브릿지의 대기 수신은 메인 문맥에서 순차 실행되며 계측 모듈은 프레임을 소비하지 않는다.",
+          "tourOrder": 2
+        },
+        {
+          "title": "프로필별 패킷 동작",
+          "lineRange": [
+            102,
+            127
+          ],
+          "explanation": "CONTROL·BRIDGE·RESETTING 전환과 각 프로필의 패킷 지원 범위를 구분한다. 타이밍 출력은 스냅샷·USB 여유·CAN 응답 구간의 조건에 묶이므로 계측 누적과 실제 출력 시점을 동일하게 보지 않는다.",
+          "tourOrder": 2
+        },
+        {
+          "title": "설정 위치와 RC 경로",
+          "lineRange": [
+            129,
+            146
+          ],
+          "explanation": "핀·전원·통신·패킷·모션 상수가 어느 파일에 있는지 안내한다. MANUAL과 PIVOT은 공통 운동학과 모션 전환을 사용하지만 입력 의미와 고정 조향 처리에는 차이가 있다.",
+          "tourOrder": 2
+        }
+      ]
+    },
+    "src/main.cpp": {
+      "overview": "Arduino setup과 loop의 최상위 실행 순서를 정의한다. 상태 정책을 직접 구현하기보다 전원·RC·CAN·USB·진단 모듈을 호출하는 순서를 보여주는 진입점이다.",
+      "sections": [
+        {
+          "title": "모듈 연결과 초기화",
+          "lineRange": [
+            1,
+            28
+          ],
+          "explanation": "전원을 초기화한 뒤 USB·계측·서보·모션·RC 입력을 준비하고 세션과 CAN을 시작한다. RC 인터럽트 연결 전에 전원 출력과 조향 중립 지령을 설정하는 순서를 코드에서 확인할 수 있다.",
+          "tourOrder": 3
+        },
+        {
+          "title": "입력과 수신 처리",
+          "lineRange": [
+            30,
+            46
+          ],
+          "explanation": "루프는 시각과 RC 모드를 읽어 전원을 갱신한 뒤 두 PWM 값을 가져온다. USB 명령과 CAN 수신 처리를 먼저 수행하며, 디버그 결과·벤치마크 호출은 전처리 조건으로 포함 여부가 결정된다.",
+          "tourOrder": 3
+        },
+        {
+          "title": "모션 갱신과 출력",
+          "lineRange": [
+            47,
+            59
+          ],
+          "explanation": "텔레메트리 상태 확인 후 구동 목표와 오류 보고를 갱신하고 CAN·USB·서보 출력을 실행한다. timing::measure는 지정 작업을 감싸지만 서보 출력은 직접 호출하므로 모든 구간이 동일하게 개별 계측되는 것은 아니다.",
+          "tourOrder": 3
+        }
+      ]
+    },
+    "include/control.hpp": {
+      "overview": "모듈이 공유하는 명령·구동 모드·오류·상태 자료형과 제어 함수 선언을 제공한다. 학습 경로에서는 main.cpp의 호출이 어떤 상태 계약을 따르는지 이해하는 데 사용한다.",
+      "sections": [
+        {
+          "title": "명령과 구동 모드",
+          "lineRange": [
+            1,
+            39
+          ],
+          "explanation": "USB 명령은 milli 단위의 정수 속도와 플래그로 표현하고 RC DriveMode는 별도 열거형으로 둔다. MotorState의 값 6은 예약 상태이며 바퀴 RPM 구조의 필드 순서는 LF·LR·RF·RR이다.",
+          "tourOrder": 3
+        },
+        {
+          "title": "오류 보고와 활성 입력",
+          "lineRange": [
+            41,
+            58
+          ],
+          "explanation": "FaultSnapshot은 반복 보고 중인 오류와 현재 활성인 timeout·estop 입력을 구분한다. 보고 비트가 남아 있다는 사실과 현재 입력이 활성이라는 사실을 분리해 상태 우선순위 판정에 활용한다.",
+          "tourOrder": 3
+        },
+        {
+          "title": "직렬 모드와 현재 상태",
+          "lineRange": [
+            60,
+            82
+          ],
+          "explanation": "CONTROL·BRIDGE·RESETTING은 RC 모드와 독립적인 직렬 운용 상태다. Status는 부팅·전원·구동 허용과 목표 RPM을 담으며 BRIDGE 열거값은 디버그 빌드에만 포함된다.",
+          "tourOrder": 3
+        },
+        {
+          "title": "조회와 변경 인터페이스",
+          "lineRange": [
+            83,
+            109
+          ],
+          "explanation": "현재 상태와 모션은 const 참조로 조회하고 변경 작업은 이름이 지정된 함수로 노출한다. 세션 초기화·오류 소비·모터 상태 판정의 선언을 구현과 연결해 읽으면 상태 소유권을 추적할 수 있다.",
+          "tourOrder": 3
+        }
+      ]
+    },
+    "src/rc_io.cpp": {
+      "overview": "RC 에지 인터럽트로 펄스폭을 측정하고 필터링된 입력을 읽기 함수로 제공한다. 반대쪽 출력 경로에서는 모션 각도 지령을 보정표를 통해 서보 PWM으로 변환한다.",
+      "sections": [
+        {
+          "title": "입력 상태와 이동평균",
+          "lineRange": [
+            4,
+            34
+          ],
+          "explanation": "속도·조향·모드마다 독립적인 10표본 필터를 둔다. 필터 초기 이력은 중립값이지만 공개 속도·조향 출력은 0으로 초기화되므로 두 초기 상태를 혼동하지 않는다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "속도와 조향 에지 처리",
+          "lineRange": [
+            36,
+            70
+          ],
+          "explanation": "두 ISR은 에지 사이 시간을 측정하고 상한을 초과하지 않은 펄스를 필터에 넣는다. 이 경로에는 펄스 하한 검사나 마지막 갱신 시각 기반 만료 처리가 없으므로 RC 연결 상실을 자동으로 판정하지 않는다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "모드 펄스 구간 판정",
+          "lineRange": [
+            72,
+            99
+          ],
+          "explanation": "모드 ISR은 상승 에지마다 시작 시각을 갱신하고 800..2200 µs 범위만 필터링한다. 최종 모드 경계는 개별 펄스가 아니라 필터 평균에 적용된다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "인터럽트 연결과 입력 조회",
+          "lineRange": [
+            103,
+            113
+          ],
+          "explanation": "세 핀 모두 CHANGE 인터럽트에 연결한다. read_pwm은 두 volatile 값을 개별 읽기하므로 모드·속도·조향 전체가 동일 순간의 원자적 스냅샷이라고 볼 수 없다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "서보 초기화와 데드밴드",
+          "lineRange": [
+            115,
+            133
+          ],
+          "explanation": "보정이 유효하면 PWM 해상도와 주파수를 설정하고 중립각 지령을 출력한다. 입력 변환 함수는 범위를 제한한 후 중립 ±50 µs를 제거해 연속적인 부호 있는 오프셋을 만든다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "각도 지령의 PWM 출력",
+          "lineRange": [
+            135,
+            145
+          ],
+          "explanation": "각 서보의 보정표에 모션 제어기의 각도를 넣고 계산된 펄스를 duty로 변환한다. 이 함수는 지령을 출력할 뿐 실제 조향각 도달이나 기구 간섭을 측정하지 않는다.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "src/control.cpp": {
+      "overview": "전원·RC 모드·직렬 모드·오류를 결합해 구동 허용 여부와 바퀴 목표를 결정한다. MANUAL과 PIVOT은 RC로 구동하고 AUTO는 USB 수신 상태만 기록하는 현재 정책의 중심이다.",
+      "sections": [
+        {
+          "title": "상태 소유와 세션 초기화",
+          "lineRange": [
+            12,
+            51
+          ],
+          "explanation": "변경 가능한 live·명령·오류 카운터·모션 객체를 구현 내부에 둔다. 세션 초기화는 보고 이력과 CAN 상태를 비우지만 모션 객체 전체를 새로 만드는 작업은 아니다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "전원 전환과 오류 소비",
+          "lineRange": [
+            53,
+            77
+          ],
+          "explanation": "POWERDOWN 여부가 바뀌면 디버그를 취소하고 CONTROL 세션을 다시 시작한다. GPIO 출력과 1000 ms 드라이버 시작 대기를 관리하며, 오류 보고 카운터는 별도 소비 함수에서 감소한다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "RPM 변환과 명령 수신",
+          "lineRange": [
+            79,
+            98
+          ],
+          "explanation": "RPM은 유한성·설정 상한·정수 표현 범위를 확인한 뒤 반올림한다. accept_command는 USB 명령과 수신 시각만 보관하므로 이 호출만으로 호스트에 구동 권한이 생기지 않는다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "RC 모드별 구동 권한",
+          "lineRange": [
+            100,
+            151
+          ],
+          "explanation": "CONTROL이 아니거나 STOP·POWERDOWN·시작 대기 상태이면 구동을 비활성화한다. MANUAL은 선속도와 곡률을, PIVOT은 조향 입력의 각속도를 생성하며 AUTO에서는 timeout·estop 상태만 계산하고 RPM을 정지시킨다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "리셋과 CONTROL 복귀",
+          "lineRange": [
+            153,
+            184
+          ],
+          "explanation": "리셋은 주기 송신을 먼저 막고 가능한 상태에서 TQ-OFF를 시도한 뒤 MCU 리셋 레지스터를 기록한다. CAN 송신 실패가 리셋을 취소하지 않으므로 정지 요청 시도와 실제 전달 성공을 구분해야 한다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "오류 차단과 상태 스냅샷",
+          "lineRange": [
+            186,
+            231
+          ],
+          "explanation": "안전 TX·드라이버 상태·응답 시간초과 보고 카운터가 구동 fault 판단에 사용된다. 전압 stale과 오류 보고를 모아 스냅샷을 만들되 현재 timeout·estop 활성 여부는 별도 필드로 유지한다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "모터 상태와 모션 출력",
+          "lineRange": [
+            233,
+            262
+          ],
+          "explanation": "모터 상태는 POWERDOWN·fault·estop·부팅 등의 우선순위로 결정된다. 실제 모션 출력에는 fault·저전압 허용 조건을 적용하고 모션 배열의 순서를 WheelRpmCommand 필드 순서에 맞게 재배열한다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "디버그 브릿지 진입",
+          "lineRange": [
+            264,
+            285
+          ],
+          "explanation": "디버그 빌드에서 BRIDGE로 바꾸면 모터 허용을 내리고 정상 목표를 정지시킨다. 전원 차단·시작 대기 상태가 아니면 두 드라이버에 TQ-OFF를 시도하지만 이는 물리적 제동 확인이 아니다.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "docs/rc-steering.ko.md": {
+      "overview": "RC 입력 처리부터 전원·구동 권한·보정·운동학·모션 한계까지 설명하는 기준 문서다. 소스에서 생성하는 지령과 실제 장비에서 확인된 상태를 구분하는 데 필요한 조건을 함께 제시한다.",
+      "sections": [
+        {
+          "title": "핀 배치와 입력 유효성",
+          "lineRange": [
+            5,
+            32
+          ],
+          "explanation": "핀 역할, 입력 필터, 데드밴드와 속도·조향 단위를 정리한다. 채널별 검사 범위가 다르고 입력 만료 감지가 없으므로 수신기 failsafe나 연결 상실 처리를 코드가 대신한다고 가정하지 않는다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "제어 권한과 전원 전환",
+          "lineRange": [
+            34,
+            56
+          ],
+          "explanation": "RC 모드와 USB CONTROL·BRIDGE 상태를 분리해 설명한다. MANUAL·PIVOT에서는 호스트 estop·disable과 명령 timeout을 구동 판단에 사용하지 않으며, CONTROL 복귀 후에는 현재 RC 입력이 다시 적용된다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "차량 기하와 서보 보정",
+          "lineRange": [
+            58,
+            80
+          ],
+          "explanation": "기하와 측정값으로 등록된 차량 각도–PWM 표를 제시한다. 내부 actuator 각도 표는 차량 각도와 방향이 반대이며 verified 설정도 부하 상태의 도달·간섭·끝단을 새로 검증했다는 뜻은 아니다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "운동학과 모션 제한",
+          "lineRange": [
+            82,
+            102
+          ],
+          "explanation": "공통 RPM 축소와 가감속·조향·대기 시간의 의미를 설명한다. 준비·정지·조향 도달은 생성 지령과 시간에 기반한 추정이며 실제 엔코더 정지나 서보 피드백 확인은 없다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "PIVOT의 두 전환 경로",
+          "lineRange": [
+            104,
+            122
+          ],
+          "explanation": "후륜 축 중앙을 기준으로 각속도를 바퀴 RPM과 고정 조향각에 대응시킨다. 조향 지령은 즉시 바뀌지만 RPM은 감속·dwell·정착 절차를 따르므로 두 전환을 별도로 이해해야 한다.",
+          "tourOrder": 4
+        },
+        {
+          "title": "오류 보고와 정지 의미",
+          "lineRange": [
+            124,
+            134
+          ],
+          "explanation": "일부 안전 오류와 저전압은 구동 차단에 영향을 주지만 모든 진단 오류가 차단 조건은 아니다. 성공한 USB 상태 송신 횟수가 오류 카운터 감소에 관여하며 STOP·TQ-OFF는 별도 물리 브레이크를 의미하지 않는다.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "include/vehicle_kinematics.hpp": {
+      "overview": "차체 명령을 전륜 조향각과 네 바퀴 RPM으로 변환하는 순수 계산부다. MANUAL의 곡률 경로와 PIVOT의 후륜 중심 회전 경로를 같은 결과 자료형으로 제공한다.",
+      "sections": [
+        {
+          "title": "좌표와 명령 자료형",
+          "lineRange": [
+            5,
+            33
+          ],
+          "explanation": "휠 순서는 LF·RF·LR·RR이며 각도는 rad, 선속도는 m/s, 곡률은 1/m로 표현한다. WheelTargets의 각도는 측정값이 아니라 지령값이고 Geometry의 길이는 미터 단위다.",
+          "tourOrder": 5
+        },
+        {
+          "title": "속도와 곡률 변환",
+          "lineRange": [
+            34,
+            42
+          ],
+          "explanation": "선속도를 바퀴 원주로 나누고 분당 초 수를 곱해 RPM을 구한다. 내륜 조향각을 곡률로 바꾸는 식에는 휠베이스와 전륜 반윤거가 함께 들어가 좌우 같은 각도를 단순 적용하지 않는다.",
+          "tourOrder": 5
+        },
+        {
+          "title": "입력 검증과 초기 목표",
+          "lineRange": [
+            43,
+            53
+          ],
+          "explanation": "먼저 이전 조향각을 복사하고 입력의 유한성과 선속도 상한을 검사한다. 실패 시 실행 불가 표시를 반환하므로 후속 모션 처리가 잘못된 입력을 일반 주행 목표로 취급하지 않게 한다.",
+          "tourOrder": 5
+        },
+        {
+          "title": "전륜 목표 계산",
+          "lineRange": [
+            54,
+            67
+          ],
+          "explanation": "각 바퀴 위치의 속도 벡터에서 조향각과 속도 크기를 구한다. PIVOT 왼쪽 전륜은 구름 방향을 반대로 잡아 조향각 범위 안에 배치하며, 각도 제한을 넘으면 전체 명령을 불가로 표시한다.",
+          "tourOrder": 5
+        },
+        {
+          "title": "후륜 목표와 전체 거부",
+          "lineRange": [
+            68,
+            78
+          ],
+          "explanation": "후륜은 곡률 또는 후륜 중심 각속도에 맞는 좌우 선속도로 RPM을 계산한다. 한쪽 조향만 잘라낸 채 RPM을 유지하지 않고 불가 명령 전체를 0 RPM·이전 각도로 되돌린다.",
+          "tourOrder": 5
+        }
+      ]
+    },
+    "include/vehicle_motion.hpp": {
+      "overview": "운동학 목표를 시간에 따라 적용하는 모션 상태기계를 구현한다. 공통 RPM 제한과 가감속, 일반 조향 보간 및 PIVOT 즉시 조향 지령을 구분해 읽는 것이 핵심이다.",
+      "sections": [
+        {
+          "title": "상태와 설정 유효성",
+          "lineRange": [
+            4,
+            34
+          ],
+          "explanation": "준비 여부·상태·조향각·RPM은 제어기 내부의 생성 지령을 나타낸다. 유효성 검사는 기하와 속도·시간 설정의 유한성 및 양수 조건을 확인하며 물리적 장비 상태를 측정하지 않는다.",
+          "tourOrder": 5
+        },
+        {
+          "title": "지령 정지와 출력 억제",
+          "lineRange": [
+            35,
+            44
+          ],
+          "explanation": "stopped는 생성된 RPM이 작은 허용 오차 안인지 확인한다. inhibit는 일반 감속 대신 즉시 지령 RPM을 0으로 바꾸지만 실제 휠 정지나 제동 성공을 확인하는 함수는 아니다.",
+          "tourOrder": 5
+        },
+        {
+          "title": "기동 대기와 공통 제한",
+          "lineRange": [
+            45,
+            65
+          ],
+          "explanation": "최대 0.05 s로 제한한 시간 간격을 사용하고 최초 기동 대기·보정·활성 조건을 확인한다. 운동학 목표 중 최대 RPM이 상한을 넘으면 네 바퀴를 같은 비율로 축소해 상대 속도 관계를 보존한다.",
+          "tourOrder": 5
+        },
+        {
+          "title": "PIVOT과 제동 전환",
+          "lineRange": [
+            66,
+            90
+          ],
+          "explanation": "PIVOT의 실행 가능한 고정 조향 목표는 제동·dwell보다 앞서 즉시 지령에 반영된다. 주행 중 모드 전환·휠 방향 반전·불가 목표는 제동으로 전환하지만 조향각 변경만으로는 제동하지 않는다.",
+          "tourOrder": 5
+        },
+        {
+          "title": "조향 보간과 정착 대기",
+          "lineRange": [
+            91,
+            116
+          ],
+          "explanation": "좌우 중 가장 긴 남은 각도 이동으로 공통 진행 비율을 계산해 고정 목표에 함께 도달하도록 지령을 보간한다. 목표가 정착 중 바뀌면 조향 상태로 돌아가며 주행 상태에서만 RPM 목표 방향의 램프를 적용한다.",
+          "tourOrder": 5
+        },
+        {
+          "title": "시간 조건과 RPM 램프",
+          "lineRange": [
+            117,
+            136
+          ],
+          "explanation": "elapsed는 상태별 대기를 시작하고 부호 없는 시간차로 경과 여부를 확인한다. ramp는 각 바퀴의 가감속 제약에서 가장 작은 진행 비율을 선택해 모든 RPM을 함께 갱신한다.",
+          "tourOrder": 5
+        }
+      ]
+    }
+  }
+}

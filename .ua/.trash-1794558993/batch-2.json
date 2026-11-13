@@ -1,0 +1,750 @@
+{
+  "nodes": [
+    {
+      "id": "file:include/build_features.hpp",
+      "type": "file",
+      "name": "build_features.hpp",
+      "filePath": "include/build_features.hpp",
+      "summary": "PlatformIO 환경이 지정하는 CAN 디버그와 타이밍 진단 기능 플래그의 기본값을 정의하고, 0 또는 1 이외의 값을 컴파일 오류로 거부한다.",
+      "tags": [
+        "설정",
+        "조건부컴파일",
+        "펌웨어"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:include/can_control.hpp",
+      "type": "file",
+      "name": "can_control.hpp",
+      "filePath": "include/can_control.hpp",
+      "summary": "모터 RPM·엔코더·수신 시각과 전압 텔레메트리의 자료형을 정의한다. CAN 수신 처리, 응답 유효성 및 주기 송신을 제어하는 인터페이스를 제공한다.",
+      "tags": [
+        "can",
+        "텔레메트리",
+        "인터페이스"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/can_control.hpp:MotorTelemetry",
+      "type": "class",
+      "name": "MotorTelemetry",
+      "filePath": "include/can_control.hpp",
+      "lineRange": [
+        6,
+        14
+      ],
+      "summary": "바퀴의 실제 RPM·엔코더·드라이버 상태와 ISR 수신 시각 및 유효성을 묶는다. 최근 명령 응답 창에서 누락되면 유효 플래그가 해제된다.",
+      "tags": [
+        "자료형",
+        "can",
+        "텔레메트리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/can_control.hpp:DriverVoltageTelemetry",
+      "type": "class",
+      "name": "DriverVoltageTelemetry",
+      "filePath": "include/can_control.hpp",
+      "lineRange": [
+        16,
+        21
+      ],
+      "summary": "드라이버 전압의 밀리볼트 값과 갱신 시각·유효성을 보관한다. PID 143 데이터의 신선도 판정에 사용한다.",
+      "tags": [
+        "자료형",
+        "can",
+        "텔레메트리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:include/can_control.hpp:Telemetry",
+      "type": "class",
+      "name": "Telemetry",
+      "filePath": "include/can_control.hpp",
+      "lineRange": [
+        25,
+        28
+      ],
+      "summary": "네 바퀴 모터 자료와 두 드라이버 전압 자료를 하나의 CAN 텔레메트리 묶음으로 보관한다.",
+      "tags": [
+        "자료형",
+        "can",
+        "텔레메트리"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:include/can_debug.hpp",
+      "type": "file",
+      "name": "can_debug.hpp",
+      "filePath": "include/can_debug.hpp",
+      "summary": "디버그 빌드에서 CAN 브릿지와 반복 요청 측정 인터페이스를 노출한다. 비활성 빌드에는 공통 제어 전환에서 호출할 빈 cancel 함수를 제공한다.",
+      "tags": [
+        "can",
+        "디버그",
+        "조건부컴파일"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:include/serial_protocol.hpp",
+      "type": "file",
+      "name": "serial_protocol.hpp",
+      "filePath": "include/serial_protocol.hpp",
+      "summary": "AA 55 USB 프레임의 타입·길이·필드 위치와 허용 명령 범위를 정의한다. 명령 수신, XOR 체크섬 및 상태 송신 인터페이스의 기준이다.",
+      "tags": [
+        "usb",
+        "프로토콜",
+        "직렬화"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:src/can_debug.cpp",
+      "type": "file",
+      "name": "can_debug.cpp",
+      "filePath": "src/can_debug.cpp",
+      "summary": "디버그 빌드에서 USB 요청을 CAN 프레임으로 중계하고 반복 송신의 응답·시간초과·RTT 결과를 수집한다. 브릿지는 첫 수신 프레임을 반환하며, 반복 측정은 ID와 PID 및 수신 시각으로 응답을 구분한다.",
+      "tags": [
+        "can",
+        "브릿지",
+        "진단"
+      ],
+      "complexity": "complex",
+      "languageNotes": "이 파일은 FIRMWARE_CAN_DEBUG 조건부 컴파일로 둘러싸여 있다. 번들 구조 추출기는 호출 정보만 반환하고 함수·클래스 선언은 반환하지 않아 이 그래프에서는 함수 단위 노드를 생략했다. 파일 요약과 import 관계는 포함한다."
+    },
+    {
+      "id": "file:src/serial_protocol.cpp",
+      "type": "file",
+      "name": "serial_protocol.cpp",
+      "filePath": "src/serial_protocol.cpp",
+      "summary": "바이트 상태 기계로 USB 명령과 리셋·디버그 프레임을 분류하고 체크섬과 범위를 검증한다. CAN 텔레메트리와 오류 스냅샷을 0x82 상태 프레임으로 직렬화하며 전체 송신 성공 후 보고 횟수를 소비한다.",
+      "tags": [
+        "usb",
+        "상태기계",
+        "직렬화"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:begin",
+      "type": "function",
+      "name": "begin",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        42,
+        42
+      ],
+      "summary": "USB Serial을 지정된 115200 baud 설정으로 초기화한다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:parse_complete_command_frame",
+      "type": "function",
+      "name": "parse_complete_command_frame",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        58,
+        79
+      ],
+      "summary": "XOR 체크섬과 선속도·각속도 범위를 검증한 뒤 CONTROL 모드로 전환하고 명령 수신 시각을 기록한다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+      "type": "function",
+      "name": "parse_complete_reset_frame",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        81,
+        98
+      ],
+      "summary": "체크섬과 두 바이트 매직 값을 검증한 뒤 MCU 리셋 절차를 호출한다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+      "type": "function",
+      "name": "parse_complete_serial_frame",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        102,
+        132
+      ],
+      "summary": "길이와 타입 조합에 따라 제어·리셋·브릿지·반복 측정 요청을 분기한다. 제외된 디버그 기능의 프레임도 통째로 소비하고 오류로 보고한다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:feed_command_parser",
+      "type": "function",
+      "name": "feed_command_parser",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        134,
+        210
+      ],
+      "summary": "헤더, 길이, 타입과 나머지 바이트를 순서대로 모으는 수신 상태 기계다. 완성된 프레임을 처리하고 파서를 초기 상태로 되돌린다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:receive_commands",
+      "type": "function",
+      "name": "receive_commands",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        212,
+        220
+      ],
+      "summary": "현재 USB 수신 버퍼의 바이트를 모두 읽어 명령 프레임 상태 기계에 전달한다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:xor_checksum",
+      "type": "function",
+      "name": "xor_checksum",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        222,
+        230
+      ],
+      "summary": "주어진 바이트 배열의 XOR 누적값을 계산하여 USB 프레임 체크섬으로 사용한다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:build_system_error_bits",
+      "type": "function",
+      "name": "build_system_error_bits",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        232,
+        258
+      ],
+      "summary": "FaultSnapshot의 오류 플래그를 상태 패킷의 16비트 오류 필드로 변환한다. watchdog에 해당하는 비트는 사용하지 않는다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:telemetry_validity_bits",
+      "type": "function",
+      "name": "telemetry_validity_bits",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        260,
+        276
+      ],
+      "summary": "네 바퀴와 두 전압 자료의 유효 플래그를 상태 프레임의 비트 마스크로 조합한다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:send_system_status",
+      "type": "function",
+      "name": "send_system_status",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        286,
+        320
+      ],
+      "summary": "최신 오류와 CAN 텔레메트리를 상태 프레임으로 직렬화한다. USB 전체 쓰기가 성공한 경우에만 순번을 증가시키고 오류 보고 횟수를 소비한다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:src/serial_protocol.cpp:send_status_if_ready",
+      "type": "function",
+      "name": "send_status_if_ready",
+      "filePath": "src/serial_protocol.cpp",
+      "lineRange": [
+        322,
+        331
+      ],
+      "summary": "CONTROL 모드이고 CAN 상태 송신이 대기 중일 때 상태 패킷을 보낸다. 송신 버퍼 부족 시 대기 플래그를 유지한다.",
+      "tags": [
+        "함수",
+        "usb",
+        "상태기계"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:include/can_control.hpp",
+      "target": "class:include/can_control.hpp:MotorTelemetry",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/can_control.hpp",
+      "target": "class:include/can_control.hpp:MotorTelemetry",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/can_control.hpp",
+      "target": "class:include/can_control.hpp:DriverVoltageTelemetry",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/can_control.hpp",
+      "target": "class:include/can_control.hpp:DriverVoltageTelemetry",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/can_control.hpp",
+      "target": "class:include/can_control.hpp:Telemetry",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:include/can_control.hpp",
+      "target": "class:include/can_control.hpp:Telemetry",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:include/can_control.hpp",
+      "target": "file:include/build_features.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:include/can_control.hpp",
+      "target": "file:include/flexcan0.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:include/can_debug.hpp",
+      "target": "file:include/build_features.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:include/can_debug.hpp",
+      "target": "file:include/flexcan0.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/can_debug.cpp",
+      "target": "file:include/can_control.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/can_debug.cpp",
+      "target": "file:include/can_debug.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/can_debug.cpp",
+      "target": "file:include/control.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/can_debug.cpp",
+      "target": "file:include/little_endian.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/can_debug.cpp",
+      "target": "file:include/serial_protocol.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:begin",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:begin",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:parse_complete_command_frame",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:feed_command_parser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:receive_commands",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:receive_commands",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:xor_checksum",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:xor_checksum",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:build_system_error_bits",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:telemetry_validity_bits",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:send_system_status",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:send_status_if_ready",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "function:src/serial_protocol.cpp:send_status_if_ready",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "file:include/can_control.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "file:include/can_debug.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "file:include/control.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "file:include/little_endian.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/serial_protocol.cpp",
+      "target": "file:include/serial_protocol.hpp",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_command_frame",
+      "target": "function:src/serial_protocol.cpp:xor_checksum",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_command_frame",
+      "target": "function:src/control.cpp:report",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_command_frame",
+      "target": "function:include/little_endian.hpp:read_i16",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_command_frame",
+      "target": "function:src/control.cpp:enter_control_mode",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_command_frame",
+      "target": "function:src/control.cpp:accept_command",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+      "target": "function:src/serial_protocol.cpp:xor_checksum",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+      "target": "function:src/control.cpp:report",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+      "target": "function:src/control.cpp:reset_mcu",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+      "target": "function:src/serial_protocol.cpp:parse_complete_command_frame",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+      "target": "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+      "target": "function:src/control.cpp:report",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:feed_command_parser",
+      "target": "function:src/control.cpp:report",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:feed_command_parser",
+      "target": "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:receive_commands",
+      "target": "function:src/serial_protocol.cpp:feed_command_parser",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_system_status",
+      "target": "function:src/control.cpp:refresh_errors",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_system_status",
+      "target": "function:src/control.cpp:fault_snapshot",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_system_status",
+      "target": "function:src/control.cpp:motor_state",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_system_status",
+      "target": "function:include/little_endian.hpp:write_u16",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_system_status",
+      "target": "function:src/serial_protocol.cpp:build_system_error_bits",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_system_status",
+      "target": "function:src/serial_protocol.cpp:telemetry_validity_bits",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_system_status",
+      "target": "function:include/little_endian.hpp:write_u32",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_system_status",
+      "target": "function:src/serial_protocol.cpp:xor_checksum",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_system_status",
+      "target": "function:src/control.cpp:consume_error_reports",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_status_if_ready",
+      "target": "function:src/can_control.cpp:status_pending",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_status_if_ready",
+      "target": "function:src/serial_protocol.cpp:send_system_status",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:src/serial_protocol.cpp:send_status_if_ready",
+      "target": "function:src/can_control.cpp:status_sent",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

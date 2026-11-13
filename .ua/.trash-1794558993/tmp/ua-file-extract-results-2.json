@@ -1,0 +1,1007 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 6,
+  "filesSkipped": [],
+  "filesUnreadable": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 6,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 6,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "include/build_features.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 13,
+      "nonEmptyLines": 12,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "include/can_control.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 46,
+      "nonEmptyLines": 43,
+      "classes": [
+        {
+          "name": "MotorTelemetry",
+          "startLine": 6,
+          "endLine": 14,
+          "methods": [],
+          "properties": [
+            "actual_rpm",
+            "encoder_count",
+            "rx_timestamp_us",
+            "status",
+            "last_update_ms",
+            "valid"
+          ]
+        },
+        {
+          "name": "DriverVoltageTelemetry",
+          "startLine": 16,
+          "endLine": 21,
+          "methods": [],
+          "properties": [
+            "millivolts",
+            "last_update_ms",
+            "valid"
+          ]
+        },
+        {
+          "name": "Telemetry",
+          "startLine": 25,
+          "endLine": 28,
+          "methods": [],
+          "properties": [
+            "lf",
+            "driver_a"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "MotorTelemetry",
+          "line": 6,
+          "isDefault": false
+        },
+        {
+          "name": "DriverVoltageTelemetry",
+          "line": 16,
+          "isDefault": false
+        },
+        {
+          "name": "Telemetry",
+          "line": 25,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 3,
+        "functionCount": 0,
+        "classCount": 3
+      }
+    },
+    {
+      "path": "include/can_debug.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 17,
+      "nonEmptyLines": 16,
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "include/serial_protocol.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 55,
+      "nonEmptyLines": 53,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/can_debug.cpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 405,
+      "nonEmptyLines": 364,
+      "callGraph": [
+        {
+          "caller": "send_can_bridge_response",
+          "callee": "little_endian::write_u16",
+          "lineNumber": 116
+        },
+        {
+          "caller": "send_can_bridge_response",
+          "callee": "protocol::xor_checksum",
+          "lineNumber": 120
+        },
+        {
+          "caller": "send_can_bridge_response",
+          "callee": "availableForWrite",
+          "lineNumber": 122
+        },
+        {
+          "caller": "send_can_bridge_response",
+          "callee": "write",
+          "lineNumber": 123
+        },
+        {
+          "caller": "complete_can_benchmark_attempt",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 143
+        },
+        {
+          "caller": "flush_result",
+          "callee": "availableForWrite",
+          "lineNumber": 168
+        },
+        {
+          "caller": "flush_result",
+          "callee": "little_endian::write_u16",
+          "lineNumber": 177
+        },
+        {
+          "caller": "flush_result",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 180
+        },
+        {
+          "caller": "flush_result",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 181
+        },
+        {
+          "caller": "flush_result",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 182
+        },
+        {
+          "caller": "flush_result",
+          "callee": "little_endian::write_u16",
+          "lineNumber": 183
+        },
+        {
+          "caller": "flush_result",
+          "callee": "little_endian::write_u16",
+          "lineNumber": 184
+        },
+        {
+          "caller": "flush_result",
+          "callee": "little_endian::write_u16",
+          "lineNumber": 185
+        },
+        {
+          "caller": "flush_result",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 193
+        },
+        {
+          "caller": "flush_result",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 194
+        },
+        {
+          "caller": "flush_result",
+          "callee": "protocol::xor_checksum",
+          "lineNumber": 200
+        },
+        {
+          "caller": "flush_result",
+          "callee": "write",
+          "lineNumber": 202
+        },
+        {
+          "caller": "can_benchmark_consume_rx",
+          "callee": "static_cast<int32_t>",
+          "lineNumber": 233
+        },
+        {
+          "caller": "can_benchmark_consume_rx",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 235
+        },
+        {
+          "caller": "can_benchmark_consume_rx",
+          "callee": "complete_can_benchmark_attempt",
+          "lineNumber": 238
+        },
+        {
+          "caller": "can_benchmark_consume_rx",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 244
+        },
+        {
+          "caller": "can_benchmark_consume_rx",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 245
+        },
+        {
+          "caller": "can_benchmark_consume_rx",
+          "callee": "complete_can_benchmark_attempt",
+          "lineNumber": 247
+        },
+        {
+          "caller": "update",
+          "callee": "control::status",
+          "lineNumber": 253
+        },
+        {
+          "caller": "update",
+          "callee": "control::status",
+          "lineNumber": 253
+        },
+        {
+          "caller": "update",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 258
+        },
+        {
+          "caller": "update",
+          "callee": "can_control::process_queued_rx",
+          "lineNumber": 260
+        },
+        {
+          "caller": "update",
+          "callee": "millis",
+          "lineNumber": 260
+        },
+        {
+          "caller": "update",
+          "callee": "complete_can_benchmark_attempt",
+          "lineNumber": 264
+        },
+        {
+          "caller": "update",
+          "callee": "static_cast<int32_t>",
+          "lineNumber": 269
+        },
+        {
+          "caller": "update",
+          "callee": "can_transmit",
+          "lineNumber": 281
+        },
+        {
+          "caller": "update",
+          "callee": "control::report_safety_tx_failure",
+          "lineNumber": 284
+        },
+        {
+          "caller": "update",
+          "callee": "complete_can_benchmark_attempt",
+          "lineNumber": 285
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "cancel",
+          "lineNumber": 295
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "protocol::xor_checksum",
+          "lineNumber": 297
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "control::report",
+          "lineNumber": 299
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "queue_invalid_can_benchmark_result",
+          "lineNumber": 300
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "little_endian::read_u16",
+          "lineNumber": 305
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "little_endian::read_u16",
+          "lineNumber": 310
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "little_endian::read_u16",
+          "lineNumber": 312
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "little_endian::read_u16",
+          "lineNumber": 313
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "little_endian::read_u16",
+          "lineNumber": 314
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "control::status",
+          "lineNumber": 318
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "control::status",
+          "lineNumber": 318
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 320
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "queue_invalid_can_benchmark_result",
+          "lineNumber": 324
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "control::enter_bridge_mode",
+          "lineNumber": 328
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 340
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 341
+        },
+        {
+          "caller": "handle_benchmark_request",
+          "callee": "micros",
+          "lineNumber": 342
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "protocol::xor_checksum",
+          "lineNumber": 352
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "control::report",
+          "lineNumber": 354
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "send_can_bridge_response",
+          "lineNumber": 355
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "little_endian::read_u16",
+          "lineNumber": 360
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "control::status",
+          "lineNumber": 362
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "control::status",
+          "lineNumber": 362
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "send_can_bridge_response",
+          "lineNumber": 364
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "cancel",
+          "lineNumber": 371
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "control::enter_bridge_mode",
+          "lineNumber": 372
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "little_endian::read_u16",
+          "lineNumber": 375
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "can_transmit",
+          "lineNumber": 376
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "control::report_safety_tx_failure",
+          "lineNumber": 378
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "send_can_bridge_response",
+          "lineNumber": 379
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 383
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "can_receive",
+          "lineNumber": 390
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "send_can_bridge_response",
+          "lineNumber": 392
+        },
+        {
+          "caller": "handle_bridge_request",
+          "callee": "send_can_bridge_response",
+          "lineNumber": 396
+        },
+        {
+          "caller": "consume_rx",
+          "callee": "can_benchmark_consume_rx",
+          "lineNumber": 401
+        },
+        {
+          "caller": "consume_rx",
+          "callee": "send_can_bridge_response",
+          "lineNumber": 402
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/serial_protocol.cpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 333,
+      "nonEmptyLines": 305,
+      "functions": [
+        {
+          "name": "begin",
+          "startLine": 42,
+          "endLine": 42,
+          "params": []
+        },
+        {
+          "name": "command_in_range",
+          "startLine": 44,
+          "endLine": 50,
+          "params": [
+            "command"
+          ]
+        },
+        {
+          "name": "command_parser_reset",
+          "startLine": 52,
+          "endLine": 56,
+          "params": [
+            "parser"
+          ]
+        },
+        {
+          "name": "parse_complete_command_frame",
+          "startLine": 58,
+          "endLine": 79,
+          "params": [
+            "packet",
+            "now"
+          ]
+        },
+        {
+          "name": "parse_complete_reset_frame",
+          "startLine": 81,
+          "endLine": 98,
+          "params": [
+            "packet"
+          ]
+        },
+        {
+          "name": "parse_complete_serial_frame",
+          "startLine": 102,
+          "endLine": 132,
+          "params": [
+            "packet",
+            "now"
+          ]
+        },
+        {
+          "name": "feed_command_parser",
+          "startLine": 134,
+          "endLine": 210,
+          "params": [
+            "byte_in",
+            "now"
+          ]
+        },
+        {
+          "name": "receive_commands",
+          "startLine": 212,
+          "endLine": 220,
+          "params": [
+            "now"
+          ]
+        },
+        {
+          "name": "xor_checksum",
+          "startLine": 222,
+          "endLine": 230,
+          "params": [
+            "data",
+            "len"
+          ]
+        },
+        {
+          "name": "build_system_error_bits",
+          "startLine": 232,
+          "endLine": 258,
+          "params": [
+            "fault"
+          ]
+        },
+        {
+          "name": "telemetry_validity_bits",
+          "startLine": 260,
+          "endLine": 276,
+          "params": []
+        },
+        {
+          "name": "put_motor_telemetry",
+          "startLine": 278,
+          "endLine": 284,
+          "params": [
+            "packet",
+            "offset",
+            "telemetry"
+          ]
+        },
+        {
+          "name": "send_system_status",
+          "startLine": 286,
+          "endLine": 320,
+          "params": []
+        },
+        {
+          "name": "send_status_if_ready",
+          "startLine": 322,
+          "endLine": 331,
+          "params": []
+        }
+      ],
+      "classes": [
+        {
+          "name": "CommandFrameParser",
+          "startLine": 20,
+          "endLine": 25,
+          "methods": [],
+          "properties": [
+            "packet",
+            "index",
+            "state"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "CommandFrameParser",
+          "line": 20,
+          "isDefault": false
+        },
+        {
+          "name": "begin",
+          "line": 42,
+          "isDefault": false
+        },
+        {
+          "name": "receive_commands",
+          "line": 212,
+          "isDefault": false
+        },
+        {
+          "name": "xor_checksum",
+          "line": 222,
+          "isDefault": false
+        },
+        {
+          "name": "send_status_if_ready",
+          "line": 322,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "begin",
+          "callee": "begin",
+          "lineNumber": 42
+        },
+        {
+          "caller": "parse_complete_command_frame",
+          "callee": "xor_checksum",
+          "lineNumber": 60
+        },
+        {
+          "caller": "parse_complete_command_frame",
+          "callee": "control::report",
+          "lineNumber": 62
+        },
+        {
+          "caller": "parse_complete_command_frame",
+          "callee": "little_endian::read_i16",
+          "lineNumber": 67
+        },
+        {
+          "caller": "parse_complete_command_frame",
+          "callee": "little_endian::read_i16",
+          "lineNumber": 68
+        },
+        {
+          "caller": "parse_complete_command_frame",
+          "callee": "command_in_range",
+          "lineNumber": 71
+        },
+        {
+          "caller": "parse_complete_command_frame",
+          "callee": "control::report",
+          "lineNumber": 73
+        },
+        {
+          "caller": "parse_complete_command_frame",
+          "callee": "control::enter_control_mode",
+          "lineNumber": 77
+        },
+        {
+          "caller": "parse_complete_command_frame",
+          "callee": "control::accept_command",
+          "lineNumber": 78
+        },
+        {
+          "caller": "parse_complete_reset_frame",
+          "callee": "xor_checksum",
+          "lineNumber": 83
+        },
+        {
+          "caller": "parse_complete_reset_frame",
+          "callee": "control::report",
+          "lineNumber": 85
+        },
+        {
+          "caller": "parse_complete_reset_frame",
+          "callee": "control::report",
+          "lineNumber": 93
+        },
+        {
+          "caller": "parse_complete_reset_frame",
+          "callee": "control::reset_mcu",
+          "lineNumber": 97
+        },
+        {
+          "caller": "parse_complete_serial_frame",
+          "callee": "parse_complete_command_frame",
+          "lineNumber": 106
+        },
+        {
+          "caller": "parse_complete_serial_frame",
+          "callee": "parse_complete_reset_frame",
+          "lineNumber": 110
+        },
+        {
+          "caller": "parse_complete_serial_frame",
+          "callee": "can_debug::handle_bridge_request",
+          "lineNumber": 115
+        },
+        {
+          "caller": "parse_complete_serial_frame",
+          "callee": "control::report",
+          "lineNumber": 117
+        },
+        {
+          "caller": "parse_complete_serial_frame",
+          "callee": "can_debug::handle_benchmark_request",
+          "lineNumber": 123
+        },
+        {
+          "caller": "parse_complete_serial_frame",
+          "callee": "control::report",
+          "lineNumber": 125
+        },
+        {
+          "caller": "parse_complete_serial_frame",
+          "callee": "control::report",
+          "lineNumber": 130
+        },
+        {
+          "caller": "feed_command_parser",
+          "callee": "control::report",
+          "lineNumber": 147
+        },
+        {
+          "caller": "feed_command_parser",
+          "callee": "control::report",
+          "lineNumber": 160
+        },
+        {
+          "caller": "feed_command_parser",
+          "callee": "command_parser_reset",
+          "lineNumber": 161
+        },
+        {
+          "caller": "feed_command_parser",
+          "callee": "control::report",
+          "lineNumber": 177
+        },
+        {
+          "caller": "feed_command_parser",
+          "callee": "command_parser_reset",
+          "lineNumber": 178
+        },
+        {
+          "caller": "feed_command_parser",
+          "callee": "control::report",
+          "lineNumber": 194
+        },
+        {
+          "caller": "feed_command_parser",
+          "callee": "command_parser_reset",
+          "lineNumber": 195
+        },
+        {
+          "caller": "feed_command_parser",
+          "callee": "parse_complete_serial_frame",
+          "lineNumber": 205
+        },
+        {
+          "caller": "feed_command_parser",
+          "callee": "command_parser_reset",
+          "lineNumber": 206
+        },
+        {
+          "caller": "receive_commands",
+          "callee": "available",
+          "lineNumber": 214
+        },
+        {
+          "caller": "receive_commands",
+          "callee": "read",
+          "lineNumber": 216
+        },
+        {
+          "caller": "receive_commands",
+          "callee": "feed_command_parser",
+          "lineNumber": 218
+        },
+        {
+          "caller": "telemetry_validity_bits",
+          "callee": "can_control::telemetry",
+          "lineNumber": 263
+        },
+        {
+          "caller": "telemetry_validity_bits",
+          "callee": "can_control::telemetry",
+          "lineNumber": 265
+        },
+        {
+          "caller": "telemetry_validity_bits",
+          "callee": "can_control::telemetry",
+          "lineNumber": 267
+        },
+        {
+          "caller": "telemetry_validity_bits",
+          "callee": "can_control::telemetry",
+          "lineNumber": 269
+        },
+        {
+          "caller": "telemetry_validity_bits",
+          "callee": "can_control::telemetry",
+          "lineNumber": 271
+        },
+        {
+          "caller": "telemetry_validity_bits",
+          "callee": "can_control::telemetry",
+          "lineNumber": 273
+        },
+        {
+          "caller": "put_motor_telemetry",
+          "callee": "little_endian::write_i16",
+          "lineNumber": 281
+        },
+        {
+          "caller": "put_motor_telemetry",
+          "callee": "little_endian::write_i32",
+          "lineNumber": 282
+        },
+        {
+          "caller": "put_motor_telemetry",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 283
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "millis",
+          "lineNumber": 289
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "control::refresh_errors",
+          "lineNumber": 290
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "control::fault_snapshot",
+          "lineNumber": 292
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 299
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "control::motor_state",
+          "lineNumber": 299
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "little_endian::write_u16",
+          "lineNumber": 300
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "build_system_error_bits",
+          "lineNumber": 300
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "telemetry_validity_bits",
+          "lineNumber": 301
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "little_endian::write_u16",
+          "lineNumber": 302
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "can_control::telemetry",
+          "lineNumber": 302
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "little_endian::write_u16",
+          "lineNumber": 303
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "can_control::telemetry",
+          "lineNumber": 303
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "put_motor_telemetry",
+          "lineNumber": 304
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "can_control::telemetry",
+          "lineNumber": 304
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "put_motor_telemetry",
+          "lineNumber": 305
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "can_control::telemetry",
+          "lineNumber": 305
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "put_motor_telemetry",
+          "lineNumber": 306
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "can_control::telemetry",
+          "lineNumber": 306
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "put_motor_telemetry",
+          "lineNumber": 307
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "can_control::telemetry",
+          "lineNumber": 307
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "availableForWrite",
+          "lineNumber": 309
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 311
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "micros",
+          "lineNumber": 311
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "xor_checksum",
+          "lineNumber": 312
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "write",
+          "lineNumber": 313
+        },
+        {
+          "caller": "send_system_status",
+          "callee": "control::consume_error_reports",
+          "lineNumber": 316
+        },
+        {
+          "caller": "send_status_if_ready",
+          "callee": "control::status",
+          "lineNumber": 324
+        },
+        {
+          "caller": "send_status_if_ready",
+          "callee": "can_control::status_pending",
+          "lineNumber": 324
+        },
+        {
+          "caller": "send_status_if_ready",
+          "callee": "send_system_status",
+          "lineNumber": 329
+        },
+        {
+          "caller": "send_status_if_ready",
+          "callee": "can_control::status_sent",
+          "lineNumber": 330
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 5,
+        "functionCount": 14,
+        "classCount": 1
+      }
+    }
+  ]
+}

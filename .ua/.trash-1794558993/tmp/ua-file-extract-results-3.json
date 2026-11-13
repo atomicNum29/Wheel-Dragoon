@@ -1,0 +1,1621 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 6,
+  "filesSkipped": [],
+  "filesUnreadable": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 6,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 6,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "include/error_report.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 5,
+      "nonEmptyLines": 4,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "include/flexcan0.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 40,
+      "nonEmptyLines": 36,
+      "classes": [
+        {
+          "name": "CanFrame",
+          "startLine": 8,
+          "endLine": 13,
+          "methods": [],
+          "properties": [
+            "id",
+            "dlc",
+            "data"
+          ]
+        },
+        {
+          "name": "CanRxStats",
+          "startLine": 22,
+          "endLine": 27,
+          "methods": [],
+          "properties": [
+            "fifo_overflows",
+            "queue_overflows",
+            "queue_high_water",
+            "max_queue_age_us"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "CanFrame",
+          "line": 8,
+          "isDefault": false
+        },
+        {
+          "name": "CanRxStats",
+          "line": 22,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 0,
+        "classCount": 2
+      }
+    },
+    {
+      "path": "include/md200t_can.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 22,
+      "nonEmptyLines": 19,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/control.cpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 285,
+      "nonEmptyLines": 253,
+      "functions": [
+        {
+          "name": "report",
+          "startLine": 31,
+          "endLine": 31,
+          "params": [
+            "error"
+          ]
+        },
+        {
+          "name": "reported",
+          "startLine": 32,
+          "endLine": 32,
+          "params": [
+            "error"
+          ]
+        },
+        {
+          "name": "report_safety_tx_failure",
+          "startLine": 33,
+          "endLine": 33,
+          "params": []
+        },
+        {
+          "name": "initialize_power",
+          "startLine": 35,
+          "endLine": 41,
+          "params": []
+        },
+        {
+          "name": "finish_boot",
+          "startLine": 42,
+          "endLine": 42,
+          "params": []
+        },
+        {
+          "name": "initialize_motion",
+          "startLine": 43,
+          "endLine": 43,
+          "params": []
+        },
+        {
+          "name": "initialize_session",
+          "startLine": 45,
+          "endLine": 51,
+          "params": [
+            "now"
+          ]
+        },
+        {
+          "name": "update_power",
+          "startLine": 53,
+          "endLine": 71,
+          "params": [
+            "drive_mode",
+            "now"
+          ]
+        },
+        {
+          "name": "consume_error_reports",
+          "startLine": 73,
+          "endLine": 77,
+          "params": []
+        },
+        {
+          "name": "rpm_to_i16",
+          "startLine": 79,
+          "endLine": 91,
+          "params": [
+            "rpm"
+          ]
+        },
+        {
+          "name": "accept_command",
+          "startLine": 93,
+          "endLine": 98,
+          "params": [
+            "command",
+            "now"
+          ]
+        },
+        {
+          "name": "update_drive",
+          "startLine": 100,
+          "endLine": 151,
+          "params": [
+            "drive_mode",
+            "v_pwm",
+            "w_pwm",
+            "now"
+          ]
+        },
+        {
+          "name": "reset_mcu",
+          "startLine": 153,
+          "endLine": 174,
+          "params": []
+        },
+        {
+          "name": "enter_control_mode",
+          "startLine": 176,
+          "endLine": 184,
+          "params": [
+            "now"
+          ]
+        },
+        {
+          "name": "has_driver_fault",
+          "startLine": 186,
+          "endLine": 193,
+          "params": []
+        },
+        {
+          "name": "voltage_telemetry_is_stale",
+          "startLine": 195,
+          "endLine": 200,
+          "params": [
+            "now"
+          ]
+        },
+        {
+          "name": "refresh_errors",
+          "startLine": 202,
+          "endLine": 210,
+          "params": [
+            "now"
+          ]
+        },
+        {
+          "name": "fault_snapshot",
+          "startLine": 212,
+          "endLine": 231,
+          "params": [
+            "now"
+          ]
+        },
+        {
+          "name": "motor_state",
+          "startLine": 233,
+          "endLine": 248,
+          "params": [
+            "fault"
+          ]
+        },
+        {
+          "name": "motor_stop_all",
+          "startLine": 250,
+          "endLine": 254,
+          "params": []
+        },
+        {
+          "name": "update_vehicle_output",
+          "startLine": 256,
+          "endLine": 262,
+          "params": [
+            "command",
+            "now"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "report",
+          "line": 31,
+          "isDefault": false
+        },
+        {
+          "name": "reported",
+          "line": 32,
+          "isDefault": false
+        },
+        {
+          "name": "report_safety_tx_failure",
+          "line": 33,
+          "isDefault": false
+        },
+        {
+          "name": "initialize_power",
+          "line": 35,
+          "isDefault": false
+        },
+        {
+          "name": "finish_boot",
+          "line": 42,
+          "isDefault": false
+        },
+        {
+          "name": "initialize_motion",
+          "line": 43,
+          "isDefault": false
+        },
+        {
+          "name": "initialize_session",
+          "line": 45,
+          "isDefault": false
+        },
+        {
+          "name": "update_power",
+          "line": 53,
+          "isDefault": false
+        },
+        {
+          "name": "consume_error_reports",
+          "line": 73,
+          "isDefault": false
+        },
+        {
+          "name": "rpm_to_i16",
+          "line": 79,
+          "isDefault": false
+        },
+        {
+          "name": "accept_command",
+          "line": 93,
+          "isDefault": false
+        },
+        {
+          "name": "update_drive",
+          "line": 100,
+          "isDefault": false
+        },
+        {
+          "name": "reset_mcu",
+          "line": 153,
+          "isDefault": false
+        },
+        {
+          "name": "enter_control_mode",
+          "line": 176,
+          "isDefault": false
+        },
+        {
+          "name": "has_driver_fault",
+          "line": 186,
+          "isDefault": false
+        },
+        {
+          "name": "refresh_errors",
+          "line": 202,
+          "isDefault": false
+        },
+        {
+          "name": "fault_snapshot",
+          "line": 212,
+          "isDefault": false
+        },
+        {
+          "name": "motor_state",
+          "line": 233,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "report",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 31
+        },
+        {
+          "caller": "reported",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 32
+        },
+        {
+          "caller": "report_safety_tx_failure",
+          "callee": "report",
+          "lineNumber": 33
+        },
+        {
+          "caller": "initialize_power",
+          "callee": "pinMode",
+          "lineNumber": 37
+        },
+        {
+          "caller": "initialize_power",
+          "callee": "pinMode",
+          "lineNumber": 38
+        },
+        {
+          "caller": "initialize_power",
+          "callee": "digitalWrite",
+          "lineNumber": 39
+        },
+        {
+          "caller": "initialize_power",
+          "callee": "digitalWrite",
+          "lineNumber": 40
+        },
+        {
+          "caller": "initialize_motion",
+          "callee": "update",
+          "lineNumber": 43
+        },
+        {
+          "caller": "initialize_motion",
+          "callee": "millis",
+          "lineNumber": 43
+        },
+        {
+          "caller": "initialize_session",
+          "callee": "can_clear_rx_overrun_reports",
+          "lineNumber": 48
+        },
+        {
+          "caller": "initialize_session",
+          "callee": "can_control::reset_session",
+          "lineNumber": 50
+        },
+        {
+          "caller": "initialize_session",
+          "callee": "micros",
+          "lineNumber": 50
+        },
+        {
+          "caller": "update_power",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 59
+        },
+        {
+          "caller": "update_power",
+          "callee": "can_debug::cancel",
+          "lineNumber": 60
+        },
+        {
+          "caller": "update_power",
+          "callee": "initialize_session",
+          "lineNumber": 62
+        },
+        {
+          "caller": "update_power",
+          "callee": "digitalWrite",
+          "lineNumber": 65
+        },
+        {
+          "caller": "update_power",
+          "callee": "digitalWrite",
+          "lineNumber": 66
+        },
+        {
+          "caller": "update_power",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 67
+        },
+        {
+          "caller": "update_power",
+          "callee": "initialize_session",
+          "lineNumber": 69
+        },
+        {
+          "caller": "consume_error_reports",
+          "callee": "can_rx_overrun_report_sent",
+          "lineNumber": 76
+        },
+        {
+          "caller": "rpm_to_i16",
+          "callee": "isfinite",
+          "lineNumber": 81
+        },
+        {
+          "caller": "rpm_to_i16",
+          "callee": "fminf",
+          "lineNumber": 82
+        },
+        {
+          "caller": "rpm_to_i16",
+          "callee": "isfinite",
+          "lineNumber": 83
+        },
+        {
+          "caller": "rpm_to_i16",
+          "callee": "vehicle::clamp",
+          "lineNumber": 84
+        },
+        {
+          "caller": "rpm_to_i16",
+          "callee": "static_cast<float>",
+          "lineNumber": 85
+        },
+        {
+          "caller": "rpm_to_i16",
+          "callee": "static_cast<float>",
+          "lineNumber": 87
+        },
+        {
+          "caller": "rpm_to_i16",
+          "callee": "static_cast<int16_t>",
+          "lineNumber": 90
+        },
+        {
+          "caller": "update_drive",
+          "callee": "motor_stop_all",
+          "lineNumber": 108
+        },
+        {
+          "caller": "update_drive",
+          "callee": "motor_stop_all",
+          "lineNumber": 117
+        },
+        {
+          "caller": "update_drive",
+          "callee": "static_cast<float>",
+          "lineNumber": 129
+        },
+        {
+          "caller": "update_drive",
+          "callee": "rc_io::offset_with_deadband",
+          "lineNumber": 129
+        },
+        {
+          "caller": "update_drive",
+          "callee": "update_vehicle_output",
+          "lineNumber": 131
+        },
+        {
+          "caller": "update_drive",
+          "callee": "static_cast<float>",
+          "lineNumber": 138
+        },
+        {
+          "caller": "update_drive",
+          "callee": "rc_io::offset_with_deadband",
+          "lineNumber": 138
+        },
+        {
+          "caller": "update_drive",
+          "callee": "static_cast<float>",
+          "lineNumber": 139
+        },
+        {
+          "caller": "update_drive",
+          "callee": "rc_io::offset_with_deadband",
+          "lineNumber": 139
+        },
+        {
+          "caller": "update_drive",
+          "callee": "vehicle::curvature_from_inner_angle",
+          "lineNumber": 141
+        },
+        {
+          "caller": "update_drive",
+          "callee": "update_vehicle_output",
+          "lineNumber": 142
+        },
+        {
+          "caller": "update_drive",
+          "callee": "motor_stop_all",
+          "lineNumber": 150
+        },
+        {
+          "caller": "reset_mcu",
+          "callee": "can_debug::cancel",
+          "lineNumber": 157
+        },
+        {
+          "caller": "reset_mcu",
+          "callee": "motor_stop_all",
+          "lineNumber": 162
+        },
+        {
+          "caller": "reset_mcu",
+          "callee": "can_control::send_torque_off",
+          "lineNumber": 165
+        },
+        {
+          "caller": "reset_mcu",
+          "callee": "__disable_irq",
+          "lineNumber": 169
+        },
+        {
+          "caller": "enter_control_mode",
+          "callee": "can_debug::cancel",
+          "lineNumber": 178
+        },
+        {
+          "caller": "enter_control_mode",
+          "callee": "initialize_session",
+          "lineNumber": 183
+        },
+        {
+          "caller": "has_driver_fault",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 190
+        },
+        {
+          "caller": "has_driver_fault",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 191
+        },
+        {
+          "caller": "has_driver_fault",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 192
+        },
+        {
+          "caller": "voltage_telemetry_is_stale",
+          "callee": "can_control::telemetry",
+          "lineNumber": 199
+        },
+        {
+          "caller": "voltage_telemetry_is_stale",
+          "callee": "can_control::telemetry",
+          "lineNumber": 199
+        },
+        {
+          "caller": "refresh_errors",
+          "callee": "report",
+          "lineNumber": 205
+        },
+        {
+          "caller": "refresh_errors",
+          "callee": "report",
+          "lineNumber": 207
+        },
+        {
+          "caller": "refresh_errors",
+          "callee": "voltage_telemetry_is_stale",
+          "lineNumber": 208
+        },
+        {
+          "caller": "refresh_errors",
+          "callee": "report",
+          "lineNumber": 209
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 215
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 216
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "has_driver_fault",
+          "lineNumber": 218
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 219
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 220
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 221
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 223
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 224
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 225
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 226
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 227
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 228
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "voltage_telemetry_is_stale",
+          "lineNumber": 228
+        },
+        {
+          "caller": "fault_snapshot",
+          "callee": "can_rx_overrun_detected",
+          "lineNumber": 229
+        },
+        {
+          "caller": "motor_stop_all",
+          "callee": "update",
+          "lineNumber": 252
+        },
+        {
+          "caller": "motor_stop_all",
+          "callee": "millis",
+          "lineNumber": 252
+        },
+        {
+          "caller": "update_vehicle_output",
+          "callee": "has_driver_fault",
+          "lineNumber": 258
+        },
+        {
+          "caller": "update_vehicle_output",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 258
+        },
+        {
+          "caller": "update_vehicle_output",
+          "callee": "update",
+          "lineNumber": 259
+        },
+        {
+          "caller": "update_vehicle_output",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 259
+        },
+        {
+          "caller": "enter_bridge_mode",
+          "callee": "motor_stop_all",
+          "lineNumber": 272
+        },
+        {
+          "caller": "enter_bridge_mode",
+          "callee": "md200t_torque_off",
+          "lineNumber": 278
+        },
+        {
+          "caller": "enter_bridge_mode",
+          "callee": "md200t_torque_off",
+          "lineNumber": 279
+        },
+        {
+          "caller": "enter_bridge_mode",
+          "callee": "report_safety_tx_failure",
+          "lineNumber": 281
+        }
+      ],
+      "metrics": {
+        "importCount": 7,
+        "exportCount": 18,
+        "functionCount": 21,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/flexcan0.cpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 384,
+      "nonEmptyLines": 328,
+      "functions": [
+        {
+          "name": "mb_code",
+          "startLine": 100,
+          "endLine": 103,
+          "params": [
+            "code"
+          ]
+        },
+        {
+          "name": "get_mb_code",
+          "startLine": 105,
+          "endLine": 108,
+          "params": [
+            "mb"
+          ]
+        },
+        {
+          "name": "elapsed_us",
+          "startLine": 110,
+          "endLine": 113,
+          "params": [
+            "start"
+          ]
+        },
+        {
+          "name": "wait_until_set",
+          "startLine": 115,
+          "endLine": 124,
+          "params": [
+            "reg",
+            "mask",
+            "timeout_us"
+          ]
+        },
+        {
+          "name": "wait_until_clear",
+          "startLine": 126,
+          "endLine": 135,
+          "params": [
+            "reg",
+            "mask",
+            "timeout_us"
+          ]
+        },
+        {
+          "name": "pack_word",
+          "startLine": 137,
+          "endLine": 147,
+          "params": [
+            "data",
+            "start_index",
+            "dlc"
+          ]
+        },
+        {
+          "name": "unpack_word",
+          "startLine": 149,
+          "endLine": 157,
+          "params": [
+            "word",
+            "data",
+            "start_index",
+            "dlc"
+          ]
+        },
+        {
+          "name": "can_rx_isr",
+          "startLine": 159,
+          "endLine": 199,
+          "params": []
+        },
+        {
+          "name": "abort_tx_mb",
+          "startLine": 201,
+          "endLine": 215,
+          "params": [
+            "timeout_us"
+          ]
+        },
+        {
+          "name": "can_begin",
+          "startLine": 218,
+          "endLine": 291,
+          "params": [
+            "bitrate"
+          ]
+        },
+        {
+          "name": "can_transmit",
+          "startLine": 293,
+          "endLine": 314,
+          "params": [
+            "frame",
+            "timeout_us"
+          ]
+        },
+        {
+          "name": "can_receive",
+          "startLine": 316,
+          "endLine": 320,
+          "params": [
+            "frame",
+            "timeout_us"
+          ]
+        },
+        {
+          "name": "can_receive_timed",
+          "startLine": 322,
+          "endLine": 340,
+          "params": [
+            "frame",
+            "received_us",
+            "timeout_us"
+          ]
+        },
+        {
+          "name": "can_rx_overrun_detected",
+          "startLine": 342,
+          "endLine": 345,
+          "params": []
+        },
+        {
+          "name": "can_rx_overrun_report_sent",
+          "startLine": 347,
+          "endLine": 353,
+          "params": []
+        },
+        {
+          "name": "can_clear_rx_overrun_reports",
+          "startLine": 355,
+          "endLine": 358,
+          "params": []
+        },
+        {
+          "name": "can_is_initialized",
+          "startLine": 360,
+          "endLine": 363,
+          "params": []
+        },
+        {
+          "name": "can_rx_pending",
+          "startLine": 365,
+          "endLine": 370,
+          "params": []
+        },
+        {
+          "name": "can_rx_overrun_count",
+          "startLine": 372,
+          "endLine": 376,
+          "params": []
+        },
+        {
+          "name": "can_rx_stats",
+          "startLine": 378,
+          "endLine": 384,
+          "params": []
+        }
+      ],
+      "classes": [
+        {
+          "name": "RxEntry",
+          "startLine": 67,
+          "endLine": 67,
+          "methods": [],
+          "properties": [
+            "frame",
+            "received_us"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "RxEntry",
+          "line": 67,
+          "isDefault": false
+        },
+        {
+          "name": "mb_code",
+          "line": 100,
+          "isDefault": false
+        },
+        {
+          "name": "get_mb_code",
+          "line": 105,
+          "isDefault": false
+        },
+        {
+          "name": "elapsed_us",
+          "line": 110,
+          "isDefault": false
+        },
+        {
+          "name": "wait_until_set",
+          "line": 115,
+          "isDefault": false
+        },
+        {
+          "name": "wait_until_clear",
+          "line": 126,
+          "isDefault": false
+        },
+        {
+          "name": "pack_word",
+          "line": 137,
+          "isDefault": false
+        },
+        {
+          "name": "unpack_word",
+          "line": 149,
+          "isDefault": false
+        },
+        {
+          "name": "can_rx_isr",
+          "line": 159,
+          "isDefault": false
+        },
+        {
+          "name": "abort_tx_mb",
+          "line": 201,
+          "isDefault": false
+        },
+        {
+          "name": "can_begin",
+          "line": 218,
+          "isDefault": false
+        },
+        {
+          "name": "can_transmit",
+          "line": 293,
+          "isDefault": false
+        },
+        {
+          "name": "can_receive",
+          "line": 316,
+          "isDefault": false
+        },
+        {
+          "name": "can_receive_timed",
+          "line": 322,
+          "isDefault": false
+        },
+        {
+          "name": "can_rx_overrun_detected",
+          "line": 342,
+          "isDefault": false
+        },
+        {
+          "name": "can_rx_overrun_report_sent",
+          "line": 347,
+          "isDefault": false
+        },
+        {
+          "name": "can_clear_rx_overrun_reports",
+          "line": 355,
+          "isDefault": false
+        },
+        {
+          "name": "can_is_initialized",
+          "line": 360,
+          "isDefault": false
+        },
+        {
+          "name": "can_rx_pending",
+          "line": 365,
+          "isDefault": false
+        },
+        {
+          "name": "can_rx_overrun_count",
+          "line": 372,
+          "isDefault": false
+        },
+        {
+          "name": "can_rx_stats",
+          "line": 378,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "mb_code",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 102
+        },
+        {
+          "caller": "get_mb_code",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 107
+        },
+        {
+          "caller": "get_mb_code",
+          "callee": "mb_cs",
+          "lineNumber": 107
+        },
+        {
+          "caller": "elapsed_us",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 112
+        },
+        {
+          "caller": "elapsed_us",
+          "callee": "micros",
+          "lineNumber": 112
+        },
+        {
+          "caller": "wait_until_set",
+          "callee": "micros",
+          "lineNumber": 117
+        },
+        {
+          "caller": "wait_until_set",
+          "callee": "elapsed_us",
+          "lineNumber": 120
+        },
+        {
+          "caller": "wait_until_clear",
+          "callee": "micros",
+          "lineNumber": 128
+        },
+        {
+          "caller": "wait_until_clear",
+          "callee": "elapsed_us",
+          "lineNumber": 131
+        },
+        {
+          "caller": "pack_word",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 144
+        },
+        {
+          "caller": "unpack_word",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 155
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "fetch_add",
+          "lineNumber": 165
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "store",
+          "lineNumber": 166
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "micros",
+          "lineNumber": 174
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "mb_cs",
+          "lineNumber": 175
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "static_cast<uint16_t>",
+          "lineNumber": 176
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "mb_id",
+          "lineNumber": 176
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 177
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "unpack_word",
+          "lineNumber": 179
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "mb_word0",
+          "lineNumber": 179
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "unpack_word",
+          "lineNumber": 180
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "mb_word1",
+          "lineNumber": 180
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "load",
+          "lineNumber": 185
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "load",
+          "lineNumber": 186
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "fetch_add",
+          "lineNumber": 190
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "store",
+          "lineNumber": 191
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "store",
+          "lineNumber": 195
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "load",
+          "lineNumber": 196
+        },
+        {
+          "caller": "can_rx_isr",
+          "callee": "store",
+          "lineNumber": 197
+        },
+        {
+          "caller": "abort_tx_mb",
+          "callee": "get_mb_code",
+          "lineNumber": 203
+        },
+        {
+          "caller": "abort_tx_mb",
+          "callee": "mb_cs",
+          "lineNumber": 208
+        },
+        {
+          "caller": "abort_tx_mb",
+          "callee": "mb_code",
+          "lineNumber": 208
+        },
+        {
+          "caller": "abort_tx_mb",
+          "callee": "wait_until_set",
+          "lineNumber": 210
+        },
+        {
+          "caller": "abort_tx_mb",
+          "callee": "get_mb_code",
+          "lineNumber": 214
+        },
+        {
+          "caller": "abort_tx_mb",
+          "callee": "get_mb_code",
+          "lineNumber": 214
+        },
+        {
+          "caller": "can_begin",
+          "callee": "NVIC_DISABLE_IRQ",
+          "lineNumber": 220
+        },
+        {
+          "caller": "can_begin",
+          "callee": "NVIC_CLEAR_PENDING",
+          "lineNumber": 221
+        },
+        {
+          "caller": "can_begin",
+          "callee": "PORT_PCR_MUX",
+          "lineNumber": 235
+        },
+        {
+          "caller": "can_begin",
+          "callee": "PORT_PCR_MUX",
+          "lineNumber": 236
+        },
+        {
+          "caller": "can_begin",
+          "callee": "wait_until_clear",
+          "lineNumber": 242
+        },
+        {
+          "caller": "can_begin",
+          "callee": "wait_until_clear",
+          "lineNumber": 246
+        },
+        {
+          "caller": "can_begin",
+          "callee": "wait_until_set",
+          "lineNumber": 255
+        },
+        {
+          "caller": "can_begin",
+          "callee": "mb_cs",
+          "lineNumber": 270
+        },
+        {
+          "caller": "can_begin",
+          "callee": "mb_id",
+          "lineNumber": 271
+        },
+        {
+          "caller": "can_begin",
+          "callee": "mb_word0",
+          "lineNumber": 272
+        },
+        {
+          "caller": "can_begin",
+          "callee": "mb_word1",
+          "lineNumber": 273
+        },
+        {
+          "caller": "can_begin",
+          "callee": "mb_cs",
+          "lineNumber": 277
+        },
+        {
+          "caller": "can_begin",
+          "callee": "mb_code",
+          "lineNumber": 277
+        },
+        {
+          "caller": "can_begin",
+          "callee": "attachInterruptVector",
+          "lineNumber": 280
+        },
+        {
+          "caller": "can_begin",
+          "callee": "NVIC_SET_PRIORITY",
+          "lineNumber": 281
+        },
+        {
+          "caller": "can_begin",
+          "callee": "wait_until_clear",
+          "lineNumber": 285
+        },
+        {
+          "caller": "can_begin",
+          "callee": "NVIC_ENABLE_IRQ",
+          "lineNumber": 289
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "abort_tx_mb",
+          "lineNumber": 301
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "mb_id",
+          "lineNumber": 304
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 304
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "mb_word0",
+          "lineNumber": 305
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "pack_word",
+          "lineNumber": 305
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "mb_word1",
+          "lineNumber": 306
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "pack_word",
+          "lineNumber": 306
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "mb_cs",
+          "lineNumber": 307
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "mb_code",
+          "lineNumber": 307
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 307
+        },
+        {
+          "caller": "can_transmit",
+          "callee": "wait_until_set",
+          "lineNumber": 309
+        },
+        {
+          "caller": "can_receive",
+          "callee": "can_receive_timed",
+          "lineNumber": 319
+        },
+        {
+          "caller": "can_receive_timed",
+          "callee": "micros",
+          "lineNumber": 325
+        },
+        {
+          "caller": "can_receive_timed",
+          "callee": "load",
+          "lineNumber": 327
+        },
+        {
+          "caller": "can_receive_timed",
+          "callee": "load",
+          "lineNumber": 328
+        },
+        {
+          "caller": "can_receive_timed",
+          "callee": "store",
+          "lineNumber": 330
+        },
+        {
+          "caller": "can_receive_timed",
+          "callee": "micros",
+          "lineNumber": 333
+        },
+        {
+          "caller": "can_receive_timed",
+          "callee": "load",
+          "lineNumber": 334
+        },
+        {
+          "caller": "can_receive_timed",
+          "callee": "store",
+          "lineNumber": 335
+        },
+        {
+          "caller": "can_receive_timed",
+          "callee": "elapsed_us",
+          "lineNumber": 338
+        },
+        {
+          "caller": "can_rx_overrun_detected",
+          "callee": "load",
+          "lineNumber": 344
+        },
+        {
+          "caller": "can_rx_overrun_report_sent",
+          "callee": "load",
+          "lineNumber": 350
+        },
+        {
+          "caller": "can_rx_overrun_report_sent",
+          "callee": "compare_exchange_weak",
+          "lineNumber": 351
+        },
+        {
+          "caller": "can_rx_pending",
+          "callee": "load",
+          "lineNumber": 368
+        },
+        {
+          "caller": "can_rx_pending",
+          "callee": "load",
+          "lineNumber": 368
+        },
+        {
+          "caller": "can_rx_overrun_count",
+          "callee": "load",
+          "lineNumber": 374
+        },
+        {
+          "caller": "can_rx_overrun_count",
+          "callee": "load",
+          "lineNumber": 375
+        },
+        {
+          "caller": "can_rx_stats",
+          "callee": "load",
+          "lineNumber": 380
+        },
+        {
+          "caller": "can_rx_stats",
+          "callee": "load",
+          "lineNumber": 381
+        },
+        {
+          "caller": "can_rx_stats",
+          "callee": "load",
+          "lineNumber": 382
+        },
+        {
+          "caller": "can_rx_stats",
+          "callee": "load",
+          "lineNumber": 383
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 21,
+        "functionCount": 20,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "src/md200t_can.cpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 82,
+      "nonEmptyLines": 71,
+      "functions": [
+        {
+          "name": "make_standard_id",
+          "startLine": 19,
+          "endLine": 24,
+          "params": [
+            "driver_id"
+          ]
+        },
+        {
+          "name": "send_frame",
+          "startLine": 27,
+          "endLine": 30,
+          "params": [
+            "frame"
+          ]
+        },
+        {
+          "name": "md200t_set_velocity",
+          "startLine": 32,
+          "endLine": 46,
+          "params": [
+            "driver_id",
+            "rpm1",
+            "rpm2"
+          ]
+        },
+        {
+          "name": "md200t_torque_off",
+          "startLine": 48,
+          "endLine": 59,
+          "params": [
+            "driver_id"
+          ]
+        },
+        {
+          "name": "md200t_request_pid_data",
+          "startLine": 61,
+          "endLine": 69,
+          "params": [
+            "driver_id",
+            "target_pid"
+          ]
+        },
+        {
+          "name": "md200t_decode_response_id",
+          "startLine": 71,
+          "endLine": 82,
+          "params": [
+            "standard_id",
+            "driver_id"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "make_standard_id",
+          "line": 19,
+          "isDefault": false
+        },
+        {
+          "name": "send_frame",
+          "line": 27,
+          "isDefault": false
+        },
+        {
+          "name": "md200t_set_velocity",
+          "line": 32,
+          "isDefault": false
+        },
+        {
+          "name": "md200t_torque_off",
+          "line": 48,
+          "isDefault": false
+        },
+        {
+          "name": "md200t_request_pid_data",
+          "line": 61,
+          "isDefault": false
+        },
+        {
+          "name": "md200t_decode_response_id",
+          "line": 71,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "make_standard_id",
+          "callee": "static_cast<uint16_t>",
+          "lineNumber": 23
+        },
+        {
+          "caller": "send_frame",
+          "callee": "can_transmit",
+          "lineNumber": 29
+        },
+        {
+          "caller": "md200t_set_velocity",
+          "callee": "make_standard_id",
+          "lineNumber": 35
+        },
+        {
+          "caller": "md200t_set_velocity",
+          "callee": "little_endian::write_i16",
+          "lineNumber": 41
+        },
+        {
+          "caller": "md200t_set_velocity",
+          "callee": "little_endian::write_i16",
+          "lineNumber": 43
+        },
+        {
+          "caller": "md200t_set_velocity",
+          "callee": "send_frame",
+          "lineNumber": 45
+        },
+        {
+          "caller": "md200t_torque_off",
+          "callee": "make_standard_id",
+          "lineNumber": 51
+        },
+        {
+          "caller": "md200t_torque_off",
+          "callee": "send_frame",
+          "lineNumber": 58
+        },
+        {
+          "caller": "md200t_request_pid_data",
+          "callee": "make_standard_id",
+          "lineNumber": 64
+        },
+        {
+          "caller": "md200t_request_pid_data",
+          "callee": "send_frame",
+          "lineNumber": 68
+        },
+        {
+          "caller": "md200t_decode_response_id",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 76
+        },
+        {
+          "caller": "md200t_decode_response_id",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 80
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 6,
+        "functionCount": 6,
+        "classCount": 0
+      }
+    }
+  ]
+}

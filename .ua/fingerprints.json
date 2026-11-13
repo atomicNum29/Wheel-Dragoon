@@ -1,0 +1,3133 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "8e74e896d4c27c538b24c2548f683d7ae4f39f48",
+  "generatedAt": "2026-11-13T08:36:07.257Z",
+  "files": {
+    ".python-version": {
+      "filePath": ".python-version",
+      "contentHash": "a876e0b10411037a012498b9fe18d9bc1df32ed8b722a13564dc944ddcfd9135",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".ua/config.json": {
+      "filePath": ".ua/config.json",
+      "contentHash": "6241daac28ec1ac6166af17c73964fef9fa7e728b98c19706b07b7b8f0712b20",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": false
+    },
+    "README.md": {
+      "filePath": "README.md",
+      "contentHash": "1b974e84d08781b5a91f3a615fe6e1e7bb8528450f024c44f7f0f6725c02775a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 59,
+      "hasStructuralAnalysis": false
+    },
+    "docs/README.md": {
+      "filePath": "docs/README.md",
+      "contentHash": "a02d75c70fcdf3e2dde1f16e3cbfe7cf7141fe199c11f1b812ec87cde5b04aa1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 49,
+      "hasStructuralAnalysis": false
+    },
+    "docs/can-cli-windows.md": {
+      "filePath": "docs/can-cli-windows.md",
+      "contentHash": "5bc89c9574385eacbb5ae39028a8113a004b882affb8e0e065f3091a4e46a481",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 91,
+      "hasStructuralAnalysis": false
+    },
+    "docs/can-rx-fifo.md": {
+      "filePath": "docs/can-rx-fifo.md",
+      "contentHash": "c7b76a5718bd5634fcc1e1784028399aaa61adbbb7acb09b575c271036a74ef8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 95,
+      "hasStructuralAnalysis": false
+    },
+    "docs/firmware-architecture.ko.md": {
+      "filePath": "docs/firmware-architecture.ko.md",
+      "contentHash": "e735539e52bf23eec06c81aeca3a2a787b3ec50c71adfe51c5cc2b590fc0fa11",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 147,
+      "hasStructuralAnalysis": false
+    },
+    "docs/raspberry-pi-handoff.ko.md": {
+      "filePath": "docs/raspberry-pi-handoff.ko.md",
+      "contentHash": "40c1ff776f66497a0e024d31ae20812334e205044e148d34240b71769d1af88e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 45,
+      "hasStructuralAnalysis": false
+    },
+    "docs/rc-loss-of-control-review-2026-11-09.ko.md": {
+      "filePath": "docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "contentHash": "653a246956661747b03045b450f7155ebbaf9239156c625367d412267955665d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 240,
+      "hasStructuralAnalysis": false
+    },
+    "docs/rc-steering.ko.md": {
+      "filePath": "docs/rc-steering.ko.md",
+      "contentHash": "ae0cb65c251f16f94b0d18040f5d397cf319a354014809a26e536183f8372b87",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 135,
+      "hasStructuralAnalysis": false
+    },
+    "docs/timing-diagnostics.md": {
+      "filePath": "docs/timing-diagnostics.md",
+      "contentHash": "465b662ebbf30dd458df9f9ed885299ba1641706cb22175361ba2c0f5587a2d5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 145,
+      "hasStructuralAnalysis": false
+    },
+    "docs/usb-protocol.ko.md": {
+      "filePath": "docs/usb-protocol.ko.md",
+      "contentHash": "b87e45ab912574436d475be0c5ca4d0fa7fc0a160ac3a4f1e6ccb990af78c6ee",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 229,
+      "hasStructuralAnalysis": false
+    },
+    "include/README": {
+      "filePath": "include/README",
+      "contentHash": "0c827dc59b8aba3a5e400f907045dd0820980f3546c98d895aa4327c73f9dd30",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 19,
+      "hasStructuralAnalysis": false
+    },
+    "include/build_features.hpp": {
+      "filePath": "include/build_features.hpp",
+      "contentHash": "cbc23599dfd0d0853ac3f3a497aea7e5a741a73ab34460499bf5887ceeb92381",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 14,
+      "hasStructuralAnalysis": true
+    },
+    "include/can_control.hpp": {
+      "filePath": "include/can_control.hpp",
+      "contentHash": "2d4e10234f424df6585c466cc412cc28f167fc4e9c12c7cbdec31452e87ac289",
+      "functions": [],
+      "classes": [
+        {
+          "name": "MotorTelemetry",
+          "methods": [],
+          "properties": [
+            "actual_rpm",
+            "encoder_count",
+            "rx_timestamp_us",
+            "status",
+            "last_update_ms",
+            "valid"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "DriverVoltageTelemetry",
+          "methods": [],
+          "properties": [
+            "millivolts",
+            "last_update_ms",
+            "valid"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "Telemetry",
+          "methods": [],
+          "properties": [
+            "lf",
+            "driver_a"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        },
+        {
+          "source": "build_features.hpp",
+          "specifiers": [
+            "build_features.hpp"
+          ]
+        },
+        {
+          "source": "flexcan0.hpp",
+          "specifiers": [
+            "flexcan0.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "MotorTelemetry",
+        "DriverVoltageTelemetry",
+        "Telemetry"
+      ],
+      "totalLines": 47,
+      "hasStructuralAnalysis": true
+    },
+    "include/can_debug.hpp": {
+      "filePath": "include/can_debug.hpp",
+      "contentHash": "c52aab34cbca4f46269916b6b44043c95b58dad78778063f4b09500ffe23bac0",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "build_features.hpp",
+          "specifiers": [
+            "build_features.hpp"
+          ]
+        },
+        {
+          "source": "flexcan0.hpp",
+          "specifiers": [
+            "flexcan0.hpp"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "include/can_tx_schedule.hpp": {
+      "filePath": "include/can_tx_schedule.hpp",
+      "contentHash": "0a918da56f77f452214054280d92bf4bb46a2fc47e0f283329bf44335baf372a",
+      "functions": [
+        {
+          "name": "can_tx_wheel_round_complete",
+          "owner": "",
+          "params": [
+            "expected_mask",
+            "received_mask"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "can_tx_response_pair_complete",
+          "owner": "",
+          "params": [
+            "expected_mask",
+            "received_mask"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "can_tx_response_window_expired",
+          "owner": "",
+          "params": [
+            "tx_us",
+            "now_us"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "scheduled_voltage_poll",
+          "owner": "",
+          "params": [
+            "cycle",
+            "request"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 18
+        }
+      ],
+      "classes": [
+        {
+          "name": "ScheduledVoltageRequest",
+          "methods": [],
+          "properties": [
+            "driver_id",
+            "pid",
+            "phase_us"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        },
+        {
+          "source": "md200t_can.hpp",
+          "specifiers": [
+            "md200t_can.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "can_tx_wheel_round_complete",
+        "can_tx_response_pair_complete",
+        "can_tx_response_window_expired",
+        "ScheduledVoltageRequest",
+        "scheduled_voltage_poll"
+      ],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
+    "include/control.hpp": {
+      "filePath": "include/control.hpp",
+      "contentHash": "98ed88b053d3c163702b15ac63b45af8f350d9eeafd617bd5e84b207eeeb9330",
+      "functions": [],
+      "classes": [
+        {
+          "name": "CommandPacket",
+          "methods": [],
+          "properties": [
+            "v_milli_mps",
+            "w_milli_radps",
+            "flags"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "WheelRpmCommand",
+          "methods": [],
+          "properties": [
+            "lf_rpm",
+            "lr_rpm",
+            "rf_rpm",
+            "rr_rpm"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "FaultSnapshot",
+          "methods": [],
+          "properties": [
+            "serial_checksum_error",
+            "command_timeout",
+            "driver_fault",
+            "can_tx_failure",
+            "emergency_stop_active",
+            "battery_low",
+            "serial_framing_error",
+            "command_out_of_range",
+            "driver_status_fault",
+            "driver_rx_timeout",
+            "voltage_stale",
+            "can_rx_overrun",
+            "command_timeout_active",
+            "emergency_stop_input_active"
+          ],
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "Status",
+          "methods": [],
+          "properties": [
+            "booting",
+            "driver_powerdown",
+            "driver_starting",
+            "motor_enabled",
+            "estop_active",
+            "command_timeout",
+            "serial_mode",
+            "control_mode_started_ms",
+            "target_wheel_rpm_cmd"
+          ],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "imports": [
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        },
+        {
+          "source": "build_features.hpp",
+          "specifiers": [
+            "build_features.hpp"
+          ]
+        },
+        {
+          "source": "vehicle_motion.hpp",
+          "specifiers": [
+            "vehicle_motion.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "CommandPacket",
+        "WheelRpmCommand",
+        "FaultSnapshot",
+        "Status"
+      ],
+      "totalLines": 110,
+      "hasStructuralAnalysis": true
+    },
+    "include/error_report.hpp": {
+      "filePath": "include/error_report.hpp",
+      "contentHash": "df46d7575b2084c12eb2eb3638955ec159cc27ebf54c2dbebda64fc84a5ab6ed",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    "include/flexcan0.hpp": {
+      "filePath": "include/flexcan0.hpp",
+      "contentHash": "48ec858106918f9b658f9eae67bf3f09920005973cca08b0a62964a49ecb9706",
+      "functions": [],
+      "classes": [
+        {
+          "name": "CanFrame",
+          "methods": [],
+          "properties": [
+            "id",
+            "dlc",
+            "data"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "CanRxStats",
+          "methods": [],
+          "properties": [
+            "fifo_overflows",
+            "queue_overflows",
+            "queue_high_water",
+            "max_queue_age_us"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        }
+      ],
+      "exports": [
+        "CanFrame",
+        "CanRxStats"
+      ],
+      "totalLines": 41,
+      "hasStructuralAnalysis": true
+    },
+    "include/little_endian.hpp": {
+      "filePath": "include/little_endian.hpp",
+      "contentHash": "e75c5c65c66deeeccd7ad104e6cdae26ffd9a296e8514906fa5da45ca47aa23d",
+      "functions": [
+        {
+          "name": "read_u16",
+          "owner": "",
+          "params": [
+            "data"
+          ],
+          "returnType": "uint16_t",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "read_i16",
+          "owner": "",
+          "params": [
+            "data"
+          ],
+          "returnType": "int16_t",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "read_u32",
+          "owner": "",
+          "params": [
+            "data"
+          ],
+          "returnType": "uint32_t",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "read_i32",
+          "owner": "",
+          "params": [
+            "data"
+          ],
+          "returnType": "int32_t",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "write_u16",
+          "owner": "",
+          "params": [
+            "data",
+            "value"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "write_i16",
+          "owner": "",
+          "params": [
+            "data",
+            "value"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "write_u32",
+          "owner": "",
+          "params": [
+            "data",
+            "value"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "write_i32",
+          "owner": "",
+          "params": [
+            "data",
+            "value"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        }
+      ],
+      "exports": [
+        "read_u16",
+        "read_i16",
+        "read_u32",
+        "read_i32",
+        "write_u16",
+        "write_i16",
+        "write_u32",
+        "write_i32"
+      ],
+      "totalLines": 57,
+      "hasStructuralAnalysis": true
+    },
+    "include/md200t_can.hpp": {
+      "filePath": "include/md200t_can.hpp",
+      "contentHash": "831343a97b8e2cccea7690c367c0637cad3cfbb346aad7ce1bfcf76e6a1a59b0",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        },
+        {
+          "source": "flexcan0.hpp",
+          "specifiers": [
+            "flexcan0.hpp"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 23,
+      "hasStructuralAnalysis": true
+    },
+    "include/rc_io.hpp": {
+      "filePath": "include/rc_io.hpp",
+      "contentHash": "544a4045830eefef0463f36130db1bb15d08d303541b1a5abccdacddd27ff514",
+      "functions": [],
+      "classes": [
+        {
+          "name": "PwmInput",
+          "methods": [],
+          "properties": [
+            "velocity_us"
+          ],
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "imports": [
+        {
+          "source": "control.hpp",
+          "specifiers": [
+            "control.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "PwmInput"
+      ],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    },
+    "include/serial_protocol.hpp": {
+      "filePath": "include/serial_protocol.hpp",
+      "contentHash": "4cfc91b6c56e18748d234a004e0a91d771704394999b3646416cac45ffa4474f",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "stddef.h",
+          "specifiers": [
+            "stddef.h"
+          ]
+        },
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "include/steering_config.hpp": {
+      "filePath": "include/steering_config.hpp",
+      "contentHash": "f1055e76a659f2e0f4a42a67e804c6e22c683fbda162924ed718048cbc0c0b5c",
+      "functions": [
+        {
+          "name": "pwm_duty",
+          "owner": "",
+          "params": [
+            "pulse_us"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "valid_calibration",
+          "owner": "",
+          "params": [
+            "c"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "pulse_for_angle",
+          "owner": "",
+          "params": [
+            "c",
+            "angle"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [
+        {
+          "name": "CalibrationPoint",
+          "methods": [],
+          "properties": [
+            "angle",
+            "pulse_us"
+          ],
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "ServoCalibration",
+          "methods": [],
+          "properties": [
+            "verified",
+            "pin",
+            "minimum_us",
+            "inverted",
+            "minimum_angle",
+            "points",
+            "count"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "MotionConfig",
+          "methods": [],
+          "properties": [
+            "geometry",
+            "rpm_limit",
+            "acceleration_rpm_s",
+            "deceleration_rpm_s",
+            "steering_rate",
+            "settle_ms",
+            "startup_ms",
+            "stopped_dwell_ms"
+          ],
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "imports": [
+        {
+          "source": "vehicle_kinematics.hpp",
+          "specifiers": [
+            "vehicle_kinematics.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "pwm_duty",
+        "CalibrationPoint",
+        "ServoCalibration",
+        "valid_calibration",
+        "pulse_for_angle",
+        "MotionConfig"
+      ],
+      "totalLines": 78,
+      "hasStructuralAnalysis": true
+    },
+    "include/timing_diagnostics.hpp": {
+      "filePath": "include/timing_diagnostics.hpp",
+      "contentHash": "cee1b26cdc0fd94918349c0e636ce7630f7a33f18d2318b2d35e4f25aacab42c",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        },
+        {
+          "source": "build_features.hpp",
+          "specifiers": [
+            "build_features.hpp"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 53,
+      "hasStructuralAnalysis": true
+    },
+    "include/vehicle_kinematics.hpp": {
+      "filePath": "include/vehicle_kinematics.hpp",
+      "contentHash": "442fb63799214107993dc2677dc08ed573893bd635a30361fe7feb264ed86237",
+      "functions": [
+        {
+          "name": "clamp",
+          "owner": "",
+          "params": [
+            "x",
+            "lo",
+            "hi"
+          ],
+          "returnType": "float",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "RcCommand",
+          "owner": "RcCommand",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "speed_to_rpm",
+          "owner": "",
+          "params": [
+            "speed",
+            "g"
+          ],
+          "returnType": "float",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "curvature_from_inner_angle",
+          "owner": "",
+          "params": [
+            "angle",
+            "g"
+          ],
+          "returnType": "float",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "inverse",
+          "owner": "",
+          "params": [
+            "cmd",
+            "g",
+            "previous",
+            "minimum",
+            "maximum"
+          ],
+          "returnType": "WheelTargets",
+          "exported": true,
+          "lineCount": 34
+        }
+      ],
+      "classes": [
+        {
+          "name": "RcCommand",
+          "methods": [
+            "RcCommand"
+          ],
+          "properties": [
+            "linear_velocity",
+            "curvature",
+            "pivot",
+            "angular_velocity"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "Geometry",
+          "methods": [],
+          "properties": [
+            "wheelbase",
+            "front_track",
+            "rear_track",
+            "radius"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "WheelTargets",
+          "methods": [],
+          "properties": [
+            "angle",
+            "rpm",
+            "feasible"
+          ],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "imports": [
+        {
+          "source": "math.h",
+          "specifiers": [
+            "math.h"
+          ]
+        },
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        }
+      ],
+      "exports": [
+        "clamp",
+        "RcCommand",
+        "RcCommand",
+        "Geometry",
+        "WheelTargets",
+        "speed_to_rpm",
+        "curvature_from_inner_angle",
+        "inverse"
+      ],
+      "totalLines": 79,
+      "hasStructuralAnalysis": true
+    },
+    "include/vehicle_motion.hpp": {
+      "filePath": "include/vehicle_motion.hpp",
+      "contentHash": "c37d942747cd691e397edb7a6849eaaaedf1d4efff83d2d705c77d3b81478c33",
+      "functions": [
+        {
+          "name": "MotionController",
+          "owner": "MotionController",
+          "params": [
+            "c",
+            "left",
+            "right"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "calibrated",
+          "owner": "MotionController",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "valid_configuration",
+          "owner": "MotionController",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "stopped",
+          "owner": "MotionController",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "inhibit",
+          "owner": "MotionController",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "update",
+          "owner": "MotionController",
+          "params": [
+            "cmd",
+            "now_ms",
+            "enabled"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 72
+        },
+        {
+          "name": "elapsed",
+          "owner": "MotionController",
+          "params": [
+            "now",
+            "interval"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "ramp",
+          "owner": "MotionController",
+          "params": [
+            "target",
+            "dt"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [
+        {
+          "name": "MotionController",
+          "methods": [
+            "MotionController",
+            "calibrated",
+            "valid_configuration",
+            "stopped",
+            "inhibit",
+            "update",
+            "elapsed",
+            "ramp"
+          ],
+          "properties": [
+            "config",
+            "calibration",
+            "transition",
+            "previous_angle",
+            "rpm",
+            "feasible",
+            "initialized",
+            "last_ms"
+          ],
+          "exported": true,
+          "lineCount": 125
+        }
+      ],
+      "imports": [
+        {
+          "source": "steering_config.hpp",
+          "specifiers": [
+            "steering_config.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "MotionController",
+        "calibrated",
+        "valid_configuration",
+        "stopped",
+        "inhibit",
+        "update",
+        "MotionController"
+      ],
+      "totalLines": 137,
+      "hasStructuralAnalysis": true
+    },
+    "lib/README": {
+      "filePath": "lib/README",
+      "contentHash": "cddda6a20c70c05fb9c0e0fcdcf1dc952ad3eb163fc91a1eb17e129b1956c635",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 11,
+      "hasStructuralAnalysis": false
+    },
+    "platformio.ini": {
+      "filePath": "platformio.ini",
+      "contentHash": "6c59202f45feb9971d8f06cdf92f6980f034fc708b53e01df9abce2f30819f33",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 24,
+      "hasStructuralAnalysis": false
+    },
+    "pyproject.toml": {
+      "filePath": "pyproject.toml",
+      "contentHash": "01b98d99e4266a18f9f328c10749ef98b085b08fb563a8e864c7d615814bc997",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 10,
+      "hasStructuralAnalysis": false
+    },
+    "src/can_cli.py": {
+      "filePath": "src/can_cli.py",
+      "contentHash": "218d7f55d8a203a14f6f3342bbad5f47d50b8b3962d3069f8b2d0993cea62120",
+      "functions": [
+        {
+          "name": "wait_for_activity",
+          "params": [
+            "ser",
+            "ui"
+          ],
+          "returnType": "tuple[bool, bool]",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "xor_checksum",
+          "params": [
+            "data"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "parse_int",
+          "params": [
+            "value"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "parse_byte",
+          "params": [
+            "value"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "parse_can_id",
+          "params": [
+            "value"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "find_teensy_port",
+          "params": [],
+          "returnType": "Optional[str]",
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "build_bridge_request",
+          "params": [
+            "can_id",
+            "data",
+            "dlc",
+            "seq",
+            "timeout_ms"
+          ],
+          "returnType": "bytes",
+          "exported": true,
+          "lineCount": 35
+        },
+        {
+          "name": "build_benchmark_request",
+          "params": [
+            "command",
+            "seq"
+          ],
+          "returnType": "bytes",
+          "exported": true,
+          "lineCount": 55
+        },
+        {
+          "name": "build_command_parser",
+          "params": [
+            "prog",
+            "add_help"
+          ],
+          "returnType": "RaisingArgumentParser",
+          "exported": true,
+          "lineCount": 32
+        },
+        {
+          "name": "command_from_namespace",
+          "params": [
+            "args",
+            "default_timeout_ms"
+          ],
+          "returnType": "BridgeCommand | BenchmarkCommand",
+          "exported": true,
+          "lineCount": 83
+        },
+        {
+          "name": "parse_interactive_command",
+          "params": [
+            "line",
+            "default_timeout_ms"
+          ],
+          "returnType": "BridgeCommand | BenchmarkCommand",
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "interactive_help",
+          "params": [],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "format_data",
+          "params": [
+            "data",
+            "dlc"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "format_timing_packet",
+          "params": [
+            "packet"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "format_packet",
+          "params": [
+            "packet"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 65
+        },
+        {
+          "name": "send_command",
+          "params": [
+            "ser",
+            "command",
+            "seq",
+            "ui"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 30
+        },
+        {
+          "name": "monitor",
+          "params": [
+            "port",
+            "baud",
+            "seq",
+            "default_timeout_ms",
+            "settle_s",
+            "initial_command",
+            "timing_only"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 51
+        },
+        {
+          "name": "add_connection_options",
+          "params": [
+            "parser",
+            "suppress_defaults",
+            "include_timeout"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "build_main_parser",
+          "params": [],
+          "returnType": "RaisingArgumentParser",
+          "exported": true,
+          "lineCount": 36
+        },
+        {
+          "name": "main",
+          "params": [
+            "argv"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 29
+        }
+      ],
+      "classes": [
+        {
+          "name": "BridgeCommand",
+          "methods": [],
+          "properties": [
+            "can_id",
+            "data",
+            "dlc",
+            "timeout_ms"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "BenchmarkCommand",
+          "methods": [],
+          "properties": [
+            "request_can_id",
+            "request_data",
+            "request_dlc",
+            "response_can_id",
+            "response_pids",
+            "repeat_count",
+            "period_ms",
+            "timeout_ms"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "BenchmarkStatistics",
+          "methods": [
+            "start",
+            "cancel",
+            "_percentile",
+            "_format_distribution",
+            "consume"
+          ],
+          "properties": [
+            "seq",
+            "expected_count",
+            "last_iteration",
+            "timeout_count",
+            "tx_failure_count",
+            "response_pids",
+            "rtt_samples_us",
+            "tx_interval_samples_us",
+            "rx_interval_samples_us",
+            "round_rtt_samples_us",
+            "response_gap_samples_us",
+            "round_rx_interval_samples_us",
+            "previous_tx_timestamp_us",
+            "previous_rx_timestamps_us",
+            "previous_round_rx_timestamp_us",
+            "partial_round_count"
+          ],
+          "exported": true,
+          "lineCount": 193
+        },
+        {
+          "name": "CommandError",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "ExitRequested",
+          "methods": [],
+          "properties": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "RaisingArgumentParser",
+          "methods": [
+            "error"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "PacketStreamParser",
+          "methods": [
+            "__init__",
+            "feed"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 40
+        },
+        {
+          "name": "TerminalUi",
+          "methods": [
+            "__init__",
+            "__enter__",
+            "__exit__",
+            "clear_prompt",
+            "redraw",
+            "log",
+            "read_characters",
+            "read_lines"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 100
+        }
+      ],
+      "imports": [
+        {
+          "source": "argparse",
+          "specifiers": [
+            "argparse"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "select",
+          "specifiers": [
+            "select"
+          ]
+        },
+        {
+          "source": "shlex",
+          "specifiers": [
+            "shlex"
+          ]
+        },
+        {
+          "source": "statistics",
+          "specifiers": [
+            "statistics"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Optional"
+          ]
+        },
+        {
+          "source": "serial",
+          "specifiers": [
+            "serial"
+          ]
+        },
+        {
+          "source": "serial.tools.list_ports",
+          "specifiers": [
+            "serial.tools.list_ports"
+          ]
+        }
+      ],
+      "exports": [
+        "BridgeCommand",
+        "BenchmarkCommand",
+        "BenchmarkStatistics",
+        "CommandError",
+        "ExitRequested",
+        "RaisingArgumentParser",
+        "PacketStreamParser",
+        "TerminalUi",
+        "wait_for_activity",
+        "xor_checksum",
+        "parse_int",
+        "parse_byte",
+        "parse_can_id",
+        "find_teensy_port",
+        "build_bridge_request",
+        "build_benchmark_request",
+        "build_command_parser",
+        "command_from_namespace",
+        "parse_interactive_command",
+        "interactive_help",
+        "format_data",
+        "format_timing_packet",
+        "format_packet",
+        "send_command",
+        "monitor",
+        "add_connection_options",
+        "build_main_parser",
+        "main"
+      ],
+      "totalLines": 1033,
+      "hasStructuralAnalysis": true
+    },
+    "src/can_control.cpp": {
+      "filePath": "src/can_control.cpp",
+      "contentHash": "02fb1ad4b53537a725801aa5e250bec80185a2cc770c661e5249c4dc11c09624",
+      "functions": [
+        {
+          "name": "status_pending",
+          "owner": "",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "status_sent",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "begin",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "drain_rx",
+          "owner": "",
+          "params": [
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "send_torque_off",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "md200t_response_window_open",
+          "owner": "",
+          "params": [
+            "driver_id",
+            "rx_timestamp_us"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "md200t_process_rx_frame",
+          "owner": "",
+          "params": [
+            "frame",
+            "now",
+            "rx_timestamp_us"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 84
+        },
+        {
+          "name": "process_queued_rx",
+          "owner": "",
+          "params": [
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "telemetry_is_fresh",
+          "owner": "",
+          "params": [
+            "valid",
+            "last_update_ms",
+            "now",
+            "timeout_ms"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "update_health",
+          "owner": "",
+          "params": [
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "md200t_send_driver_command",
+          "owner": "",
+          "params": [
+            "driver_id",
+            "command"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "invalidate_wheel_telemetry",
+          "owner": "",
+          "params": [
+            "wheel_mask"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "close_driver_response_window",
+          "owner": "",
+          "params": [
+            "driver_id"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 28
+        },
+        {
+          "name": "reset_can_tx_scheduler",
+          "owner": "",
+          "params": [
+            "now_us"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "transmit_if_due",
+          "owner": "",
+          "params": [
+            "now_us"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 149
+        },
+        {
+          "name": "reset_session",
+          "owner": "",
+          "params": [
+            "now_us"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [
+        {
+          "name": "Md200tDriverCommand",
+          "methods": [],
+          "properties": [
+            "ch1_rpm",
+            "ch2_rpm",
+            "enabled"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "CanTxScheduler",
+          "methods": [],
+          "properties": [
+            "cycle_start_us",
+            "driver_a_tx_us",
+            "driver_b_tx_us",
+            "superframe_cycle",
+            "initialized",
+            "driver_a_command_sent",
+            "driver_a_response_checked",
+            "driver_b_command_sent",
+            "driver_b_response_checked",
+            "voltage_poll_handled",
+            "pending_driver_b_command",
+            "expected_wheel_mask",
+            "received_wheel_mask",
+            "round_status_tx_requested"
+          ],
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "imports": [
+        {
+          "source": "Arduino.h",
+          "specifiers": [
+            "Arduino.h"
+          ]
+        },
+        {
+          "source": "can_control.hpp",
+          "specifiers": [
+            "can_control.hpp"
+          ]
+        },
+        {
+          "source": "can_tx_schedule.hpp",
+          "specifiers": [
+            "can_tx_schedule.hpp"
+          ]
+        },
+        {
+          "source": "control.hpp",
+          "specifiers": [
+            "control.hpp"
+          ]
+        },
+        {
+          "source": "can_debug.hpp",
+          "specifiers": [
+            "can_debug.hpp"
+          ]
+        },
+        {
+          "source": "timing_diagnostics.hpp",
+          "specifiers": [
+            "timing_diagnostics.hpp"
+          ]
+        },
+        {
+          "source": "little_endian.hpp",
+          "specifiers": [
+            "little_endian.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "Md200tDriverCommand",
+        "CanTxScheduler",
+        "status_pending",
+        "status_sent",
+        "begin",
+        "drain_rx",
+        "send_torque_off",
+        "process_queued_rx",
+        "update_health",
+        "transmit_if_due",
+        "reset_session"
+      ],
+      "totalLines": 481,
+      "hasStructuralAnalysis": true
+    },
+    "src/can_debug.cpp": {
+      "filePath": "src/can_debug.cpp",
+      "contentHash": "aba73de785ee28ba7ad10664cfac0ac0132569e79404b756aafca3edf4c05756",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "Arduino.h",
+          "specifiers": [
+            "Arduino.h"
+          ]
+        },
+        {
+          "source": "can_debug.hpp",
+          "specifiers": [
+            "can_debug.hpp"
+          ]
+        },
+        {
+          "source": "control.hpp",
+          "specifiers": [
+            "control.hpp"
+          ]
+        },
+        {
+          "source": "can_control.hpp",
+          "specifiers": [
+            "can_control.hpp"
+          ]
+        },
+        {
+          "source": "serial_protocol.hpp",
+          "specifiers": [
+            "serial_protocol.hpp"
+          ]
+        },
+        {
+          "source": "little_endian.hpp",
+          "specifiers": [
+            "little_endian.hpp"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 406,
+      "hasStructuralAnalysis": true
+    },
+    "src/control.cpp": {
+      "filePath": "src/control.cpp",
+      "contentHash": "2e477feb721b6c3701f13b1c6c86970f8c794a313804b20ae5d8d4152eef2ef9",
+      "functions": [
+        {
+          "name": "report",
+          "owner": "",
+          "params": [
+            "error"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "reported",
+          "owner": "",
+          "params": [
+            "error"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "report_safety_tx_failure",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "initialize_power",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "finish_boot",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "initialize_motion",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "initialize_session",
+          "owner": "",
+          "params": [
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "update_power",
+          "owner": "",
+          "params": [
+            "drive_mode",
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "consume_error_reports",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "rpm_to_i16",
+          "owner": "",
+          "params": [
+            "rpm"
+          ],
+          "returnType": "int16_t",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "accept_command",
+          "owner": "",
+          "params": [
+            "command",
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "update_drive",
+          "owner": "",
+          "params": [
+            "drive_mode",
+            "v_pwm",
+            "w_pwm",
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 52
+        },
+        {
+          "name": "reset_mcu",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "enter_control_mode",
+          "owner": "",
+          "params": [
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "has_driver_fault",
+          "owner": "",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "voltage_telemetry_is_stale",
+          "owner": "",
+          "params": [
+            "now"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "refresh_errors",
+          "owner": "",
+          "params": [
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "fault_snapshot",
+          "owner": "",
+          "params": [
+            "now"
+          ],
+          "returnType": "FaultSnapshot",
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "motor_state",
+          "owner": "",
+          "params": [
+            "fault"
+          ],
+          "returnType": "MotorState",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "motor_stop_all",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "update_vehicle_output",
+          "owner": "",
+          "params": [
+            "command",
+            "now"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "Arduino.h",
+          "specifiers": [
+            "Arduino.h"
+          ]
+        },
+        {
+          "source": "kinetis.h",
+          "specifiers": [
+            "kinetis.h"
+          ]
+        },
+        {
+          "source": "stdint.h",
+          "specifiers": [
+            "stdint.h"
+          ]
+        },
+        {
+          "source": "control.hpp",
+          "specifiers": [
+            "control.hpp"
+          ]
+        },
+        {
+          "source": "rc_io.hpp",
+          "specifiers": [
+            "rc_io.hpp"
+          ]
+        },
+        {
+          "source": "can_control.hpp",
+          "specifiers": [
+            "can_control.hpp"
+          ]
+        },
+        {
+          "source": "can_debug.hpp",
+          "specifiers": [
+            "can_debug.hpp"
+          ]
+        },
+        {
+          "source": "serial_protocol.hpp",
+          "specifiers": [
+            "serial_protocol.hpp"
+          ]
+        },
+        {
+          "source": "md200t_can.hpp",
+          "specifiers": [
+            "md200t_can.hpp"
+          ]
+        },
+        {
+          "source": "error_report.hpp",
+          "specifiers": [
+            "error_report.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "report",
+        "reported",
+        "report_safety_tx_failure",
+        "initialize_power",
+        "finish_boot",
+        "initialize_motion",
+        "initialize_session",
+        "update_power",
+        "consume_error_reports",
+        "rpm_to_i16",
+        "accept_command",
+        "update_drive",
+        "reset_mcu",
+        "enter_control_mode",
+        "has_driver_fault",
+        "refresh_errors",
+        "fault_snapshot",
+        "motor_state"
+      ],
+      "totalLines": 286,
+      "hasStructuralAnalysis": true
+    },
+    "src/control.py": {
+      "filePath": "src/control.py",
+      "contentHash": "c5956e6bb88579c58e0d4f9226da2fddcab0babc2d2b7d42f02c0a18c201cf09",
+      "functions": [
+        {
+          "name": "xor_checksum",
+          "params": [
+            "data"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "build_command_packet",
+          "params": [
+            "v_mps",
+            "w_radps",
+            "seq",
+            "enable",
+            "emergency_stop"
+          ],
+          "returnType": "bytes",
+          "exported": true,
+          "lineCount": 40
+        },
+        {
+          "name": "build_reset_packet",
+          "params": [
+            "seq"
+          ],
+          "returnType": "bytes",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "find_teensy_port",
+          "params": [],
+          "returnType": "Optional[str]",
+          "exported": true,
+          "lineCount": 21
+        },
+        {
+          "name": "send_packet",
+          "params": [
+            "payload",
+            "port",
+            "baud",
+            "timeout",
+            "read_response"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "send_command",
+          "params": [
+            "v_mps",
+            "w_radps",
+            "seq",
+            "enable",
+            "emergency_stop",
+            "port",
+            "baud",
+            "timeout"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "send_reset",
+          "params": [
+            "seq",
+            "port",
+            "baud",
+            "timeout"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "main",
+          "params": [
+            "argv"
+          ],
+          "exported": true,
+          "lineCount": 92
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "argparse",
+          "specifiers": [
+            "argparse"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Optional"
+          ]
+        },
+        {
+          "source": "serial",
+          "specifiers": [
+            "serial"
+          ]
+        },
+        {
+          "source": "struct",
+          "specifiers": [
+            "struct"
+          ]
+        },
+        {
+          "source": "serial.tools.list_ports",
+          "specifiers": [
+            "serial.tools.list_ports"
+          ]
+        }
+      ],
+      "exports": [
+        "xor_checksum",
+        "build_command_packet",
+        "build_reset_packet",
+        "find_teensy_port",
+        "send_packet",
+        "send_command",
+        "send_reset",
+        "main"
+      ],
+      "totalLines": 263,
+      "hasStructuralAnalysis": true
+    },
+    "src/flexcan0.cpp": {
+      "filePath": "src/flexcan0.cpp",
+      "contentHash": "7c3dcacfe6c6ea58b41442ebd4384e3b53bc894edb84c68d736edd03fe493975",
+      "functions": [
+        {
+          "name": "mb_code",
+          "owner": "",
+          "params": [
+            "code"
+          ],
+          "returnType": "uint32_t",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "get_mb_code",
+          "owner": "",
+          "params": [
+            "mb"
+          ],
+          "returnType": "uint8_t",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "elapsed_us",
+          "owner": "",
+          "params": [
+            "start"
+          ],
+          "returnType": "uint32_t",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "wait_until_set",
+          "owner": "",
+          "params": [
+            "reg",
+            "mask",
+            "timeout_us"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "wait_until_clear",
+          "owner": "",
+          "params": [
+            "reg",
+            "mask",
+            "timeout_us"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "pack_word",
+          "owner": "",
+          "params": [
+            "data",
+            "start_index",
+            "dlc"
+          ],
+          "returnType": "uint32_t",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "unpack_word",
+          "owner": "",
+          "params": [
+            "word",
+            "data",
+            "start_index",
+            "dlc"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "can_rx_isr",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 41
+        },
+        {
+          "name": "abort_tx_mb",
+          "owner": "",
+          "params": [
+            "timeout_us"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "can_begin",
+          "owner": "",
+          "params": [
+            "bitrate"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 74
+        },
+        {
+          "name": "can_transmit",
+          "owner": "",
+          "params": [
+            "frame",
+            "timeout_us"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "can_receive",
+          "owner": "",
+          "params": [
+            "frame",
+            "timeout_us"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "can_receive_timed",
+          "owner": "",
+          "params": [
+            "frame",
+            "received_us",
+            "timeout_us"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "can_rx_overrun_detected",
+          "owner": "",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "can_rx_overrun_report_sent",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "can_clear_rx_overrun_reports",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "can_is_initialized",
+          "owner": "",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "can_rx_pending",
+          "owner": "",
+          "params": [],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "can_rx_overrun_count",
+          "owner": "",
+          "params": [],
+          "returnType": "uint32_t",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "can_rx_stats",
+          "owner": "",
+          "params": [],
+          "returnType": "CanRxStats",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [
+        {
+          "name": "RxEntry",
+          "methods": [],
+          "properties": [
+            "frame",
+            "received_us"
+          ],
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "imports": [
+        {
+          "source": "flexcan0.hpp",
+          "specifiers": [
+            "flexcan0.hpp"
+          ]
+        },
+        {
+          "source": "error_report.hpp",
+          "specifiers": [
+            "error_report.hpp"
+          ]
+        },
+        {
+          "source": "Arduino.h",
+          "specifiers": [
+            "Arduino.h"
+          ]
+        },
+        {
+          "source": "kinetis.h",
+          "specifiers": [
+            "kinetis.h"
+          ]
+        },
+        {
+          "source": "atomic",
+          "specifiers": [
+            "atomic"
+          ]
+        }
+      ],
+      "exports": [
+        "RxEntry",
+        "mb_code",
+        "get_mb_code",
+        "elapsed_us",
+        "wait_until_set",
+        "wait_until_clear",
+        "pack_word",
+        "unpack_word",
+        "can_rx_isr",
+        "abort_tx_mb",
+        "can_begin",
+        "can_transmit",
+        "can_receive",
+        "can_receive_timed",
+        "can_rx_overrun_detected",
+        "can_rx_overrun_report_sent",
+        "can_clear_rx_overrun_reports",
+        "can_is_initialized",
+        "can_rx_pending",
+        "can_rx_overrun_count",
+        "can_rx_stats"
+      ],
+      "totalLines": 385,
+      "hasStructuralAnalysis": true
+    },
+    "src/main.cpp": {
+      "filePath": "src/main.cpp",
+      "contentHash": "54bf90ce1b18bbf65e9496c3ea31ce3dea034499589cee5fa15990a260aef76d",
+      "functions": [
+        {
+          "name": "setup",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "loop",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 30
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "Arduino.h",
+          "specifiers": [
+            "Arduino.h"
+          ]
+        },
+        {
+          "source": "control.hpp",
+          "specifiers": [
+            "control.hpp"
+          ]
+        },
+        {
+          "source": "rc_io.hpp",
+          "specifiers": [
+            "rc_io.hpp"
+          ]
+        },
+        {
+          "source": "can_control.hpp",
+          "specifiers": [
+            "can_control.hpp"
+          ]
+        },
+        {
+          "source": "serial_protocol.hpp",
+          "specifiers": [
+            "serial_protocol.hpp"
+          ]
+        },
+        {
+          "source": "can_debug.hpp",
+          "specifiers": [
+            "can_debug.hpp"
+          ]
+        },
+        {
+          "source": "timing_diagnostics.hpp",
+          "specifiers": [
+            "timing_diagnostics.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "setup",
+        "loop"
+      ],
+      "totalLines": 60,
+      "hasStructuralAnalysis": true
+    },
+    "src/md200t_can.cpp": {
+      "filePath": "src/md200t_can.cpp",
+      "contentHash": "feb8a06be1cb22a750af42ef9a5da05057cc609e75f5bf5a558ad49781bea703",
+      "functions": [
+        {
+          "name": "make_standard_id",
+          "owner": "",
+          "params": [
+            "driver_id"
+          ],
+          "returnType": "uint16_t",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "send_frame",
+          "owner": "",
+          "params": [
+            "frame"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "md200t_set_velocity",
+          "owner": "",
+          "params": [
+            "driver_id",
+            "rpm1",
+            "rpm2"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "md200t_torque_off",
+          "owner": "",
+          "params": [
+            "driver_id"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "md200t_request_pid_data",
+          "owner": "",
+          "params": [
+            "driver_id",
+            "target_pid"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "md200t_decode_response_id",
+          "owner": "",
+          "params": [
+            "standard_id",
+            "driver_id"
+          ],
+          "returnType": "bool",
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "md200t_can.hpp",
+          "specifiers": [
+            "md200t_can.hpp"
+          ]
+        },
+        {
+          "source": "flexcan0.hpp",
+          "specifiers": [
+            "flexcan0.hpp"
+          ]
+        },
+        {
+          "source": "little_endian.hpp",
+          "specifiers": [
+            "little_endian.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "make_standard_id",
+        "send_frame",
+        "md200t_set_velocity",
+        "md200t_torque_off",
+        "md200t_request_pid_data",
+        "md200t_decode_response_id"
+      ],
+      "totalLines": 83,
+      "hasStructuralAnalysis": true
+    },
+    "src/packet_monitor.py": {
+      "filePath": "src/packet_monitor.py",
+      "contentHash": "5a524bcec39a774ee523c61bec12bbb8ce52504e2c0b420d594f7c5534f84071",
+      "functions": [
+        {
+          "name": "extract_packets",
+          "params": [
+            "buffer"
+          ],
+          "returnType": "list[bytes]",
+          "exported": true,
+          "lineCount": 33
+        },
+        {
+          "name": "main",
+          "params": [],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 25
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "argparse",
+          "specifiers": [
+            "argparse"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "serial",
+          "specifiers": [
+            "serial"
+          ]
+        }
+      ],
+      "exports": [
+        "extract_packets",
+        "main"
+      ],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    "src/rc_io.cpp": {
+      "filePath": "src/rc_io.cpp",
+      "contentHash": "1864a0f05707baa6783c34a738b16f0fc8d9ad3f4a419495b44a08079d51a3c4",
+      "functions": [
+        {
+          "name": "PulseFilter",
+          "owner": "PulseFilter",
+          "params": [
+            "initial_us"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "push",
+          "owner": "PulseFilter",
+          "params": [
+            "pulse_us"
+          ],
+          "returnType": "long",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "v_decodePWM",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "w_decodePWM",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "mode_decodePWM",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 28
+        },
+        {
+          "name": "initialize_inputs",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "read_mode",
+          "owner": "",
+          "params": [],
+          "returnType": "DriveMode",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "read_pwm",
+          "owner": "",
+          "params": [],
+          "returnType": "PwmInput",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "initialize_steering",
+          "owner": "",
+          "params": [
+            "motion"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "offset_with_deadband",
+          "owner": "",
+          "params": [
+            "pulse_width_us"
+          ],
+          "returnType": "int32_t",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "write_steering",
+          "owner": "",
+          "params": [
+            "motion"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [
+        {
+          "name": "PulseFilter",
+          "methods": [
+            "PulseFilter",
+            "push"
+          ],
+          "properties": [
+            "samples",
+            "sum",
+            "index"
+          ],
+          "exported": true,
+          "lineCount": 16
+        }
+      ],
+      "imports": [
+        {
+          "source": "Arduino.h",
+          "specifiers": [
+            "Arduino.h"
+          ]
+        },
+        {
+          "source": "rc_io.hpp",
+          "specifiers": [
+            "rc_io.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "PulseFilter",
+        "push",
+        "PulseFilter",
+        "v_decodePWM",
+        "w_decodePWM",
+        "mode_decodePWM",
+        "initialize_inputs",
+        "read_mode",
+        "read_pwm",
+        "initialize_steering",
+        "offset_with_deadband",
+        "write_steering"
+      ],
+      "totalLines": 146,
+      "hasStructuralAnalysis": true
+    },
+    "src/serial_protocol.cpp": {
+      "filePath": "src/serial_protocol.cpp",
+      "contentHash": "ff864bce96c4946256f5161dc920e2a94ec4c629d44c74f67e8feffce6b7a66e",
+      "functions": [
+        {
+          "name": "begin",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "command_in_range",
+          "owner": "",
+          "params": [
+            "command"
+          ],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "command_parser_reset",
+          "owner": "",
+          "params": [
+            "parser"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "parse_complete_command_frame",
+          "owner": "",
+          "params": [
+            "packet",
+            "now"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "parse_complete_reset_frame",
+          "owner": "",
+          "params": [
+            "packet"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "parse_complete_serial_frame",
+          "owner": "",
+          "params": [
+            "packet",
+            "now"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 31
+        },
+        {
+          "name": "feed_command_parser",
+          "owner": "",
+          "params": [
+            "byte_in",
+            "now"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 77
+        },
+        {
+          "name": "receive_commands",
+          "owner": "",
+          "params": [
+            "now"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "xor_checksum",
+          "owner": "",
+          "params": [
+            "data",
+            "len"
+          ],
+          "returnType": "uint8_t",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "build_system_error_bits",
+          "owner": "",
+          "params": [
+            "fault"
+          ],
+          "returnType": "uint16_t",
+          "exported": false,
+          "lineCount": 27
+        },
+        {
+          "name": "telemetry_validity_bits",
+          "owner": "",
+          "params": [],
+          "returnType": "uint8_t",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "put_motor_telemetry",
+          "owner": "",
+          "params": [
+            "packet",
+            "offset",
+            "telemetry"
+          ],
+          "returnType": "void",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "send_system_status",
+          "owner": "",
+          "params": [],
+          "returnType": "bool",
+          "exported": false,
+          "lineCount": 35
+        },
+        {
+          "name": "send_status_if_ready",
+          "owner": "",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [
+        {
+          "name": "CommandFrameParser",
+          "methods": [],
+          "properties": [
+            "packet",
+            "index",
+            "state"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "Arduino.h",
+          "specifiers": [
+            "Arduino.h"
+          ]
+        },
+        {
+          "source": "serial_protocol.hpp",
+          "specifiers": [
+            "serial_protocol.hpp"
+          ]
+        },
+        {
+          "source": "control.hpp",
+          "specifiers": [
+            "control.hpp"
+          ]
+        },
+        {
+          "source": "can_control.hpp",
+          "specifiers": [
+            "can_control.hpp"
+          ]
+        },
+        {
+          "source": "can_debug.hpp",
+          "specifiers": [
+            "can_debug.hpp"
+          ]
+        },
+        {
+          "source": "little_endian.hpp",
+          "specifiers": [
+            "little_endian.hpp"
+          ]
+        }
+      ],
+      "exports": [
+        "CommandFrameParser",
+        "begin",
+        "receive_commands",
+        "xor_checksum",
+        "send_status_if_ready"
+      ],
+      "totalLines": 334,
+      "hasStructuralAnalysis": true
+    },
+    "src/timing_diagnostics.cpp": {
+      "filePath": "src/timing_diagnostics.cpp",
+      "contentHash": "fe6e52d0261fef14fa8a1db3a71b7332ed2db29c1fe7c7a753b7b3eeec9dd577",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "Arduino.h",
+          "specifiers": [
+            "Arduino.h"
+          ]
+        },
+        {
+          "source": "timing_diagnostics.hpp",
+          "specifiers": [
+            "timing_diagnostics.hpp"
+          ]
+        },
+        {
+          "source": "can_control.hpp",
+          "specifiers": [
+            "can_control.hpp"
+          ]
+        },
+        {
+          "source": "can_tx_schedule.hpp",
+          "specifiers": [
+            "can_tx_schedule.hpp"
+          ]
+        },
+        {
+          "source": "control.hpp",
+          "specifiers": [
+            "control.hpp"
+          ]
+        },
+        {
+          "source": "serial_protocol.hpp",
+          "specifiers": [
+            "serial_protocol.hpp"
+          ]
+        },
+        {
+          "source": "little_endian.hpp",
+          "specifiers": [
+            "little_endian.hpp"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 214,
+      "hasStructuralAnalysis": true
+    }
+  }
+}

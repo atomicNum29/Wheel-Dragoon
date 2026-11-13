@@ -1,0 +1,70 @@
+{
+    "projectRoot":  "C:\\Users\\desktop\\Documents\\WCL\\SLAM\\Wheel-Dragoon",
+    "batchImportData":  {
+                            "include/error_report.hpp":  [
+
+                                                         ],
+                            "include/flexcan0.hpp":  [
+
+                                                     ],
+                            "include/md200t_can.hpp":  [
+                                                           "include/flexcan0.hpp"
+                                                       ],
+                            "src/control.cpp":  [
+                                                    "include/can_control.hpp",
+                                                    "include/can_debug.hpp",
+                                                    "include/control.hpp",
+                                                    "include/error_report.hpp",
+                                                    "include/md200t_can.hpp",
+                                                    "include/rc_io.hpp",
+                                                    "include/serial_protocol.hpp"
+                                                ],
+                            "src/flexcan0.cpp":  [
+                                                     "include/error_report.hpp",
+                                                     "include/flexcan0.hpp"
+                                                 ],
+                            "src/md200t_can.cpp":  [
+                                                       "include/flexcan0.hpp",
+                                                       "include/little_endian.hpp",
+                                                       "include/md200t_can.hpp"
+                                                   ]
+                        },
+    "batchFiles":  [
+                       {
+                           "path":  "include/error_report.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  5,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/flexcan0.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  40,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "include/md200t_can.hpp",
+                           "language":  "cpp",
+                           "sizeLines":  22,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/control.cpp",
+                           "language":  "cpp",
+                           "sizeLines":  285,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/flexcan0.cpp",
+                           "language":  "cpp",
+                           "sizeLines":  384,
+                           "fileCategory":  "code"
+                       },
+                       {
+                           "path":  "src/md200t_can.cpp",
+                           "language":  "cpp",
+                           "sizeLines":  82,
+                           "fileCategory":  "code"
+                       }
+                   ]
+}

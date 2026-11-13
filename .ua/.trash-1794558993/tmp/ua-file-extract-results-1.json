@@ -1,0 +1,1480 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 7,
+  "filesSkipped": [],
+  "filesUnreadable": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 7,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 7,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "include/control.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 109,
+      "nonEmptyLines": 104,
+      "classes": [
+        {
+          "name": "CommandPacket",
+          "startLine": 6,
+          "endLine": 11,
+          "methods": [],
+          "properties": [
+            "v_milli_mps",
+            "w_milli_radps",
+            "flags"
+          ]
+        },
+        {
+          "name": "WheelRpmCommand",
+          "startLine": 33,
+          "endLine": 39,
+          "methods": [],
+          "properties": [
+            "lf_rpm",
+            "lr_rpm",
+            "rf_rpm",
+            "rr_rpm"
+          ]
+        },
+        {
+          "name": "FaultSnapshot",
+          "startLine": 41,
+          "endLine": 58,
+          "methods": [],
+          "properties": [
+            "serial_checksum_error",
+            "command_timeout",
+            "driver_fault",
+            "can_tx_failure",
+            "emergency_stop_active",
+            "battery_low",
+            "serial_framing_error",
+            "command_out_of_range",
+            "driver_status_fault",
+            "driver_rx_timeout",
+            "voltage_stale",
+            "can_rx_overrun",
+            "command_timeout_active",
+            "emergency_stop_input_active"
+          ]
+        },
+        {
+          "name": "Status",
+          "startLine": 72,
+          "endLine": 82,
+          "methods": [],
+          "properties": [
+            "booting",
+            "driver_powerdown",
+            "driver_starting",
+            "motor_enabled",
+            "estop_active",
+            "command_timeout",
+            "serial_mode",
+            "control_mode_started_ms",
+            "target_wheel_rpm_cmd"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "CommandPacket",
+          "line": 6,
+          "isDefault": false
+        },
+        {
+          "name": "WheelRpmCommand",
+          "line": 33,
+          "isDefault": false
+        },
+        {
+          "name": "FaultSnapshot",
+          "line": 41,
+          "isDefault": false
+        },
+        {
+          "name": "Status",
+          "line": 72,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 4,
+        "functionCount": 0,
+        "classCount": 4
+      }
+    },
+    {
+      "path": "include/rc_io.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 19,
+      "nonEmptyLines": 18,
+      "classes": [
+        {
+          "name": "PwmInput",
+          "startLine": 11,
+          "endLine": 11,
+          "methods": [],
+          "properties": [
+            "velocity_us"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "PwmInput",
+          "line": 11,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 0,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "include/steering_config.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 77,
+      "nonEmptyLines": 76,
+      "functions": [
+        {
+          "name": "pwm_duty",
+          "startLine": 9,
+          "endLine": 11,
+          "params": [
+            "pulse_us"
+          ]
+        },
+        {
+          "name": "valid_calibration",
+          "startLine": 26,
+          "endLine": 43,
+          "params": [
+            "c"
+          ]
+        },
+        {
+          "name": "pulse_for_angle",
+          "startLine": 44,
+          "endLine": 54,
+          "params": [
+            "c",
+            "angle"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "CalibrationPoint",
+          "startLine": 16,
+          "endLine": 16,
+          "methods": [],
+          "properties": [
+            "angle",
+            "pulse_us"
+          ]
+        },
+        {
+          "name": "ServoCalibration",
+          "startLine": 17,
+          "endLine": 25,
+          "methods": [],
+          "properties": [
+            "verified",
+            "pin",
+            "minimum_us",
+            "inverted",
+            "minimum_angle",
+            "points",
+            "count"
+          ]
+        },
+        {
+          "name": "MotionConfig",
+          "startLine": 67,
+          "endLine": 76,
+          "methods": [],
+          "properties": [
+            "geometry",
+            "rpm_limit",
+            "acceleration_rpm_s",
+            "deceleration_rpm_s",
+            "steering_rate",
+            "settle_ms",
+            "startup_ms",
+            "stopped_dwell_ms"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "pwm_duty",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "CalibrationPoint",
+          "line": 16,
+          "isDefault": false
+        },
+        {
+          "name": "ServoCalibration",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "valid_calibration",
+          "line": 26,
+          "isDefault": false
+        },
+        {
+          "name": "pulse_for_angle",
+          "line": 44,
+          "isDefault": false
+        },
+        {
+          "name": "MotionConfig",
+          "line": 67,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "pwm_duty",
+          "callee": "static_cast<int>",
+          "lineNumber": 10
+        },
+        {
+          "caller": "pwm_duty",
+          "callee": "lroundf",
+          "lineNumber": 10
+        },
+        {
+          "caller": "valid_calibration",
+          "callee": "isfinite",
+          "lineNumber": 29
+        },
+        {
+          "caller": "valid_calibration",
+          "callee": "isfinite",
+          "lineNumber": 29
+        },
+        {
+          "caller": "valid_calibration",
+          "callee": "isfinite",
+          "lineNumber": 34
+        },
+        {
+          "caller": "pulse_for_angle",
+          "callee": "valid_calibration",
+          "lineNumber": 45
+        },
+        {
+          "caller": "pulse_for_angle",
+          "callee": "isfinite",
+          "lineNumber": 45
+        },
+        {
+          "caller": "pulse_for_angle",
+          "callee": "clamp",
+          "lineNumber": 46
+        },
+        {
+          "caller": "pulse_for_angle",
+          "callee": "static_cast<int>",
+          "lineNumber": 50
+        },
+        {
+          "caller": "pulse_for_angle",
+          "callee": "lroundf",
+          "lineNumber": 50
+        },
+        {
+          "caller": "pulse_for_angle",
+          "callee": "clamp",
+          "lineNumber": 50
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 6,
+        "functionCount": 3,
+        "classCount": 3
+      }
+    },
+    {
+      "path": "include/vehicle_kinematics.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 78,
+      "nonEmptyLines": 77,
+      "functions": [
+        {
+          "name": "clamp",
+          "startLine": 13,
+          "endLine": 13,
+          "params": [
+            "x",
+            "lo",
+            "hi"
+          ]
+        },
+        {
+          "name": "RcCommand",
+          "startLine": 20,
+          "endLine": 21,
+          "params": []
+        },
+        {
+          "name": "speed_to_rpm",
+          "startLine": 34,
+          "endLine": 36,
+          "params": [
+            "speed",
+            "g"
+          ]
+        },
+        {
+          "name": "curvature_from_inner_angle",
+          "startLine": 39,
+          "endLine": 42,
+          "params": [
+            "angle",
+            "g"
+          ]
+        },
+        {
+          "name": "inverse",
+          "startLine": 44,
+          "endLine": 77,
+          "params": [
+            "cmd",
+            "g",
+            "previous",
+            "minimum",
+            "maximum"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "RcCommand",
+          "startLine": 15,
+          "endLine": 22,
+          "methods": [
+            "RcCommand"
+          ],
+          "properties": [
+            "linear_velocity",
+            "curvature",
+            "pivot",
+            "angular_velocity"
+          ]
+        },
+        {
+          "name": "Geometry",
+          "startLine": 23,
+          "endLine": 28,
+          "methods": [],
+          "properties": [
+            "wheelbase",
+            "front_track",
+            "rear_track",
+            "radius"
+          ]
+        },
+        {
+          "name": "WheelTargets",
+          "startLine": 29,
+          "endLine": 33,
+          "methods": [],
+          "properties": [
+            "angle",
+            "rpm",
+            "feasible"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "clamp",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "RcCommand",
+          "line": 20,
+          "isDefault": false
+        },
+        {
+          "name": "RcCommand",
+          "line": 15,
+          "isDefault": false
+        },
+        {
+          "name": "Geometry",
+          "line": 23,
+          "isDefault": false
+        },
+        {
+          "name": "WheelTargets",
+          "line": 29,
+          "isDefault": false
+        },
+        {
+          "name": "speed_to_rpm",
+          "line": 34,
+          "isDefault": false
+        },
+        {
+          "name": "curvature_from_inner_angle",
+          "line": 39,
+          "isDefault": false
+        },
+        {
+          "name": "inverse",
+          "line": 44,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "clamp",
+          "callee": "fminf",
+          "lineNumber": 13
+        },
+        {
+          "caller": "clamp",
+          "callee": "fmaxf",
+          "lineNumber": 13
+        },
+        {
+          "caller": "curvature_from_inner_angle",
+          "callee": "tanf",
+          "lineNumber": 40
+        },
+        {
+          "caller": "curvature_from_inner_angle",
+          "callee": "fabsf",
+          "lineNumber": 41
+        },
+        {
+          "caller": "inverse",
+          "callee": "isfinite",
+          "lineNumber": 50
+        },
+        {
+          "caller": "inverse",
+          "callee": "isfinite",
+          "lineNumber": 50
+        },
+        {
+          "caller": "inverse",
+          "callee": "isfinite",
+          "lineNumber": 50
+        },
+        {
+          "caller": "inverse",
+          "callee": "fabsf",
+          "lineNumber": 50
+        },
+        {
+          "caller": "inverse",
+          "callee": "hypotf",
+          "lineNumber": 60
+        },
+        {
+          "caller": "inverse",
+          "callee": "atan2f",
+          "lineNumber": 62
+        },
+        {
+          "caller": "inverse",
+          "callee": "atan2f",
+          "lineNumber": 62
+        },
+        {
+          "caller": "inverse",
+          "callee": "clamp",
+          "lineNumber": 65
+        },
+        {
+          "caller": "inverse",
+          "callee": "speed_to_rpm",
+          "lineNumber": 66
+        },
+        {
+          "caller": "inverse",
+          "callee": "speed_to_rpm",
+          "lineNumber": 68
+        },
+        {
+          "caller": "inverse",
+          "callee": "speed_to_rpm",
+          "lineNumber": 70
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 8,
+        "functionCount": 5,
+        "classCount": 3
+      }
+    },
+    {
+      "path": "include/vehicle_motion.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 136,
+      "nonEmptyLines": 135,
+      "functions": [
+        {
+          "name": "MotionController",
+          "startLine": 19,
+          "endLine": 20,
+          "params": [
+            "c",
+            "left",
+            "right"
+          ]
+        },
+        {
+          "name": "calibrated",
+          "startLine": 21,
+          "endLine": 21,
+          "params": []
+        },
+        {
+          "name": "valid_configuration",
+          "startLine": 22,
+          "endLine": 34,
+          "params": []
+        },
+        {
+          "name": "stopped",
+          "startLine": 35,
+          "endLine": 38,
+          "params": []
+        },
+        {
+          "name": "inhibit",
+          "startLine": 40,
+          "endLine": 44,
+          "params": []
+        },
+        {
+          "name": "update",
+          "startLine": 45,
+          "endLine": 116,
+          "params": [
+            "cmd",
+            "now_ms",
+            "enabled"
+          ]
+        },
+        {
+          "name": "elapsed",
+          "startLine": 120,
+          "endLine": 123,
+          "params": [
+            "now",
+            "interval"
+          ]
+        },
+        {
+          "name": "ramp",
+          "startLine": 124,
+          "endLine": 134,
+          "params": [
+            "target",
+            "dt"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "MotionController",
+          "startLine": 11,
+          "endLine": 135,
+          "methods": [
+            "MotionController",
+            "calibrated",
+            "valid_configuration",
+            "stopped",
+            "inhibit",
+            "update",
+            "elapsed",
+            "ramp"
+          ],
+          "properties": [
+            "config",
+            "calibration",
+            "transition",
+            "previous_angle",
+            "rpm",
+            "feasible",
+            "initialized",
+            "last_ms"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "MotionController",
+          "line": 19,
+          "isDefault": false
+        },
+        {
+          "name": "calibrated",
+          "line": 21,
+          "isDefault": false
+        },
+        {
+          "name": "valid_configuration",
+          "line": 22,
+          "isDefault": false
+        },
+        {
+          "name": "stopped",
+          "line": 35,
+          "isDefault": false
+        },
+        {
+          "name": "inhibit",
+          "line": 40,
+          "isDefault": false
+        },
+        {
+          "name": "update",
+          "line": 45,
+          "isDefault": false
+        },
+        {
+          "name": "MotionController",
+          "line": 11,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "calibrated",
+          "callee": "valid_calibration",
+          "lineNumber": 21
+        },
+        {
+          "caller": "calibrated",
+          "callee": "valid_calibration",
+          "lineNumber": 21
+        },
+        {
+          "caller": "valid_configuration",
+          "callee": "isfinite",
+          "lineNumber": 24
+        },
+        {
+          "caller": "valid_configuration",
+          "callee": "isfinite",
+          "lineNumber": 25
+        },
+        {
+          "caller": "valid_configuration",
+          "callee": "isfinite",
+          "lineNumber": 26
+        },
+        {
+          "caller": "valid_configuration",
+          "callee": "isfinite",
+          "lineNumber": 27
+        },
+        {
+          "caller": "valid_configuration",
+          "callee": "isfinite",
+          "lineNumber": 28
+        },
+        {
+          "caller": "valid_configuration",
+          "callee": "isfinite",
+          "lineNumber": 30
+        },
+        {
+          "caller": "valid_configuration",
+          "callee": "isfinite",
+          "lineNumber": 31
+        },
+        {
+          "caller": "valid_configuration",
+          "callee": "isfinite",
+          "lineNumber": 32
+        },
+        {
+          "caller": "stopped",
+          "callee": "fabsf",
+          "lineNumber": 36
+        },
+        {
+          "caller": "update",
+          "callee": "fminf",
+          "lineNumber": 46
+        },
+        {
+          "caller": "update",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 46
+        },
+        {
+          "caller": "update",
+          "callee": "calibrated",
+          "lineNumber": 49
+        },
+        {
+          "caller": "update",
+          "callee": "valid_configuration",
+          "lineNumber": 49
+        },
+        {
+          "caller": "update",
+          "callee": "inhibit",
+          "lineNumber": 49
+        },
+        {
+          "caller": "update",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 51
+        },
+        {
+          "caller": "update",
+          "callee": "inhibit",
+          "lineNumber": 54
+        },
+        {
+          "caller": "update",
+          "callee": "inverse",
+          "lineNumber": 57
+        },
+        {
+          "caller": "update",
+          "callee": "fmaxf",
+          "lineNumber": 61
+        },
+        {
+          "caller": "update",
+          "callee": "fabsf",
+          "lineNumber": 61
+        },
+        {
+          "caller": "update",
+          "callee": "ramp",
+          "lineNumber": 84
+        },
+        {
+          "caller": "update",
+          "callee": "stopped",
+          "lineNumber": 85
+        },
+        {
+          "caller": "update",
+          "callee": "elapsed",
+          "lineNumber": 86
+        },
+        {
+          "caller": "update",
+          "callee": "fmaxf",
+          "lineNumber": 97
+        },
+        {
+          "caller": "update",
+          "callee": "fabsf",
+          "lineNumber": 97
+        },
+        {
+          "caller": "update",
+          "callee": "fminf",
+          "lineNumber": 99
+        },
+        {
+          "caller": "update",
+          "callee": "fabsf",
+          "lineNumber": 105
+        },
+        {
+          "caller": "update",
+          "callee": "fabsf",
+          "lineNumber": 106
+        },
+        {
+          "caller": "update",
+          "callee": "elapsed",
+          "lineNumber": 113
+        },
+        {
+          "caller": "update",
+          "callee": "ramp",
+          "lineNumber": 115
+        },
+        {
+          "caller": "elapsed",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 122
+        },
+        {
+          "caller": "ramp",
+          "callee": "fabsf",
+          "lineNumber": 129
+        },
+        {
+          "caller": "ramp",
+          "callee": "fabsf",
+          "lineNumber": 130
+        },
+        {
+          "caller": "ramp",
+          "callee": "fabsf",
+          "lineNumber": 130
+        },
+        {
+          "caller": "ramp",
+          "callee": "fminf",
+          "lineNumber": 131
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 7,
+        "functionCount": 8,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "src/main.cpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 59,
+      "nonEmptyLines": 55,
+      "functions": [
+        {
+          "name": "setup",
+          "startLine": 13,
+          "endLine": 28,
+          "params": []
+        },
+        {
+          "name": "loop",
+          "startLine": 30,
+          "endLine": 59,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "setup",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "loop",
+          "line": 30,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "setup",
+          "callee": "control::initialize_power",
+          "lineNumber": 16
+        },
+        {
+          "caller": "setup",
+          "callee": "protocol::begin",
+          "lineNumber": 17
+        },
+        {
+          "caller": "setup",
+          "callee": "timing::begin",
+          "lineNumber": 18
+        },
+        {
+          "caller": "setup",
+          "callee": "rc_io::initialize_steering",
+          "lineNumber": 19
+        },
+        {
+          "caller": "setup",
+          "callee": "control::motion_output",
+          "lineNumber": 19
+        },
+        {
+          "caller": "setup",
+          "callee": "control::initialize_motion",
+          "lineNumber": 20
+        },
+        {
+          "caller": "setup",
+          "callee": "rc_io::initialize_inputs",
+          "lineNumber": 21
+        },
+        {
+          "caller": "setup",
+          "callee": "pinMode",
+          "lineNumber": 22
+        },
+        {
+          "caller": "setup",
+          "callee": "digitalWrite",
+          "lineNumber": 23
+        },
+        {
+          "caller": "setup",
+          "callee": "delay",
+          "lineNumber": 24
+        },
+        {
+          "caller": "setup",
+          "callee": "control::initialize_session",
+          "lineNumber": 25
+        },
+        {
+          "caller": "setup",
+          "callee": "millis",
+          "lineNumber": 25
+        },
+        {
+          "caller": "setup",
+          "callee": "can_control::begin",
+          "lineNumber": 26
+        },
+        {
+          "caller": "setup",
+          "callee": "control::finish_boot",
+          "lineNumber": 27
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::begin_loop",
+          "lineNumber": 32
+        },
+        {
+          "caller": "loop",
+          "callee": "millis",
+          "lineNumber": 33
+        },
+        {
+          "caller": "loop",
+          "callee": "rc_io::read_mode",
+          "lineNumber": 34
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 35
+        },
+        {
+          "caller": "loop",
+          "callee": "control::update_power",
+          "lineNumber": 35
+        },
+        {
+          "caller": "loop",
+          "callee": "rc_io::read_pwm",
+          "lineNumber": 36
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 38
+        },
+        {
+          "caller": "loop",
+          "callee": "protocol::receive_commands",
+          "lineNumber": 38
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 40
+        },
+        {
+          "caller": "loop",
+          "callee": "can_debug::flush_result",
+          "lineNumber": 40
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 42
+        },
+        {
+          "caller": "loop",
+          "callee": "can_control::drain_rx",
+          "lineNumber": 42
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 44
+        },
+        {
+          "caller": "loop",
+          "callee": "can_debug::update",
+          "lineNumber": 44
+        },
+        {
+          "caller": "loop",
+          "callee": "micros",
+          "lineNumber": 44
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 45
+        },
+        {
+          "caller": "loop",
+          "callee": "can_debug::flush_result",
+          "lineNumber": 45
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 47
+        },
+        {
+          "caller": "loop",
+          "callee": "can_control::update_health",
+          "lineNumber": 47
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 48
+        },
+        {
+          "caller": "loop",
+          "callee": "control::update_drive",
+          "lineNumber": 49
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 51
+        },
+        {
+          "caller": "loop",
+          "callee": "control::refresh_errors",
+          "lineNumber": 51
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 52
+        },
+        {
+          "caller": "loop",
+          "callee": "can_control::transmit_if_due",
+          "lineNumber": 52
+        },
+        {
+          "caller": "loop",
+          "callee": "micros",
+          "lineNumber": 52
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 53
+        },
+        {
+          "caller": "loop",
+          "callee": "protocol::send_status_if_ready",
+          "lineNumber": 53
+        },
+        {
+          "caller": "loop",
+          "callee": "rc_io::write_steering",
+          "lineNumber": 54
+        },
+        {
+          "caller": "loop",
+          "callee": "control::motion_output",
+          "lineNumber": 54
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::measure",
+          "lineNumber": 56
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::publish_if_due",
+          "lineNumber": 56
+        },
+        {
+          "caller": "loop",
+          "callee": "timing::end_loop",
+          "lineNumber": 58
+        }
+      ],
+      "metrics": {
+        "importCount": 6,
+        "exportCount": 2,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/rc_io.cpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 145,
+      "nonEmptyLines": 130,
+      "functions": [
+        {
+          "name": "PulseFilter",
+          "startLine": 19,
+          "endLine": 21,
+          "params": [
+            "initial_us"
+          ]
+        },
+        {
+          "name": "push",
+          "startLine": 22,
+          "endLine": 27,
+          "params": [
+            "pulse_us"
+          ]
+        },
+        {
+          "name": "v_decodePWM",
+          "startLine": 36,
+          "endLine": 52,
+          "params": []
+        },
+        {
+          "name": "w_decodePWM",
+          "startLine": 54,
+          "endLine": 70,
+          "params": []
+        },
+        {
+          "name": "mode_decodePWM",
+          "startLine": 72,
+          "endLine": 99,
+          "params": []
+        },
+        {
+          "name": "initialize_inputs",
+          "startLine": 103,
+          "endLine": 111,
+          "params": []
+        },
+        {
+          "name": "read_mode",
+          "startLine": 112,
+          "endLine": 112,
+          "params": []
+        },
+        {
+          "name": "read_pwm",
+          "startLine": 113,
+          "endLine": 113,
+          "params": []
+        },
+        {
+          "name": "initialize_steering",
+          "startLine": 115,
+          "endLine": 123,
+          "params": [
+            "motion"
+          ]
+        },
+        {
+          "name": "offset_with_deadband",
+          "startLine": 124,
+          "endLine": 133,
+          "params": [
+            "pulse_width_us"
+          ]
+        },
+        {
+          "name": "write_steering",
+          "startLine": 135,
+          "endLine": 143,
+          "params": [
+            "motion"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "PulseFilter",
+          "startLine": 17,
+          "endLine": 32,
+          "methods": [
+            "PulseFilter",
+            "push"
+          ],
+          "properties": [
+            "samples",
+            "sum",
+            "index"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "PulseFilter",
+          "line": 19,
+          "isDefault": false
+        },
+        {
+          "name": "push",
+          "line": 22,
+          "isDefault": false
+        },
+        {
+          "name": "PulseFilter",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "v_decodePWM",
+          "line": 36,
+          "isDefault": false
+        },
+        {
+          "name": "w_decodePWM",
+          "line": 54,
+          "isDefault": false
+        },
+        {
+          "name": "mode_decodePWM",
+          "line": 72,
+          "isDefault": false
+        },
+        {
+          "name": "initialize_inputs",
+          "line": 103,
+          "isDefault": false
+        },
+        {
+          "name": "read_mode",
+          "line": 112,
+          "isDefault": false
+        },
+        {
+          "name": "read_pwm",
+          "line": 113,
+          "isDefault": false
+        },
+        {
+          "name": "initialize_steering",
+          "line": 115,
+          "isDefault": false
+        },
+        {
+          "name": "offset_with_deadband",
+          "line": 124,
+          "isDefault": false
+        },
+        {
+          "name": "write_steering",
+          "line": 135,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "v_decodePWM",
+          "callee": "digitalRead",
+          "lineNumber": 40
+        },
+        {
+          "caller": "v_decodePWM",
+          "callee": "micros",
+          "lineNumber": 42
+        },
+        {
+          "caller": "v_decodePWM",
+          "callee": "static_cast<long>",
+          "lineNumber": 43
+        },
+        {
+          "caller": "v_decodePWM",
+          "callee": "push",
+          "lineNumber": 45
+        },
+        {
+          "caller": "v_decodePWM",
+          "callee": "micros",
+          "lineNumber": 50
+        },
+        {
+          "caller": "w_decodePWM",
+          "callee": "digitalRead",
+          "lineNumber": 58
+        },
+        {
+          "caller": "w_decodePWM",
+          "callee": "micros",
+          "lineNumber": 60
+        },
+        {
+          "caller": "w_decodePWM",
+          "callee": "static_cast<long>",
+          "lineNumber": 61
+        },
+        {
+          "caller": "w_decodePWM",
+          "callee": "push",
+          "lineNumber": 63
+        },
+        {
+          "caller": "w_decodePWM",
+          "callee": "micros",
+          "lineNumber": 68
+        },
+        {
+          "caller": "mode_decodePWM",
+          "callee": "digitalRead",
+          "lineNumber": 77
+        },
+        {
+          "caller": "mode_decodePWM",
+          "callee": "micros",
+          "lineNumber": 79
+        },
+        {
+          "caller": "mode_decodePWM",
+          "callee": "micros",
+          "lineNumber": 84
+        },
+        {
+          "caller": "mode_decodePWM",
+          "callee": "push",
+          "lineNumber": 88
+        },
+        {
+          "caller": "initialize_inputs",
+          "callee": "pinMode",
+          "lineNumber": 105
+        },
+        {
+          "caller": "initialize_inputs",
+          "callee": "pinMode",
+          "lineNumber": 106
+        },
+        {
+          "caller": "initialize_inputs",
+          "callee": "pinMode",
+          "lineNumber": 107
+        },
+        {
+          "caller": "initialize_inputs",
+          "callee": "attachInterrupt",
+          "lineNumber": 108
+        },
+        {
+          "caller": "initialize_inputs",
+          "callee": "digitalPinToInterrupt",
+          "lineNumber": 108
+        },
+        {
+          "caller": "initialize_inputs",
+          "callee": "attachInterrupt",
+          "lineNumber": 109
+        },
+        {
+          "caller": "initialize_inputs",
+          "callee": "digitalPinToInterrupt",
+          "lineNumber": 109
+        },
+        {
+          "caller": "initialize_inputs",
+          "callee": "attachInterrupt",
+          "lineNumber": 110
+        },
+        {
+          "caller": "initialize_inputs",
+          "callee": "digitalPinToInterrupt",
+          "lineNumber": 110
+        },
+        {
+          "caller": "initialize_steering",
+          "callee": "calibrated",
+          "lineNumber": 117
+        },
+        {
+          "caller": "initialize_steering",
+          "callee": "analogWriteResolution",
+          "lineNumber": 118
+        },
+        {
+          "caller": "initialize_steering",
+          "callee": "analogWriteFrequency",
+          "lineNumber": 120
+        },
+        {
+          "caller": "initialize_steering",
+          "callee": "analogWrite",
+          "lineNumber": 121
+        },
+        {
+          "caller": "initialize_steering",
+          "callee": "vehicle::pwm_duty",
+          "lineNumber": 121
+        },
+        {
+          "caller": "initialize_steering",
+          "callee": "vehicle::pulse_for_angle",
+          "lineNumber": 121
+        },
+        {
+          "caller": "offset_with_deadband",
+          "callee": "static_cast<int32_t>",
+          "lineNumber": 128
+        },
+        {
+          "caller": "write_steering",
+          "callee": "calibrated",
+          "lineNumber": 137
+        },
+        {
+          "caller": "write_steering",
+          "callee": "vehicle::pulse_for_angle",
+          "lineNumber": 140
+        },
+        {
+          "caller": "write_steering",
+          "callee": "analogWrite",
+          "lineNumber": 141
+        },
+        {
+          "caller": "write_steering",
+          "callee": "vehicle::pwm_duty",
+          "lineNumber": 141
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 12,
+        "functionCount": 11,
+        "classCount": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,2864 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 4,
+  "filesSkipped": [
+    ".python-version",
+    "include/README",
+    "lib/README"
+  ],
+  "filesUnreadable": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 4,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 3,
+      "failed": 0,
+      "skipped": 1
+    }
+  },
+  "results": [
+    {
+      "path": ".ua/config.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 3,
+      "nonEmptyLines": 3,
+      "sections": [
+        {
+          "heading": "outputLanguage",
+          "level": 1,
+          "line": 2
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 1
+      }
+    },
+    {
+      "path": "src/can_cli.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 1032,
+      "nonEmptyLines": 907,
+      "functions": [
+        {
+          "name": "wait_for_activity",
+          "startLine": 431,
+          "endLine": 441,
+          "params": [
+            "ser",
+            "ui"
+          ]
+        },
+        {
+          "name": "xor_checksum",
+          "startLine": 444,
+          "endLine": 448,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "parse_int",
+          "startLine": 451,
+          "endLine": 452,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "parse_byte",
+          "startLine": 455,
+          "endLine": 459,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "parse_can_id",
+          "startLine": 462,
+          "endLine": 466,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "find_teensy_port",
+          "startLine": 469,
+          "endLine": 490,
+          "params": []
+        },
+        {
+          "name": "build_bridge_request",
+          "startLine": 493,
+          "endLine": 527,
+          "params": [
+            "can_id",
+            "data",
+            "dlc",
+            "seq",
+            "timeout_ms"
+          ]
+        },
+        {
+          "name": "build_benchmark_request",
+          "startLine": 530,
+          "endLine": 584,
+          "params": [
+            "command",
+            "seq"
+          ]
+        },
+        {
+          "name": "build_command_parser",
+          "startLine": 587,
+          "endLine": 618,
+          "params": [
+            "prog",
+            "add_help"
+          ]
+        },
+        {
+          "name": "command_from_namespace",
+          "startLine": 621,
+          "endLine": 703,
+          "params": [
+            "args",
+            "default_timeout_ms"
+          ]
+        },
+        {
+          "name": "parse_interactive_command",
+          "startLine": 706,
+          "endLine": 725,
+          "params": [
+            "line",
+            "default_timeout_ms"
+          ]
+        },
+        {
+          "name": "interactive_help",
+          "startLine": 728,
+          "endLine": 738,
+          "params": []
+        },
+        {
+          "name": "format_data",
+          "startLine": 741,
+          "endLine": 743,
+          "params": [
+            "data",
+            "dlc"
+          ]
+        },
+        {
+          "name": "format_timing_packet",
+          "startLine": 746,
+          "endLine": 778,
+          "params": [
+            "packet"
+          ]
+        },
+        {
+          "name": "format_packet",
+          "startLine": 781,
+          "endLine": 845,
+          "params": [
+            "packet"
+          ]
+        },
+        {
+          "name": "send_command",
+          "startLine": 848,
+          "endLine": 877,
+          "params": [
+            "ser",
+            "command",
+            "seq",
+            "ui"
+          ]
+        },
+        {
+          "name": "monitor",
+          "startLine": 880,
+          "endLine": 930,
+          "params": [
+            "port",
+            "baud",
+            "seq",
+            "default_timeout_ms",
+            "settle_s",
+            "initial_command",
+            "timing_only"
+          ]
+        },
+        {
+          "name": "add_connection_options",
+          "startLine": 933,
+          "endLine": 959,
+          "params": [
+            "parser",
+            "suppress_defaults",
+            "include_timeout"
+          ]
+        },
+        {
+          "name": "build_main_parser",
+          "startLine": 962,
+          "endLine": 997,
+          "params": []
+        },
+        {
+          "name": "main",
+          "startLine": 1000,
+          "endLine": 1028,
+          "params": [
+            "argv"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "BridgeCommand",
+          "startLine": 59,
+          "endLine": 63,
+          "methods": [],
+          "properties": [
+            "can_id",
+            "data",
+            "dlc",
+            "timeout_ms"
+          ]
+        },
+        {
+          "name": "BenchmarkCommand",
+          "startLine": 67,
+          "endLine": 75,
+          "methods": [],
+          "properties": [
+            "request_can_id",
+            "request_data",
+            "request_dlc",
+            "response_can_id",
+            "response_pids",
+            "repeat_count",
+            "period_ms",
+            "timeout_ms"
+          ]
+        },
+        {
+          "name": "BenchmarkStatistics",
+          "startLine": 79,
+          "endLine": 271,
+          "methods": [
+            "start",
+            "cancel",
+            "_percentile",
+            "_format_distribution",
+            "consume"
+          ],
+          "properties": [
+            "seq",
+            "expected_count",
+            "last_iteration",
+            "timeout_count",
+            "tx_failure_count",
+            "response_pids",
+            "rtt_samples_us",
+            "tx_interval_samples_us",
+            "rx_interval_samples_us",
+            "round_rtt_samples_us",
+            "response_gap_samples_us",
+            "round_rx_interval_samples_us",
+            "previous_tx_timestamp_us",
+            "previous_rx_timestamps_us",
+            "previous_round_rx_timestamp_us",
+            "partial_round_count"
+          ]
+        },
+        {
+          "name": "CommandError",
+          "startLine": 274,
+          "endLine": 275,
+          "methods": [],
+          "properties": []
+        },
+        {
+          "name": "ExitRequested",
+          "startLine": 278,
+          "endLine": 279,
+          "methods": [],
+          "properties": []
+        },
+        {
+          "name": "RaisingArgumentParser",
+          "startLine": 282,
+          "endLine": 284,
+          "methods": [
+            "error"
+          ],
+          "properties": []
+        },
+        {
+          "name": "PacketStreamParser",
+          "startLine": 287,
+          "endLine": 326,
+          "methods": [
+            "__init__",
+            "feed"
+          ],
+          "properties": []
+        },
+        {
+          "name": "TerminalUi",
+          "startLine": 329,
+          "endLine": 428,
+          "methods": [
+            "__init__",
+            "__enter__",
+            "__exit__",
+            "clear_prompt",
+            "redraw",
+            "log",
+            "read_characters",
+            "read_lines"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "BridgeCommand",
+          "line": 58,
+          "isDefault": false
+        },
+        {
+          "name": "BenchmarkCommand",
+          "line": 66,
+          "isDefault": false
+        },
+        {
+          "name": "BenchmarkStatistics",
+          "line": 78,
+          "isDefault": false
+        },
+        {
+          "name": "CommandError",
+          "line": 274,
+          "isDefault": false
+        },
+        {
+          "name": "ExitRequested",
+          "line": 278,
+          "isDefault": false
+        },
+        {
+          "name": "RaisingArgumentParser",
+          "line": 282,
+          "isDefault": false
+        },
+        {
+          "name": "PacketStreamParser",
+          "line": 287,
+          "isDefault": false
+        },
+        {
+          "name": "TerminalUi",
+          "line": 329,
+          "isDefault": false
+        },
+        {
+          "name": "wait_for_activity",
+          "line": 431,
+          "isDefault": false
+        },
+        {
+          "name": "xor_checksum",
+          "line": 444,
+          "isDefault": false
+        },
+        {
+          "name": "parse_int",
+          "line": 451,
+          "isDefault": false
+        },
+        {
+          "name": "parse_byte",
+          "line": 455,
+          "isDefault": false
+        },
+        {
+          "name": "parse_can_id",
+          "line": 462,
+          "isDefault": false
+        },
+        {
+          "name": "find_teensy_port",
+          "line": 469,
+          "isDefault": false
+        },
+        {
+          "name": "build_bridge_request",
+          "line": 493,
+          "isDefault": false
+        },
+        {
+          "name": "build_benchmark_request",
+          "line": 530,
+          "isDefault": false
+        },
+        {
+          "name": "build_command_parser",
+          "line": 587,
+          "isDefault": false
+        },
+        {
+          "name": "command_from_namespace",
+          "line": 621,
+          "isDefault": false
+        },
+        {
+          "name": "parse_interactive_command",
+          "line": 706,
+          "isDefault": false
+        },
+        {
+          "name": "interactive_help",
+          "line": 728,
+          "isDefault": false
+        },
+        {
+          "name": "format_data",
+          "line": 741,
+          "isDefault": false
+        },
+        {
+          "name": "format_timing_packet",
+          "line": 746,
+          "isDefault": false
+        },
+        {
+          "name": "format_packet",
+          "line": 781,
+          "isDefault": false
+        },
+        {
+          "name": "send_command",
+          "line": 848,
+          "isDefault": false
+        },
+        {
+          "name": "monitor",
+          "line": 880,
+          "isDefault": false
+        },
+        {
+          "name": "add_connection_options",
+          "line": 933,
+          "isDefault": false
+        },
+        {
+          "name": "build_main_parser",
+          "line": 962,
+          "isDefault": false
+        },
+        {
+          "name": "main",
+          "line": 1000,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "start",
+          "callee": "samples.clear",
+          "lineNumber": 107
+        },
+        {
+          "caller": "start",
+          "callee": "self.tx_interval_samples_us.clear",
+          "lineNumber": 108
+        },
+        {
+          "caller": "start",
+          "callee": "samples.clear",
+          "lineNumber": 110
+        },
+        {
+          "caller": "start",
+          "callee": "self.round_rtt_samples_us.clear",
+          "lineNumber": 111
+        },
+        {
+          "caller": "start",
+          "callee": "self.response_gap_samples_us.clear",
+          "lineNumber": 112
+        },
+        {
+          "caller": "start",
+          "callee": "self.round_rx_interval_samples_us.clear",
+          "lineNumber": 113
+        },
+        {
+          "caller": "cancel",
+          "callee": "samples.clear",
+          "lineNumber": 127
+        },
+        {
+          "caller": "cancel",
+          "callee": "self.tx_interval_samples_us.clear",
+          "lineNumber": 128
+        },
+        {
+          "caller": "cancel",
+          "callee": "samples.clear",
+          "lineNumber": 130
+        },
+        {
+          "caller": "cancel",
+          "callee": "self.round_rtt_samples_us.clear",
+          "lineNumber": 131
+        },
+        {
+          "caller": "cancel",
+          "callee": "self.response_gap_samples_us.clear",
+          "lineNumber": 132
+        },
+        {
+          "caller": "cancel",
+          "callee": "self.round_rx_interval_samples_us.clear",
+          "lineNumber": 133
+        },
+        {
+          "caller": "_percentile",
+          "callee": "len",
+          "lineNumber": 141
+        },
+        {
+          "caller": "_percentile",
+          "callee": "float",
+          "lineNumber": 142
+        },
+        {
+          "caller": "_percentile",
+          "callee": "len",
+          "lineNumber": 144
+        },
+        {
+          "caller": "_percentile",
+          "callee": "int",
+          "lineNumber": 145
+        },
+        {
+          "caller": "_percentile",
+          "callee": "min",
+          "lineNumber": 146
+        },
+        {
+          "caller": "_percentile",
+          "callee": "len",
+          "lineNumber": 146
+        },
+        {
+          "caller": "_format_distribution",
+          "callee": "sorted",
+          "lineNumber": 155
+        },
+        {
+          "caller": "_format_distribution",
+          "callee": "len",
+          "lineNumber": 157
+        },
+        {
+          "caller": "_format_distribution",
+          "callee": "statistics.fmean",
+          "lineNumber": 158
+        },
+        {
+          "caller": "_format_distribution",
+          "callee": "cls._percentile",
+          "lineNumber": 159
+        },
+        {
+          "caller": "_format_distribution",
+          "callee": "cls._percentile",
+          "lineNumber": 160
+        },
+        {
+          "caller": "_format_distribution",
+          "callee": "cls._percentile",
+          "lineNumber": 161
+        },
+        {
+          "caller": "_format_distribution",
+          "callee": "statistics.pstdev",
+          "lineNumber": 162
+        },
+        {
+          "caller": "consume",
+          "callee": "int.from_bytes",
+          "lineNumber": 174
+        },
+        {
+          "caller": "consume",
+          "callee": "bool",
+          "lineNumber": 176
+        },
+        {
+          "caller": "consume",
+          "callee": "min",
+          "lineNumber": 177
+        },
+        {
+          "caller": "consume",
+          "callee": "int.from_bytes",
+          "lineNumber": 184
+        },
+        {
+          "caller": "consume",
+          "callee": "self.tx_interval_samples_us.append",
+          "lineNumber": 186
+        },
+        {
+          "caller": "consume",
+          "callee": "range",
+          "lineNumber": 195
+        },
+        {
+          "caller": "consume",
+          "callee": "int.from_bytes",
+          "lineNumber": 198
+        },
+        {
+          "caller": "consume",
+          "callee": "int.from_bytes",
+          "lineNumber": 202
+        },
+        {
+          "caller": "consume",
+          "callee": "self.rx_interval_samples_us[response_index].append",
+          "lineNumber": 208
+        },
+        {
+          "caller": "consume",
+          "callee": "self.rtt_samples_us[response_index].append",
+          "lineNumber": 212
+        },
+        {
+          "caller": "consume",
+          "callee": "received_rtts.append",
+          "lineNumber": 213
+        },
+        {
+          "caller": "consume",
+          "callee": "received_timestamps.append",
+          "lineNumber": 214
+        },
+        {
+          "caller": "consume",
+          "callee": "max",
+          "lineNumber": 218
+        },
+        {
+          "caller": "consume",
+          "callee": "received_rtts.index",
+          "lineNumber": 219
+        },
+        {
+          "caller": "consume",
+          "callee": "self.round_rtt_samples_us.append",
+          "lineNumber": 221
+        },
+        {
+          "caller": "consume",
+          "callee": "self.round_rx_interval_samples_us.append",
+          "lineNumber": 223
+        },
+        {
+          "caller": "consume",
+          "callee": "self.response_gap_samples_us.append",
+          "lineNumber": 228
+        },
+        {
+          "caller": "consume",
+          "callee": "abs",
+          "lineNumber": 228
+        },
+        {
+          "caller": "consume",
+          "callee": "int.from_bytes",
+          "lineNumber": 232
+        },
+        {
+          "caller": "consume",
+          "callee": "int.from_bytes",
+          "lineNumber": 233
+        },
+        {
+          "caller": "consume",
+          "callee": "max",
+          "lineNumber": 238
+        },
+        {
+          "caller": "consume",
+          "callee": "enumerate",
+          "lineNumber": 247
+        },
+        {
+          "caller": "consume",
+          "callee": "distributions.append",
+          "lineNumber": 248
+        },
+        {
+          "caller": "consume",
+          "callee": "self._format_distribution",
+          "lineNumber": 249
+        },
+        {
+          "caller": "consume",
+          "callee": "distributions.append",
+          "lineNumber": 251
+        },
+        {
+          "caller": "consume",
+          "callee": "self._format_distribution",
+          "lineNumber": 251
+        },
+        {
+          "caller": "consume",
+          "callee": "len",
+          "lineNumber": 252
+        },
+        {
+          "caller": "consume",
+          "callee": "distributions.append",
+          "lineNumber": 253
+        },
+        {
+          "caller": "consume",
+          "callee": "self._format_distribution",
+          "lineNumber": 254
+        },
+        {
+          "caller": "consume",
+          "callee": "distributions.append",
+          "lineNumber": 256
+        },
+        {
+          "caller": "consume",
+          "callee": "self._format_distribution",
+          "lineNumber": 257
+        },
+        {
+          "caller": "consume",
+          "callee": "enumerate",
+          "lineNumber": 259
+        },
+        {
+          "caller": "consume",
+          "callee": "distributions.append",
+          "lineNumber": 260
+        },
+        {
+          "caller": "consume",
+          "callee": "self._format_distribution",
+          "lineNumber": 261
+        },
+        {
+          "caller": "consume",
+          "callee": "distributions.append",
+          "lineNumber": 265
+        },
+        {
+          "caller": "consume",
+          "callee": "self._format_distribution",
+          "lineNumber": 266
+        },
+        {
+          "caller": "consume",
+          "callee": "\"\\n  \".join",
+          "lineNumber": 268
+        },
+        {
+          "caller": "consume",
+          "callee": "self.cancel",
+          "lineNumber": 270
+        },
+        {
+          "caller": "error",
+          "callee": "CommandError",
+          "lineNumber": 284
+        },
+        {
+          "caller": "__init__",
+          "callee": "bytearray",
+          "lineNumber": 291
+        },
+        {
+          "caller": "feed",
+          "callee": "self.buffer.extend",
+          "lineNumber": 294
+        },
+        {
+          "caller": "feed",
+          "callee": "self.buffer.find",
+          "lineNumber": 298
+        },
+        {
+          "caller": "feed",
+          "callee": "len",
+          "lineNumber": 305
+        },
+        {
+          "caller": "feed",
+          "callee": "len",
+          "lineNumber": 314
+        },
+        {
+          "caller": "feed",
+          "callee": "bytes",
+          "lineNumber": 317
+        },
+        {
+          "caller": "feed",
+          "callee": "xor_checksum",
+          "lineNumber": 318
+        },
+        {
+          "caller": "feed",
+          "callee": "packets.append",
+          "lineNumber": 319
+        },
+        {
+          "caller": "__enter__",
+          "callee": "sys.stdin.isatty",
+          "lineNumber": 341
+        },
+        {
+          "caller": "__enter__",
+          "callee": "sys.stdout.isatty",
+          "lineNumber": 341
+        },
+        {
+          "caller": "__enter__",
+          "callee": "RuntimeError",
+          "lineNumber": 342
+        },
+        {
+          "caller": "__enter__",
+          "callee": "sys.stdin.fileno",
+          "lineNumber": 345
+        },
+        {
+          "caller": "__enter__",
+          "callee": "termios.tcgetattr",
+          "lineNumber": 346
+        },
+        {
+          "caller": "__enter__",
+          "callee": "termios.tcgetattr",
+          "lineNumber": 347
+        },
+        {
+          "caller": "__enter__",
+          "callee": "termios.tcsetattr",
+          "lineNumber": 351
+        },
+        {
+          "caller": "__enter__",
+          "callee": "self.redraw",
+          "lineNumber": 352
+        },
+        {
+          "caller": "__exit__",
+          "callee": "termios.tcsetattr",
+          "lineNumber": 357
+        },
+        {
+          "caller": "__exit__",
+          "callee": "self.clear_prompt",
+          "lineNumber": 358
+        },
+        {
+          "caller": "__exit__",
+          "callee": "sys.stdout.flush",
+          "lineNumber": 359
+        },
+        {
+          "caller": "clear_prompt",
+          "callee": "sys.stdout.write",
+          "lineNumber": 364
+        },
+        {
+          "caller": "clear_prompt",
+          "callee": "sys.stdout.write",
+          "lineNumber": 366
+        },
+        {
+          "caller": "redraw",
+          "callee": "self.clear_prompt",
+          "lineNumber": 370
+        },
+        {
+          "caller": "redraw",
+          "callee": "sys.stdout.write",
+          "lineNumber": 372
+        },
+        {
+          "caller": "redraw",
+          "callee": "len",
+          "lineNumber": 373
+        },
+        {
+          "caller": "redraw",
+          "callee": "sys.stdout.flush",
+          "lineNumber": 374
+        },
+        {
+          "caller": "log",
+          "callee": "self.clear_prompt",
+          "lineNumber": 377
+        },
+        {
+          "caller": "log",
+          "callee": "sys.stdout.write",
+          "lineNumber": 378
+        },
+        {
+          "caller": "log",
+          "callee": "self.redraw",
+          "lineNumber": 379
+        },
+        {
+          "caller": "read_characters",
+          "callee": "os.read(self.fd, 64).decode",
+          "lineNumber": 383
+        },
+        {
+          "caller": "read_characters",
+          "callee": "os.read",
+          "lineNumber": 383
+        },
+        {
+          "caller": "read_characters",
+          "callee": "range",
+          "lineNumber": 386
+        },
+        {
+          "caller": "read_characters",
+          "callee": "msvcrt.kbhit",
+          "lineNumber": 387
+        },
+        {
+          "caller": "read_characters",
+          "callee": "msvcrt.getwch",
+          "lineNumber": 389
+        },
+        {
+          "caller": "read_characters",
+          "callee": "characters.append",
+          "lineNumber": 396
+        },
+        {
+          "caller": "read_characters",
+          "callee": "\"\".join",
+          "lineNumber": 397
+        },
+        {
+          "caller": "read_lines",
+          "callee": "self.read_characters",
+          "lineNumber": 401
+        },
+        {
+          "caller": "read_lines",
+          "callee": "ord",
+          "lineNumber": 402
+        },
+        {
+          "caller": "read_lines",
+          "callee": "ord",
+          "lineNumber": 404
+        },
+        {
+          "caller": "read_lines",
+          "callee": "self.input_buffer.strip",
+          "lineNumber": 413
+        },
+        {
+          "caller": "read_lines",
+          "callee": "lines.append",
+          "lineNumber": 416
+        },
+        {
+          "caller": "read_lines",
+          "callee": "chr",
+          "lineNumber": 426
+        },
+        {
+          "caller": "read_lines",
+          "callee": "self.redraw",
+          "lineNumber": 427
+        },
+        {
+          "caller": "wait_for_activity",
+          "callee": "bool",
+          "lineNumber": 435
+        },
+        {
+          "caller": "wait_for_activity",
+          "callee": "msvcrt.kbhit",
+          "lineNumber": 435
+        },
+        {
+          "caller": "wait_for_activity",
+          "callee": "time.sleep",
+          "lineNumber": 437
+        },
+        {
+          "caller": "wait_for_activity",
+          "callee": "ser.fileno",
+          "lineNumber": 439
+        },
+        {
+          "caller": "wait_for_activity",
+          "callee": "select.select",
+          "lineNumber": 440
+        },
+        {
+          "caller": "parse_int",
+          "callee": "int",
+          "lineNumber": 452
+        },
+        {
+          "caller": "parse_byte",
+          "callee": "parse_int",
+          "lineNumber": 456
+        },
+        {
+          "caller": "parse_byte",
+          "callee": "argparse.ArgumentTypeError",
+          "lineNumber": 458
+        },
+        {
+          "caller": "parse_can_id",
+          "callee": "parse_int",
+          "lineNumber": 463
+        },
+        {
+          "caller": "parse_can_id",
+          "callee": "argparse.ArgumentTypeError",
+          "lineNumber": 465
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "list",
+          "lineNumber": 470
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "serial.tools.list_ports.comports",
+          "lineNumber": 470
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "(port.description or \"\").lower",
+          "lineNumber": 473
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "(port.device or \"\").lower",
+          "lineNumber": 474
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "candidates.append",
+          "lineNumber": 477
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "len",
+          "lineNumber": 479
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "(port.device or \"\").lower",
+          "lineNumber": 482
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "ValueError",
+          "lineNumber": 501
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "ValueError",
+          "lineNumber": 503
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "len",
+          "lineNumber": 504
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "ValueError",
+          "lineNumber": 505
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "len",
+          "lineNumber": 506
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "ValueError",
+          "lineNumber": 507
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "ValueError",
+          "lineNumber": 509
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "bytes",
+          "lineNumber": 511
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "len",
+          "lineNumber": 511
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "bytes",
+          "lineNumber": 514
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "bytes",
+          "lineNumber": 525
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "bytes",
+          "lineNumber": 527
+        },
+        {
+          "caller": "build_bridge_request",
+          "callee": "xor_checksum",
+          "lineNumber": 527
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 532
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 534
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "len",
+          "lineNumber": 535
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "len",
+          "lineNumber": 535
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 536
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 538
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "len",
+          "lineNumber": 539
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 540
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "any",
+          "lineNumber": 541
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 542
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "len",
+          "lineNumber": 543
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "set",
+          "lineNumber": 543
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "len",
+          "lineNumber": 543
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 544
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 546
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 548
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 550
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "ValueError",
+          "lineNumber": 552
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "bytes",
+          "lineNumber": 554
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "len",
+          "lineNumber": 554
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "bytes",
+          "lineNumber": 557
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "bytes",
+          "lineNumber": 568
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "len",
+          "lineNumber": 579
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "len",
+          "lineNumber": 580
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "bytes",
+          "lineNumber": 584
+        },
+        {
+          "caller": "build_benchmark_request",
+          "callee": "xor_checksum",
+          "lineNumber": 584
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "RaisingArgumentParser",
+          "lineNumber": 588
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "parser.add_subparsers",
+          "lineNumber": 589
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "subparsers.add_parser",
+          "lineNumber": 591
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "pid_parser.add_argument",
+          "lineNumber": 592
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "pid_parser.add_argument",
+          "lineNumber": 593
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "pid_parser.add_argument",
+          "lineNumber": 594
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "pid_parser.add_argument",
+          "lineNumber": 595
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "pid_parser.add_argument",
+          "lineNumber": 596
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "subparsers.add_parser",
+          "lineNumber": 598
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "frame_parser.add_argument",
+          "lineNumber": 599
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "frame_parser.add_argument",
+          "lineNumber": 600
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "frame_parser.add_argument",
+          "lineNumber": 601
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "frame_parser.add_argument",
+          "lineNumber": 602
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "subparsers.add_parser",
+          "lineNumber": 604
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 609
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 610
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 611
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 612
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 613
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 614
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 615
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 616
+        },
+        {
+          "caller": "build_command_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 617
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 626
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "len",
+          "lineNumber": 629
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 630
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 632
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "BridgeCommand",
+          "lineNumber": 633
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "len",
+          "lineNumber": 641
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 642
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "len",
+          "lineNumber": 643
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 645
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "len",
+          "lineNumber": 646
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 647
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "BridgeCommand",
+          "lineNumber": 648
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "min",
+          "lineNumber": 652
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "len",
+          "lineNumber": 656
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 657
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "len",
+          "lineNumber": 658
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "len",
+          "lineNumber": 659
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 660
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 662
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 664
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 666
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 674
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "len",
+          "lineNumber": 683
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 690
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "BenchmarkCommand",
+          "lineNumber": 692
+        },
+        {
+          "caller": "command_from_namespace",
+          "callee": "CommandError",
+          "lineNumber": 703
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "shlex.split",
+          "lineNumber": 710
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "CommandError",
+          "lineNumber": 712
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "str",
+          "lineNumber": 712
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "CommandError",
+          "lineNumber": 714
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "tokens[0].lower",
+          "lineNumber": 716
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "len",
+          "lineNumber": 718
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "CommandError",
+          "lineNumber": 719
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "CommandError",
+          "lineNumber": 722
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "interactive_help",
+          "lineNumber": 722
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "build_command_parser",
+          "lineNumber": 724
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "command_from_namespace",
+          "lineNumber": 725
+        },
+        {
+          "caller": "parse_interactive_command",
+          "callee": "parser.parse_args",
+          "lineNumber": 725
+        },
+        {
+          "caller": "format_data",
+          "callee": "max",
+          "lineNumber": 742
+        },
+        {
+          "caller": "format_data",
+          "callee": "len",
+          "lineNumber": 742
+        },
+        {
+          "caller": "format_data",
+          "callee": "\" \".join",
+          "lineNumber": 743
+        },
+        {
+          "caller": "u32",
+          "callee": "int.from_bytes",
+          "lineNumber": 748
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 753
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 753
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 754
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 754
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "int.from_bytes",
+          "lineNumber": 755
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 759
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 759
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 760
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "len",
+          "lineNumber": 761
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 762
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "len",
+          "lineNumber": 770
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 771
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 771
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 772
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 772
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 772
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 773
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 773
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 775
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 776
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 776
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 777
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 777
+        },
+        {
+          "caller": "format_timing_packet",
+          "callee": "u32",
+          "lineNumber": 777
+        },
+        {
+          "caller": "format_packet",
+          "callee": "time.strftime",
+          "lineNumber": 782
+        },
+        {
+          "caller": "format_packet",
+          "callee": "format_timing_packet",
+          "lineNumber": 784
+        },
+        {
+          "caller": "format_packet",
+          "callee": "int.from_bytes",
+          "lineNumber": 787
+        },
+        {
+          "caller": "format_packet",
+          "callee": "BENCHMARK_STATUS_NAMES.get",
+          "lineNumber": 789
+        },
+        {
+          "caller": "format_packet",
+          "callee": "bool",
+          "lineNumber": 790
+        },
+        {
+          "caller": "format_packet",
+          "callee": "int.from_bytes",
+          "lineNumber": 791
+        },
+        {
+          "caller": "format_packet",
+          "callee": "int.from_bytes",
+          "lineNumber": 792
+        },
+        {
+          "caller": "format_packet",
+          "callee": "int.from_bytes",
+          "lineNumber": 793
+        },
+        {
+          "caller": "format_packet",
+          "callee": "int.from_bytes",
+          "lineNumber": 794
+        },
+        {
+          "caller": "format_packet",
+          "callee": "min",
+          "lineNumber": 795
+        },
+        {
+          "caller": "format_packet",
+          "callee": "enumerate",
+          "lineNumber": 800
+        },
+        {
+          "caller": "format_packet",
+          "callee": "int.from_bytes",
+          "lineNumber": 805
+        },
+        {
+          "caller": "format_packet",
+          "callee": "int.from_bytes",
+          "lineNumber": 806
+        },
+        {
+          "caller": "format_packet",
+          "callee": "min",
+          "lineNumber": 807
+        },
+        {
+          "caller": "format_packet",
+          "callee": "list",
+          "lineNumber": 808
+        },
+        {
+          "caller": "format_packet",
+          "callee": "response_parts.append",
+          "lineNumber": 811
+        },
+        {
+          "caller": "format_packet",
+          "callee": "format_data",
+          "lineNumber": 813
+        },
+        {
+          "caller": "format_packet",
+          "callee": "rtts.append",
+          "lineNumber": 815
+        },
+        {
+          "caller": "format_packet",
+          "callee": "len",
+          "lineNumber": 817
+        },
+        {
+          "caller": "format_packet",
+          "callee": "max",
+          "lineNumber": 818
+        },
+        {
+          "caller": "format_packet",
+          "callee": "abs",
+          "lineNumber": 820
+        },
+        {
+          "caller": "format_packet",
+          "callee": "\" \".join",
+          "lineNumber": 821
+        },
+        {
+          "caller": "format_packet",
+          "callee": "received_mask.bit_count",
+          "lineNumber": 824
+        },
+        {
+          "caller": "format_packet",
+          "callee": "format_data",
+          "lineNumber": 830
+        },
+        {
+          "caller": "format_packet",
+          "callee": "list",
+          "lineNumber": 830
+        },
+        {
+          "caller": "format_packet",
+          "callee": "len",
+          "lineNumber": 830
+        },
+        {
+          "caller": "format_packet",
+          "callee": "BRIDGE_STATUS_NAMES.get",
+          "lineNumber": 834
+        },
+        {
+          "caller": "format_packet",
+          "callee": "min",
+          "lineNumber": 836
+        },
+        {
+          "caller": "format_packet",
+          "callee": "list",
+          "lineNumber": 837
+        },
+        {
+          "caller": "format_packet",
+          "callee": "format_data",
+          "lineNumber": 844
+        },
+        {
+          "caller": "send_command",
+          "callee": "isinstance",
+          "lineNumber": 851
+        },
+        {
+          "caller": "send_command",
+          "callee": "build_benchmark_request",
+          "lineNumber": 852
+        },
+        {
+          "caller": "send_command",
+          "callee": "ser.write",
+          "lineNumber": 853
+        },
+        {
+          "caller": "send_command",
+          "callee": "ser.flush",
+          "lineNumber": 854
+        },
+        {
+          "caller": "send_command",
+          "callee": "ui.log",
+          "lineNumber": 855
+        },
+        {
+          "caller": "send_command",
+          "callee": "format_data",
+          "lineNumber": 857
+        },
+        {
+          "caller": "send_command",
+          "callee": "','.join",
+          "lineNumber": 859
+        },
+        {
+          "caller": "send_command",
+          "callee": "str",
+          "lineNumber": 859
+        },
+        {
+          "caller": "send_command",
+          "callee": "build_bridge_request",
+          "lineNumber": 864
+        },
+        {
+          "caller": "send_command",
+          "callee": "ser.write",
+          "lineNumber": 871
+        },
+        {
+          "caller": "send_command",
+          "callee": "ser.flush",
+          "lineNumber": 872
+        },
+        {
+          "caller": "send_command",
+          "callee": "ui.log",
+          "lineNumber": 873
+        },
+        {
+          "caller": "send_command",
+          "callee": "format_data",
+          "lineNumber": 875
+        },
+        {
+          "caller": "monitor",
+          "callee": "PacketStreamParser",
+          "lineNumber": 889
+        },
+        {
+          "caller": "monitor",
+          "callee": "BenchmarkStatistics",
+          "lineNumber": 890
+        },
+        {
+          "caller": "send_and_track",
+          "callee": "isinstance",
+          "lineNumber": 898
+        },
+        {
+          "caller": "send_and_track",
+          "callee": "benchmark_statistics.start",
+          "lineNumber": 899
+        },
+        {
+          "caller": "send_and_track",
+          "callee": "benchmark_statistics.cancel",
+          "lineNumber": 902
+        },
+        {
+          "caller": "send_and_track",
+          "callee": "send_command",
+          "lineNumber": 903
+        },
+        {
+          "caller": "monitor",
+          "callee": "serial.Serial",
+          "lineNumber": 905
+        },
+        {
+          "caller": "monitor",
+          "callee": "TerminalUi",
+          "lineNumber": 905
+        },
+        {
+          "caller": "monitor",
+          "callee": "time.sleep",
+          "lineNumber": 907
+        },
+        {
+          "caller": "monitor",
+          "callee": "ui.log",
+          "lineNumber": 908
+        },
+        {
+          "caller": "monitor",
+          "callee": "send_and_track",
+          "lineNumber": 910
+        },
+        {
+          "caller": "monitor",
+          "callee": "wait_for_activity",
+          "lineNumber": 913
+        },
+        {
+          "caller": "monitor",
+          "callee": "ser.read",
+          "lineNumber": 915
+        },
+        {
+          "caller": "monitor",
+          "callee": "max",
+          "lineNumber": 915
+        },
+        {
+          "caller": "monitor",
+          "callee": "stream_parser.feed",
+          "lineNumber": 916
+        },
+        {
+          "caller": "monitor",
+          "callee": "ui.log",
+          "lineNumber": 918
+        },
+        {
+          "caller": "monitor",
+          "callee": "format_packet",
+          "lineNumber": 918
+        },
+        {
+          "caller": "monitor",
+          "callee": "benchmark_statistics.consume",
+          "lineNumber": 919
+        },
+        {
+          "caller": "monitor",
+          "callee": "ui.log",
+          "lineNumber": 921
+        },
+        {
+          "caller": "monitor",
+          "callee": "ui.read_lines",
+          "lineNumber": 924
+        },
+        {
+          "caller": "monitor",
+          "callee": "parse_interactive_command",
+          "lineNumber": 926
+        },
+        {
+          "caller": "monitor",
+          "callee": "send_and_track",
+          "lineNumber": 927
+        },
+        {
+          "caller": "monitor",
+          "callee": "str(exc).splitlines",
+          "lineNumber": 929
+        },
+        {
+          "caller": "monitor",
+          "callee": "str",
+          "lineNumber": 929
+        },
+        {
+          "caller": "monitor",
+          "callee": "ui.log",
+          "lineNumber": 930
+        },
+        {
+          "caller": "add_connection_options",
+          "callee": "parser.add_argument",
+          "lineNumber": 939
+        },
+        {
+          "caller": "add_connection_options",
+          "callee": "parser.add_argument",
+          "lineNumber": 940
+        },
+        {
+          "caller": "add_connection_options",
+          "callee": "parser.add_argument",
+          "lineNumber": 941
+        },
+        {
+          "caller": "add_connection_options",
+          "callee": "parser.add_argument",
+          "lineNumber": 942
+        },
+        {
+          "caller": "add_connection_options",
+          "callee": "parser.add_argument",
+          "lineNumber": 948
+        },
+        {
+          "caller": "add_connection_options",
+          "callee": "parser.add_argument",
+          "lineNumber": 954
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "RaisingArgumentParser",
+          "lineNumber": 963
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "add_connection_options",
+          "lineNumber": 966
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "parser.add_subparsers",
+          "lineNumber": 967
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "subparsers.add_parser",
+          "lineNumber": 969
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "pid_parser.add_argument",
+          "lineNumber": 970
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "pid_parser.add_argument",
+          "lineNumber": 971
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "pid_parser.add_argument",
+          "lineNumber": 972
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "pid_parser.add_argument",
+          "lineNumber": 973
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "add_connection_options",
+          "lineNumber": 974
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "subparsers.add_parser",
+          "lineNumber": 976
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "frame_parser.add_argument",
+          "lineNumber": 977
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "frame_parser.add_argument",
+          "lineNumber": 978
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "frame_parser.add_argument",
+          "lineNumber": 979
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "add_connection_options",
+          "lineNumber": 980
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "subparsers.add_parser",
+          "lineNumber": 982
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 985
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 986
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 987
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 988
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 989
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 990
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 991
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 992
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "benchmark_parser.add_argument",
+          "lineNumber": 993
+        },
+        {
+          "caller": "build_main_parser",
+          "callee": "add_connection_options",
+          "lineNumber": 996
+        },
+        {
+          "caller": "main",
+          "callee": "build_main_parser",
+          "lineNumber": 1001
+        },
+        {
+          "caller": "main",
+          "callee": "parser.parse_args",
+          "lineNumber": 1003
+        },
+        {
+          "caller": "main",
+          "callee": "CommandError",
+          "lineNumber": 1005
+        },
+        {
+          "caller": "main",
+          "callee": "CommandError",
+          "lineNumber": 1007
+        },
+        {
+          "caller": "main",
+          "callee": "command_from_namespace",
+          "lineNumber": 1009
+        },
+        {
+          "caller": "main",
+          "callee": "parser.print_usage",
+          "lineNumber": 1012
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 1013
+        },
+        {
+          "caller": "main",
+          "callee": "find_teensy_port",
+          "lineNumber": 1016
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 1018
+        },
+        {
+          "caller": "main",
+          "callee": "monitor",
+          "lineNumber": 1022
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 1024
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 1026
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 28,
+        "functionCount": 20,
+        "classCount": 8
+      }
+    },
+    {
+      "path": "src/control.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 262,
+      "nonEmptyLines": 233,
+      "functions": [
+        {
+          "name": "xor_checksum",
+          "startLine": 24,
+          "endLine": 28,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "build_command_packet",
+          "startLine": 31,
+          "endLine": 70,
+          "params": [
+            "v_mps",
+            "w_radps",
+            "seq",
+            "enable",
+            "emergency_stop"
+          ]
+        },
+        {
+          "name": "build_reset_packet",
+          "startLine": 73,
+          "endLine": 80,
+          "params": [
+            "seq"
+          ]
+        },
+        {
+          "name": "find_teensy_port",
+          "startLine": 83,
+          "endLine": 103,
+          "params": []
+        },
+        {
+          "name": "send_packet",
+          "startLine": 106,
+          "endLine": 129,
+          "params": [
+            "payload",
+            "port",
+            "baud",
+            "timeout",
+            "read_response"
+          ]
+        },
+        {
+          "name": "send_command",
+          "startLine": 132,
+          "endLine": 153,
+          "params": [
+            "v_mps",
+            "w_radps",
+            "seq",
+            "enable",
+            "emergency_stop",
+            "port",
+            "baud",
+            "timeout"
+          ]
+        },
+        {
+          "name": "send_reset",
+          "startLine": 156,
+          "endLine": 164,
+          "params": [
+            "seq",
+            "port",
+            "baud",
+            "timeout"
+          ]
+        },
+        {
+          "name": "main",
+          "startLine": 167,
+          "endLine": 258,
+          "params": [
+            "argv"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "xor_checksum",
+          "line": 24,
+          "isDefault": false
+        },
+        {
+          "name": "build_command_packet",
+          "line": 31,
+          "isDefault": false
+        },
+        {
+          "name": "build_reset_packet",
+          "line": 73,
+          "isDefault": false
+        },
+        {
+          "name": "find_teensy_port",
+          "line": 83,
+          "isDefault": false
+        },
+        {
+          "name": "send_packet",
+          "line": 106,
+          "isDefault": false
+        },
+        {
+          "name": "send_command",
+          "line": 132,
+          "isDefault": false
+        },
+        {
+          "name": "send_reset",
+          "line": 156,
+          "isDefault": false
+        },
+        {
+          "name": "main",
+          "line": 167,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "build_command_packet",
+          "callee": "ValueError",
+          "lineNumber": 45
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "ValueError",
+          "lineNumber": 47
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "round",
+          "lineNumber": 51
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "round",
+          "lineNumber": 52
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "ValueError",
+          "lineNumber": 54
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "ValueError",
+          "lineNumber": 56
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "struct.pack",
+          "lineNumber": 60
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "int",
+          "lineNumber": 65
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "int",
+          "lineNumber": 66
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "bytes",
+          "lineNumber": 70
+        },
+        {
+          "caller": "build_command_packet",
+          "callee": "xor_checksum",
+          "lineNumber": 70
+        },
+        {
+          "caller": "build_reset_packet",
+          "callee": "bytes",
+          "lineNumber": 77
+        },
+        {
+          "caller": "build_reset_packet",
+          "callee": "bytes",
+          "lineNumber": 80
+        },
+        {
+          "caller": "build_reset_packet",
+          "callee": "xor_checksum",
+          "lineNumber": 80
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "serial.tools.list_ports.comports",
+          "lineNumber": 88
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "(p.description or \"\").lower",
+          "lineNumber": 89
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "(p.device or \"\").lower",
+          "lineNumber": 90
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "serial.tools.list_ports.comports",
+          "lineNumber": 94
+        },
+        {
+          "caller": "find_teensy_port",
+          "callee": "(p.device or \"\").lower",
+          "lineNumber": 95
+        },
+        {
+          "caller": "send_packet",
+          "callee": "find_teensy_port",
+          "lineNumber": 114
+        },
+        {
+          "caller": "send_packet",
+          "callee": "RuntimeError",
+          "lineNumber": 116
+        },
+        {
+          "caller": "send_packet",
+          "callee": "serial.Serial",
+          "lineNumber": 118
+        },
+        {
+          "caller": "send_packet",
+          "callee": "ser.write",
+          "lineNumber": 119
+        },
+        {
+          "caller": "send_packet",
+          "callee": "ser.flush",
+          "lineNumber": 120
+        },
+        {
+          "caller": "send_packet",
+          "callee": "time.sleep",
+          "lineNumber": 125
+        },
+        {
+          "caller": "send_packet",
+          "callee": "ser.readline().decode(\"utf-8\", errors=\"replace\").strip",
+          "lineNumber": 127
+        },
+        {
+          "caller": "send_packet",
+          "callee": "ser.readline().decode",
+          "lineNumber": 127
+        },
+        {
+          "caller": "send_packet",
+          "callee": "ser.readline",
+          "lineNumber": 127
+        },
+        {
+          "caller": "send_command",
+          "callee": "build_command_packet",
+          "lineNumber": 146
+        },
+        {
+          "caller": "send_command",
+          "callee": "send_packet",
+          "lineNumber": 153
+        },
+        {
+          "caller": "send_reset",
+          "callee": "send_packet",
+          "lineNumber": 164
+        },
+        {
+          "caller": "send_reset",
+          "callee": "build_reset_packet",
+          "lineNumber": 164
+        },
+        {
+          "caller": "main",
+          "callee": "argparse.ArgumentParser",
+          "lineNumber": 168
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 171
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 177
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 183
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 188
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 194
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 199
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 204
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 205
+        },
+        {
+          "caller": "main",
+          "callee": "parser.parse_args",
+          "lineNumber": 208
+        },
+        {
+          "caller": "main",
+          "callee": "ValueError",
+          "lineNumber": 213
+        },
+        {
+          "caller": "main",
+          "callee": "ValueError",
+          "lineNumber": 215
+        },
+        {
+          "caller": "main",
+          "callee": "build_reset_packet",
+          "lineNumber": 217
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 218
+        },
+        {
+          "caller": "main",
+          "callee": "payload.hex",
+          "lineNumber": 220
+        },
+        {
+          "caller": "main",
+          "callee": "send_reset",
+          "lineNumber": 223
+        },
+        {
+          "caller": "main",
+          "callee": "ValueError",
+          "lineNumber": 227
+        },
+        {
+          "caller": "main",
+          "callee": "build_command_packet",
+          "lineNumber": 229
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 236
+        },
+        {
+          "caller": "main",
+          "callee": "payload.hex",
+          "lineNumber": 241
+        },
+        {
+          "caller": "main",
+          "callee": "send_command",
+          "lineNumber": 244
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 254
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 256
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 8,
+        "functionCount": 8,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/packet_monitor.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 80,
+      "nonEmptyLines": 66,
+      "functions": [
+        {
+          "name": "extract_packets",
+          "startLine": 17,
+          "endLine": 49,
+          "params": [
+            "buffer"
+          ]
+        },
+        {
+          "name": "main",
+          "startLine": 52,
+          "endLine": 76,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "extract_packets",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "main",
+          "line": 52,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "extract_packets",
+          "callee": "buffer.find",
+          "lineNumber": 21
+        },
+        {
+          "caller": "extract_packets",
+          "callee": "len",
+          "lineNumber": 28
+        },
+        {
+          "caller": "extract_packets",
+          "callee": "len",
+          "lineNumber": 36
+        },
+        {
+          "caller": "extract_packets",
+          "callee": "bytes",
+          "lineNumber": 39
+        },
+        {
+          "caller": "extract_packets",
+          "callee": "packets.append",
+          "lineNumber": 44
+        },
+        {
+          "caller": "main",
+          "callee": "argparse.ArgumentParser",
+          "lineNumber": 53
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 54
+        },
+        {
+          "caller": "main",
+          "callee": "parser.add_argument",
+          "lineNumber": 55
+        },
+        {
+          "caller": "main",
+          "callee": "parser.parse_args",
+          "lineNumber": 56
+        },
+        {
+          "caller": "main",
+          "callee": "bytearray",
+          "lineNumber": 57
+        },
+        {
+          "caller": "main",
+          "callee": "serial.Serial",
+          "lineNumber": 60
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 61
+        },
+        {
+          "caller": "main",
+          "callee": "buffer.extend",
+          "lineNumber": 63
+        },
+        {
+          "caller": "main",
+          "callee": "port.read",
+          "lineNumber": 63
+        },
+        {
+          "caller": "main",
+          "callee": "max",
+          "lineNumber": 63
+        },
+        {
+          "caller": "main",
+          "callee": "extract_packets",
+          "lineNumber": 64
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 65
+        },
+        {
+          "caller": "main",
+          "callee": "time.strftime",
+          "lineNumber": 66
+        },
+        {
+          "caller": "main",
+          "callee": "packet.hex(' ').upper",
+          "lineNumber": 68
+        },
+        {
+          "caller": "main",
+          "callee": "packet.hex",
+          "lineNumber": 68
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 72
+        },
+        {
+          "caller": "main",
+          "callee": "print",
+          "lineNumber": 74
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    }
+  ]
+}

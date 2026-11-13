@@ -1,0 +1,285 @@
+{
+  "detailedFiles": [
+    {
+      "filePath": "README.md",
+      "tourOrder": 1
+    },
+    {
+      "filePath": "docs/README.md",
+      "tourOrder": 1
+    },
+    {
+      "filePath": "platformio.ini",
+      "tourOrder": 2
+    },
+    {
+      "filePath": "include/build_features.hpp",
+      "tourOrder": 2
+    },
+    {
+      "filePath": "docs/firmware-architecture.ko.md",
+      "tourOrder": 2
+    },
+    {
+      "filePath": "src/main.cpp",
+      "tourOrder": 3
+    },
+    {
+      "filePath": "include/control.hpp",
+      "tourOrder": 3
+    },
+    {
+      "filePath": "src/rc_io.cpp",
+      "tourOrder": 4
+    },
+    {
+      "filePath": "src/control.cpp",
+      "tourOrder": 4
+    },
+    {
+      "filePath": "docs/rc-steering.ko.md",
+      "tourOrder": 4
+    },
+    {
+      "filePath": "include/vehicle_kinematics.hpp",
+      "tourOrder": 5
+    },
+    {
+      "filePath": "include/vehicle_motion.hpp",
+      "tourOrder": 5
+    },
+    {
+      "filePath": "include/steering_config.hpp",
+      "tourOrder": 5
+    },
+    {
+      "filePath": "src/md200t_can.cpp",
+      "tourOrder": 6
+    },
+    {
+      "filePath": "src/flexcan0.cpp",
+      "tourOrder": 6
+    },
+    {
+      "filePath": "include/flexcan0.hpp",
+      "tourOrder": 6
+    },
+    {
+      "filePath": "src/can_control.cpp",
+      "tourOrder": 7
+    },
+    {
+      "filePath": "include/can_tx_schedule.hpp",
+      "tourOrder": 7
+    },
+    {
+      "filePath": "include/can_control.hpp",
+      "tourOrder": 7
+    },
+    {
+      "filePath": "docs/can-rx-fifo.md",
+      "tourOrder": 7
+    },
+    {
+      "filePath": "src/serial_protocol.cpp",
+      "tourOrder": 8
+    },
+    {
+      "filePath": "include/serial_protocol.hpp",
+      "tourOrder": 8
+    },
+    {
+      "filePath": "include/little_endian.hpp",
+      "tourOrder": 8
+    },
+    {
+      "filePath": "docs/usb-protocol.ko.md",
+      "tourOrder": 8
+    },
+    {
+      "filePath": "src/packet_monitor.py",
+      "tourOrder": 9
+    },
+    {
+      "filePath": "src/can_cli.py",
+      "tourOrder": 9
+    },
+    {
+      "filePath": "src/control.py",
+      "tourOrder": 9
+    },
+    {
+      "filePath": "pyproject.toml",
+      "tourOrder": 9
+    },
+    {
+      "filePath": "src/can_debug.cpp",
+      "tourOrder": 10
+    },
+    {
+      "filePath": "src/timing_diagnostics.cpp",
+      "tourOrder": 10
+    },
+    {
+      "filePath": "docs/timing-diagnostics.md",
+      "tourOrder": 10
+    },
+    {
+      "filePath": "docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "tourOrder": 11
+    },
+    {
+      "filePath": "docs/raspberry-pi-handoff.ko.md",
+      "tourOrder": 11
+    }
+  ],
+  "batches": [
+    {
+      "batchIndex": 1,
+      "files": [
+        {
+          "filePath": "README.md",
+          "tourOrder": 1
+        },
+        {
+          "filePath": "docs/README.md",
+          "tourOrder": 1
+        },
+        {
+          "filePath": "platformio.ini",
+          "tourOrder": 2
+        },
+        {
+          "filePath": "include/build_features.hpp",
+          "tourOrder": 2
+        },
+        {
+          "filePath": "docs/firmware-architecture.ko.md",
+          "tourOrder": 2
+        },
+        {
+          "filePath": "src/main.cpp",
+          "tourOrder": 3
+        },
+        {
+          "filePath": "include/control.hpp",
+          "tourOrder": 3
+        },
+        {
+          "filePath": "src/rc_io.cpp",
+          "tourOrder": 4
+        },
+        {
+          "filePath": "src/control.cpp",
+          "tourOrder": 4
+        },
+        {
+          "filePath": "docs/rc-steering.ko.md",
+          "tourOrder": 4
+        },
+        {
+          "filePath": "include/vehicle_kinematics.hpp",
+          "tourOrder": 5
+        },
+        {
+          "filePath": "include/vehicle_motion.hpp",
+          "tourOrder": 5
+        }
+      ]
+    },
+    {
+      "batchIndex": 2,
+      "files": [
+        {
+          "filePath": "include/steering_config.hpp",
+          "tourOrder": 5
+        },
+        {
+          "filePath": "src/md200t_can.cpp",
+          "tourOrder": 6
+        },
+        {
+          "filePath": "src/flexcan0.cpp",
+          "tourOrder": 6
+        },
+        {
+          "filePath": "include/flexcan0.hpp",
+          "tourOrder": 6
+        },
+        {
+          "filePath": "src/can_control.cpp",
+          "tourOrder": 7
+        },
+        {
+          "filePath": "include/can_tx_schedule.hpp",
+          "tourOrder": 7
+        },
+        {
+          "filePath": "include/can_control.hpp",
+          "tourOrder": 7
+        },
+        {
+          "filePath": "docs/can-rx-fifo.md",
+          "tourOrder": 7
+        },
+        {
+          "filePath": "src/serial_protocol.cpp",
+          "tourOrder": 8
+        },
+        {
+          "filePath": "include/serial_protocol.hpp",
+          "tourOrder": 8
+        },
+        {
+          "filePath": "include/little_endian.hpp",
+          "tourOrder": 8
+        },
+        {
+          "filePath": "docs/usb-protocol.ko.md",
+          "tourOrder": 8
+        }
+      ]
+    },
+    {
+      "batchIndex": 3,
+      "files": [
+        {
+          "filePath": "src/packet_monitor.py",
+          "tourOrder": 9
+        },
+        {
+          "filePath": "src/can_cli.py",
+          "tourOrder": 9
+        },
+        {
+          "filePath": "src/control.py",
+          "tourOrder": 9
+        },
+        {
+          "filePath": "pyproject.toml",
+          "tourOrder": 9
+        },
+        {
+          "filePath": "src/can_debug.cpp",
+          "tourOrder": 10
+        },
+        {
+          "filePath": "src/timing_diagnostics.cpp",
+          "tourOrder": 10
+        },
+        {
+          "filePath": "docs/timing-diagnostics.md",
+          "tourOrder": 10
+        },
+        {
+          "filePath": "docs/rc-loss-of-control-review-2026-11-09.ko.md",
+          "tourOrder": 11
+        },
+        {
+          "filePath": "docs/raspberry-pi-handoff.ko.md",
+          "tourOrder": 11
+        }
+      ]
+    }
+  ]
+}

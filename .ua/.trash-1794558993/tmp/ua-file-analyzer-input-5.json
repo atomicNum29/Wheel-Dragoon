@@ -1,0 +1,34 @@
+{
+    "projectRoot":  "C:/Users/desktop/Documents/WCL/SLAM/Wheel-Dragoon",
+    "batchImportData":  {
+                            "README.md":  [
+
+                                          ],
+                            "platformio.ini":  [
+
+                                               ],
+                            "pyproject.toml":  [
+
+                                               ]
+                        },
+    "batchFiles":  [
+                       {
+                           "path":  "README.md",
+                           "language":  "markdown",
+                           "sizeLines":  58,
+                           "fileCategory":  "docs"
+                       },
+                       {
+                           "path":  "platformio.ini",
+                           "language":  "config",
+                           "sizeLines":  23,
+                           "fileCategory":  "config"
+                       },
+                       {
+                           "path":  "pyproject.toml",
+                           "language":  "toml",
+                           "sizeLines":  9,
+                           "fileCategory":  "config"
+                       }
+                   ]
+}

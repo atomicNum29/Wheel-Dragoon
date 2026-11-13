@@ -1,0 +1,115 @@
+[
+  {
+    "order": 1,
+    "title": "프로젝트와 확인 범위",
+    "description": "Wheel-Dragoon은 Teensy 3.2에서 RC 전륜 조향과 MD200T 두 대의 4륜 구동을 처리하며, Python 도구로 USB 상태를 관측하는 프로젝트다. README에서 MANUAL·PIVOT 구동과 AUTO 구동 차단을 먼저 구분하고, 문서 안내에서 기능별 코드 근거를 찾는다. 이 학습 경로는 현재 소스를 설명하며 빌드 성공, 실물 통신 또는 업로드된 바이너리와의 일치를 입증하지 않는다.",
+    "nodeIds": [
+      "document:README.md",
+      "document:docs/README.md"
+    ]
+  },
+  {
+    "order": 2,
+    "title": "빌드 프로필과 기능 선택",
+    "description": "앞서 본 기능이 어떤 펌웨어에 포함되는지 PlatformIO의 네 프로필에서 확인한다. CAN 디버그와 타이밍 진단은 기능 플래그와 소스 필터로 선택되므로, 같은 저장소라도 빌드 환경에 따라 호출 가능한 기능이 달라진다. 구조 문서는 이 선택을 모듈별 상태 소유권과 실행 순서에 연결한다.",
+    "nodeIds": [
+      "config:platformio.ini",
+      "file:include/build_features.hpp",
+      "document:docs/firmware-architecture.ko.md"
+    ],
+    "languageLesson": "C++ 전처리 조건은 실행 중 분기와 달리 컴파일할 코드를 선택한다. 기능 매크로의 기본값과 PlatformIO 환경에서 전달하는 값을 함께 읽어야 최종 포함 범위를 알 수 있다."
+  },
+  {
+    "order": 3,
+    "title": "실행 루프와 상태 계약",
+    "description": "선택한 빌드의 실행 진입점인 setup과 loop에서 전원, RC, USB, CAN, 모션, 진단의 처리 순서를 따라간다. 여러 모듈이 공유하는 구동 모드·오류·상태 자료형을 함께 읽으면 각 단계가 무엇을 입력받고 갱신하는지 이해할 수 있다. 이후 단계에서는 이 루프가 호출하는 입력 해석과 출력 경로를 하나씩 펼친다.",
+    "nodeIds": [
+      "file:src/main.cpp",
+      "file:include/control.hpp"
+    ]
+  },
+  {
+    "order": 4,
+    "title": "RC 입력과 구동 권한",
+    "description": "실행 루프가 읽는 RC 펄스는 에지 인터럽트로 측정되며 모드 선택에는 이동평균이 적용된다. 제어 모듈은 전원·시리얼·RC 모드를 조합해 MANUAL과 PIVOT의 운동 입력을 허용하고, AUTO USB 명령은 수신 기록만 유지한다. RC 펄스 만료 감지와 물리적 정지 확인의 한계를 문서에서 함께 확인해야 소스의 STOP·POWERDOWN 처리를 실제 제동 보장으로 해석하지 않는다.",
+    "nodeIds": [
+      "file:src/rc_io.cpp",
+      "file:src/control.cpp",
+      "document:docs/rc-steering.ko.md"
+    ]
+  },
+  {
+    "order": 5,
+    "title": "운동학과 모션 전환",
+    "description": "허용된 RC 입력은 차체 속도·곡률 또는 후륜 중심 PIVOT 각속도로 표현되어 전륜 조향각과 네 바퀴 RPM으로 변환된다. 모션 제어기는 기동·제동·조향·정착·주행 전환과 RPM 제한을 담당하고, 서보 보정표는 각도 지령을 펄스에 연결한다. PIVOT의 고정 조향 지령은 일반 조향 속도 제한을 우회하며, 보정 데이터의 verified 표시는 이번 분석에서 실물을 검증했다는 뜻이 아니다.",
+    "nodeIds": [
+      "file:include/vehicle_kinematics.hpp",
+      "file:include/vehicle_motion.hpp",
+      "file:include/steering_config.hpp"
+    ]
+  },
+  {
+    "order": 6,
+    "title": "모터 명령과 CAN 전송",
+    "description": "앞 단계의 RPM 출력은 MD200T PID 207 프레임으로 변환되고, TQ-OFF와 데이터 요청도 같은 CAN 전송 경로를 사용한다. FlexCAN0 구현은 500 kbit/s 초기화, TX 메일박스와 FIFO 수신 인터럽트, 메인 루프로 전달하는 수신 큐를 담당한다. 수신 시각은 ISR이 FIFO를 읽은 시점이므로 버스 도착 시각과 동일하게 취급하지 않는다.",
+    "nodeIds": [
+      "file:src/md200t_can.cpp",
+      "file:src/flexcan0.cpp",
+      "file:include/flexcan0.hpp"
+    ],
+    "languageLesson": "인터럽트와 메인 루프가 공유하는 링 큐는 단일 생산자·소비자 구조다. acquire/release 원자 연산은 완성된 프레임 복사가 게시된 뒤 소비자가 읽도록 순서를 연결한다."
+  },
+  {
+    "order": 7,
+    "title": "응답 창과 텔레메트리",
+    "description": "CAN 전송 수단 위에서 스케줄러가 10 ms 명령 주기와 드라이버별 3 ms 응답 구간을 조정한다. 수신 프레임은 ISR 시각과 응답 조건으로 검사되어 바퀴 RPM·엔코더·전압 자료와 유효 플래그를 갱신한다. 이 단계에서 유효성·신선도와 누락 판정을 이해하면 다음 USB 상태 패킷의 숫자를 해석할 수 있다.",
+    "nodeIds": [
+      "file:src/can_control.cpp",
+      "file:include/can_tx_schedule.hpp",
+      "file:include/can_control.hpp",
+      "document:docs/can-rx-fifo.md"
+    ]
+  },
+  {
+    "order": 8,
+    "title": "USB 프레임과 상태 보고",
+    "description": "CAN 텔레메트리와 오류 스냅샷은 AA 55 헤더의 0x82 상태 프레임으로 직렬화된다. 수신 측은 바이트 상태 기계로 길이·타입·체크섬을 검사하고, 송신 측은 전체 쓰기가 성공한 뒤에만 오류 보고 횟수를 소비한다. 필드 위치와 little-endian 변환을 함께 읽어야 호스트 도구와 펌웨어가 같은 바이트 계약을 사용하는지 이해할 수 있다.",
+    "nodeIds": [
+      "file:src/serial_protocol.cpp",
+      "file:include/serial_protocol.hpp",
+      "file:include/little_endian.hpp",
+      "document:docs/usb-protocol.ko.md"
+    ],
+    "languageLesson": "정수의 메모리 배치를 그대로 전송하는 대신 바이트별 읽기·쓰기로 endian을 명시한다. 프레임의 길이와 필드 오프셋을 상수로 공유하면 송수신 계약을 코드에서 추적하기 쉽다."
+  },
+  {
+    "order": 9,
+    "title": "Python 호스트 도구",
+    "description": "앞서 정의한 USB 스트림을 PC에서 다루는 도구는 목적에 따라 나뉜다. packet_monitor는 명령을 보내지 않는 프레임 관측기이며, can_cli는 대화형 브릿지·반복 요청 측정과 진단 표시를 담당한다. control.py는 단발 명령·리셋 패킷을 보내지만 바이너리 상태 해석기는 아니므로, 환경 의존성과 각 도구의 역할을 함께 읽는다.",
+    "nodeIds": [
+      "file:src/packet_monitor.py",
+      "file:src/can_cli.py",
+      "file:src/control.py",
+      "config:pyproject.toml"
+    ]
+  },
+  {
+    "order": 10,
+    "title": "디버그와 타이밍 관측",
+    "description": "호스트 CLI가 사용하는 디버그 빌드는 CAN 프레임 중계와 반복 요청의 응답·시간초과·RTT 수집을 제공한다. 별도의 타이밍 기능은 CPU cycle, RX 간격과 응답 누락을 관측하고 USB 여유 공간 및 CAN 스케줄을 고려해 진단 패킷 송신을 미룬다. 측정 모드와 출력 부하가 결과 해석에 영향을 주므로 진단 수치를 일반 주행 성능과 곧바로 동일시하지 않는다.",
+    "nodeIds": [
+      "file:src/can_debug.cpp",
+      "file:src/timing_diagnostics.cpp",
+      "document:docs/timing-diagnostics.md"
+    ]
+  },
+  {
+    "order": 11,
+    "title": "검토 기록과 인계",
+    "description": "전체 입력·출력·관측 경로를 읽은 뒤 조종 기능 상실 검토 기록에서 관측 사실, 소스상 원인 후보와 미확인 장비 상태의 구분을 확인한다. CAN abort, RC 입력 만료와 전원 경로의 후보를 실제 사고 원인으로 확정하지 않는 것이 이 기록의 해석 기준이다. 다른 환경으로 인계할 때도 저장소 상태와 빌드 프로필을 식별하고, 정적 코드 설명과 실제 장비 검증 결과를 구분해 전달한다.",
+    "nodeIds": [
+      "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "document:docs/raspberry-pi-handoff.ko.md"
+    ]
+  }
+]

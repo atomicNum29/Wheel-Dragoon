@@ -1,0 +1,1315 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 5,
+  "filesSkipped": [],
+  "filesUnreadable": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 5,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 5,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "include/can_tx_schedule.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 73,
+      "nonEmptyLines": 63,
+      "functions": [
+        {
+          "name": "can_tx_wheel_round_complete",
+          "startLine": 30,
+          "endLine": 34,
+          "params": [
+            "expected_mask",
+            "received_mask"
+          ]
+        },
+        {
+          "name": "can_tx_response_pair_complete",
+          "startLine": 36,
+          "endLine": 39,
+          "params": [
+            "expected_mask",
+            "received_mask"
+          ]
+        },
+        {
+          "name": "can_tx_response_window_expired",
+          "startLine": 41,
+          "endLine": 44,
+          "params": [
+            "tx_us",
+            "now_us"
+          ]
+        },
+        {
+          "name": "scheduled_voltage_poll",
+          "startLine": 56,
+          "endLine": 73,
+          "params": [
+            "cycle",
+            "request"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "ScheduledVoltageRequest",
+          "startLine": 46,
+          "endLine": 51,
+          "methods": [],
+          "properties": [
+            "driver_id",
+            "pid",
+            "phase_us"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "can_tx_wheel_round_complete",
+          "line": 30,
+          "isDefault": false
+        },
+        {
+          "name": "can_tx_response_pair_complete",
+          "line": 36,
+          "isDefault": false
+        },
+        {
+          "name": "can_tx_response_window_expired",
+          "line": 41,
+          "isDefault": false
+        },
+        {
+          "name": "ScheduledVoltageRequest",
+          "line": 46,
+          "isDefault": false
+        },
+        {
+          "name": "scheduled_voltage_poll",
+          "line": 56,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "can_tx_response_window_expired",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 43
+        },
+        {
+          "caller": "scheduled_voltage_poll",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 58
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 5,
+        "functionCount": 4,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "include/little_endian.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 56,
+      "nonEmptyLines": 47,
+      "functions": [
+        {
+          "name": "read_u16",
+          "startLine": 7,
+          "endLine": 11,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "read_i16",
+          "startLine": 13,
+          "endLine": 16,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "read_u32",
+          "startLine": 18,
+          "endLine": 24,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "read_i32",
+          "startLine": 26,
+          "endLine": 29,
+          "params": [
+            "data"
+          ]
+        },
+        {
+          "name": "write_u16",
+          "startLine": 31,
+          "endLine": 35,
+          "params": [
+            "data",
+            "value"
+          ]
+        },
+        {
+          "name": "write_i16",
+          "startLine": 37,
+          "endLine": 42,
+          "params": [
+            "data",
+            "value"
+          ]
+        },
+        {
+          "name": "write_u32",
+          "startLine": 44,
+          "endLine": 50,
+          "params": [
+            "data",
+            "value"
+          ]
+        },
+        {
+          "name": "write_i32",
+          "startLine": 52,
+          "endLine": 55,
+          "params": [
+            "data",
+            "value"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "read_u16",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "read_i16",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "read_u32",
+          "line": 18,
+          "isDefault": false
+        },
+        {
+          "name": "read_i32",
+          "line": 26,
+          "isDefault": false
+        },
+        {
+          "name": "write_u16",
+          "line": 31,
+          "isDefault": false
+        },
+        {
+          "name": "write_i16",
+          "line": 37,
+          "isDefault": false
+        },
+        {
+          "name": "write_u32",
+          "line": 44,
+          "isDefault": false
+        },
+        {
+          "name": "write_i32",
+          "line": 52,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "read_u16",
+          "callee": "static_cast<uint16_t>",
+          "lineNumber": 9
+        },
+        {
+          "caller": "read_u16",
+          "callee": "static_cast<uint16_t>",
+          "lineNumber": 10
+        },
+        {
+          "caller": "read_i16",
+          "callee": "static_cast<int16_t>",
+          "lineNumber": 15
+        },
+        {
+          "caller": "read_i16",
+          "callee": "read_u16",
+          "lineNumber": 15
+        },
+        {
+          "caller": "read_u32",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 20
+        },
+        {
+          "caller": "read_u32",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 21
+        },
+        {
+          "caller": "read_u32",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 22
+        },
+        {
+          "caller": "read_u32",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 23
+        },
+        {
+          "caller": "read_i32",
+          "callee": "static_cast<int32_t>",
+          "lineNumber": 28
+        },
+        {
+          "caller": "read_i32",
+          "callee": "read_u32",
+          "lineNumber": 28
+        },
+        {
+          "caller": "write_u16",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 33
+        },
+        {
+          "caller": "write_u16",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 34
+        },
+        {
+          "caller": "write_i16",
+          "callee": "write_u16",
+          "lineNumber": 41
+        },
+        {
+          "caller": "write_i16",
+          "callee": "static_cast<uint16_t>",
+          "lineNumber": 41
+        },
+        {
+          "caller": "write_u32",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 46
+        },
+        {
+          "caller": "write_u32",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 47
+        },
+        {
+          "caller": "write_u32",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 48
+        },
+        {
+          "caller": "write_u32",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 49
+        },
+        {
+          "caller": "write_i32",
+          "callee": "write_u32",
+          "lineNumber": 54
+        },
+        {
+          "caller": "write_i32",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 54
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 8,
+        "functionCount": 8,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "include/timing_diagnostics.hpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 52,
+      "nonEmptyLines": 47,
+      "callGraph": [
+        {
+          "caller": "measure",
+          "callee": "action",
+          "lineNumber": 44
+        },
+        {
+          "caller": "measure",
+          "callee": "record_stage",
+          "lineNumber": 45
+        },
+        {
+          "caller": "measure",
+          "callee": "action",
+          "lineNumber": 48
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/can_control.cpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 480,
+      "nonEmptyLines": 438,
+      "functions": [
+        {
+          "name": "status_pending",
+          "startLine": 53,
+          "endLine": 53,
+          "params": []
+        },
+        {
+          "name": "status_sent",
+          "startLine": 54,
+          "endLine": 54,
+          "params": []
+        },
+        {
+          "name": "begin",
+          "startLine": 55,
+          "endLine": 61,
+          "params": []
+        },
+        {
+          "name": "drain_rx",
+          "startLine": 62,
+          "endLine": 66,
+          "params": [
+            "now"
+          ]
+        },
+        {
+          "name": "send_torque_off",
+          "startLine": 67,
+          "endLine": 74,
+          "params": []
+        },
+        {
+          "name": "md200t_response_window_open",
+          "startLine": 109,
+          "endLine": 126,
+          "params": [
+            "driver_id",
+            "rx_timestamp_us"
+          ]
+        },
+        {
+          "name": "md200t_process_rx_frame",
+          "startLine": 128,
+          "endLine": 211,
+          "params": [
+            "frame",
+            "now",
+            "rx_timestamp_us"
+          ]
+        },
+        {
+          "name": "process_queued_rx",
+          "startLine": 213,
+          "endLine": 233,
+          "params": [
+            "now"
+          ]
+        },
+        {
+          "name": "telemetry_is_fresh",
+          "startLine": 235,
+          "endLine": 238,
+          "params": [
+            "valid",
+            "last_update_ms",
+            "now",
+            "timeout_ms"
+          ]
+        },
+        {
+          "name": "update_health",
+          "startLine": 240,
+          "endLine": 251,
+          "params": [
+            "now"
+          ]
+        },
+        {
+          "name": "md200t_send_driver_command",
+          "startLine": 253,
+          "endLine": 261,
+          "params": [
+            "driver_id",
+            "command"
+          ]
+        },
+        {
+          "name": "invalidate_wheel_telemetry",
+          "startLine": 263,
+          "endLine": 273,
+          "params": [
+            "wheel_mask"
+          ]
+        },
+        {
+          "name": "close_driver_response_window",
+          "startLine": 275,
+          "endLine": 302,
+          "params": [
+            "driver_id"
+          ]
+        },
+        {
+          "name": "reset_can_tx_scheduler",
+          "startLine": 304,
+          "endLine": 310,
+          "params": [
+            "now_us"
+          ]
+        },
+        {
+          "name": "transmit_if_due",
+          "startLine": 312,
+          "endLine": 460,
+          "params": [
+            "now_us"
+          ]
+        },
+        {
+          "name": "reset_session",
+          "startLine": 462,
+          "endLine": 467,
+          "params": [
+            "now_us"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "Md200tDriverCommand",
+          "startLine": 23,
+          "endLine": 28,
+          "methods": [],
+          "properties": [
+            "ch1_rpm",
+            "ch2_rpm",
+            "enabled"
+          ]
+        },
+        {
+          "name": "CanTxScheduler",
+          "startLine": 29,
+          "endLine": 45,
+          "methods": [],
+          "properties": [
+            "cycle_start_us",
+            "driver_a_tx_us",
+            "driver_b_tx_us",
+            "superframe_cycle",
+            "initialized",
+            "driver_a_command_sent",
+            "driver_a_response_checked",
+            "driver_b_command_sent",
+            "driver_b_response_checked",
+            "voltage_poll_handled",
+            "pending_driver_b_command",
+            "expected_wheel_mask",
+            "received_wheel_mask",
+            "round_status_tx_requested"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "Md200tDriverCommand",
+          "line": 23,
+          "isDefault": false
+        },
+        {
+          "name": "CanTxScheduler",
+          "line": 29,
+          "isDefault": false
+        },
+        {
+          "name": "status_pending",
+          "line": 53,
+          "isDefault": false
+        },
+        {
+          "name": "status_sent",
+          "line": 54,
+          "isDefault": false
+        },
+        {
+          "name": "begin",
+          "line": 55,
+          "isDefault": false
+        },
+        {
+          "name": "drain_rx",
+          "line": 62,
+          "isDefault": false
+        },
+        {
+          "name": "send_torque_off",
+          "line": 67,
+          "isDefault": false
+        },
+        {
+          "name": "process_queued_rx",
+          "line": 213,
+          "isDefault": false
+        },
+        {
+          "name": "update_health",
+          "line": 240,
+          "isDefault": false
+        },
+        {
+          "name": "transmit_if_due",
+          "line": 312,
+          "isDefault": false
+        },
+        {
+          "name": "reset_session",
+          "line": 462,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "begin",
+          "callee": "can_begin",
+          "lineNumber": 57
+        },
+        {
+          "caller": "begin",
+          "callee": "control::report_safety_tx_failure",
+          "lineNumber": 58
+        },
+        {
+          "caller": "begin",
+          "callee": "digitalWrite",
+          "lineNumber": 59
+        },
+        {
+          "caller": "drain_rx",
+          "callee": "timing::observe_rx_poll",
+          "lineNumber": 64
+        },
+        {
+          "caller": "drain_rx",
+          "callee": "process_queued_rx",
+          "lineNumber": 65
+        },
+        {
+          "caller": "send_torque_off",
+          "callee": "md200t_torque_off",
+          "lineNumber": 70
+        },
+        {
+          "caller": "send_torque_off",
+          "callee": "md200t_torque_off",
+          "lineNumber": 71
+        },
+        {
+          "caller": "send_torque_off",
+          "callee": "control::report_safety_tx_failure",
+          "lineNumber": 72
+        },
+        {
+          "caller": "send_torque_off",
+          "callee": "digitalWrite",
+          "lineNumber": 73
+        },
+        {
+          "caller": "send_torque_off",
+          "callee": "control::has_driver_fault",
+          "lineNumber": 73
+        },
+        {
+          "caller": "send_torque_off",
+          "callee": "control::reported",
+          "lineNumber": 73
+        },
+        {
+          "caller": "md200t_response_window_open",
+          "callee": "can_tx_response_window_expired",
+          "lineNumber": 115
+        },
+        {
+          "caller": "md200t_response_window_open",
+          "callee": "can_tx_response_window_expired",
+          "lineNumber": 122
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "md200t_decode_response_id",
+          "lineNumber": 133
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "md200t_find_motor_telemetry",
+          "lineNumber": 138
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "timing::observe_wheel",
+          "lineNumber": 149
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "md200t_response_window_open",
+          "lineNumber": 150
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "md200t_response_window_open",
+          "lineNumber": 154
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "little_endian::read_i16",
+          "lineNumber": 158
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "little_endian::read_i32",
+          "lineNumber": 159
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "control::report",
+          "lineNumber": 164
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "control::status",
+          "lineNumber": 169
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "can_tx_response_pair_complete",
+          "lineNumber": 174
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "can_tx_response_pair_complete",
+          "lineNumber": 177
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "can_tx_wheel_round_complete",
+          "lineNumber": 181
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "little_endian::read_i16",
+          "lineNumber": 202
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "static_cast<uint16_t>",
+          "lineNumber": 208
+        },
+        {
+          "caller": "md200t_process_rx_frame",
+          "callee": "static_cast<uint16_t>",
+          "lineNumber": 208
+        },
+        {
+          "caller": "process_queued_rx",
+          "callee": "can_receive_timed",
+          "lineNumber": 219
+        },
+        {
+          "caller": "process_queued_rx",
+          "callee": "control::status",
+          "lineNumber": 222
+        },
+        {
+          "caller": "process_queued_rx",
+          "callee": "control::status",
+          "lineNumber": 222
+        },
+        {
+          "caller": "process_queued_rx",
+          "callee": "control::status",
+          "lineNumber": 226
+        },
+        {
+          "caller": "process_queued_rx",
+          "callee": "can_debug::consume_rx",
+          "lineNumber": 227
+        },
+        {
+          "caller": "process_queued_rx",
+          "callee": "md200t_process_rx_frame",
+          "lineNumber": 231
+        },
+        {
+          "caller": "update_health",
+          "callee": "control::status",
+          "lineNumber": 242
+        },
+        {
+          "caller": "update_health",
+          "callee": "control::status",
+          "lineNumber": 242
+        },
+        {
+          "caller": "update_health",
+          "callee": "telemetry_is_fresh",
+          "lineNumber": 245
+        },
+        {
+          "caller": "update_health",
+          "callee": "telemetry_is_fresh",
+          "lineNumber": 246
+        },
+        {
+          "caller": "update_health",
+          "callee": "control::report",
+          "lineNumber": 250
+        },
+        {
+          "caller": "md200t_send_driver_command",
+          "callee": "md200t_set_velocity",
+          "lineNumber": 257
+        },
+        {
+          "caller": "md200t_send_driver_command",
+          "callee": "control::rpm_to_i16",
+          "lineNumber": 258
+        },
+        {
+          "caller": "md200t_send_driver_command",
+          "callee": "control::rpm_to_i16",
+          "lineNumber": 259
+        },
+        {
+          "caller": "md200t_send_driver_command",
+          "callee": "md200t_torque_off",
+          "lineNumber": 260
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "process_queued_rx",
+          "lineNumber": 279
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "millis",
+          "lineNumber": 279
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 283
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 284
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "timing::observe_timeout",
+          "lineNumber": 290
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "invalidate_wheel_telemetry",
+          "lineNumber": 292
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "control::report",
+          "lineNumber": 293
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "digitalWrite",
+          "lineNumber": 301
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "control::has_driver_fault",
+          "lineNumber": 301
+        },
+        {
+          "caller": "close_driver_response_window",
+          "callee": "control::reported",
+          "lineNumber": 301
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 314
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 317
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 317
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 320
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 331
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "can_tx_response_window_expired",
+          "lineNumber": 339
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "close_driver_response_window",
+          "lineNumber": 341
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "can_tx_response_window_expired",
+          "lineNumber": 346
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "close_driver_response_window",
+          "lineNumber": 348
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 356
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 369
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 374
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 374
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 374
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::has_driver_fault",
+          "lineNumber": 375
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::reported",
+          "lineNumber": 375
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 377
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "micros",
+          "lineNumber": 391
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "md200t_send_driver_command",
+          "lineNumber": 393
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::report_safety_tx_failure",
+          "lineNumber": 394
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "digitalWrite",
+          "lineNumber": 395
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::has_driver_fault",
+          "lineNumber": 395
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::reported",
+          "lineNumber": 395
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "can_tx_response_window_expired",
+          "lineNumber": 405
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "close_driver_response_window",
+          "lineNumber": 409
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 414
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::has_driver_fault",
+          "lineNumber": 414
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::reported",
+          "lineNumber": 414
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 414
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::status",
+          "lineNumber": 414
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "micros",
+          "lineNumber": 418
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "md200t_send_driver_command",
+          "lineNumber": 420
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::report_safety_tx_failure",
+          "lineNumber": 422
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "digitalWrite",
+          "lineNumber": 423
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::has_driver_fault",
+          "lineNumber": 423
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::reported",
+          "lineNumber": 423
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "can_tx_response_window_expired",
+          "lineNumber": 429
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "close_driver_response_window",
+          "lineNumber": 432
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "scheduled_voltage_poll",
+          "lineNumber": 445
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "md200t_request_pid_data",
+          "lineNumber": 455
+        },
+        {
+          "caller": "transmit_if_due",
+          "callee": "control::report",
+          "lineNumber": 456
+        },
+        {
+          "caller": "reset_session",
+          "callee": "reset_can_tx_scheduler",
+          "lineNumber": 466
+        },
+        {
+          "caller": "diagnostic_output_ready",
+          "callee": "control::status",
+          "lineNumber": 471
+        },
+        {
+          "caller": "diagnostic_output_ready",
+          "callee": "control::status",
+          "lineNumber": 473
+        },
+        {
+          "caller": "diagnostic_output_ready",
+          "callee": "control::status",
+          "lineNumber": 473
+        }
+      ],
+      "metrics": {
+        "importCount": 6,
+        "exportCount": 11,
+        "functionCount": 16,
+        "classCount": 2
+      }
+    },
+    {
+      "path": "src/timing_diagnostics.cpp",
+      "language": "cpp",
+      "fileCategory": "code",
+      "totalLines": 213,
+      "nonEmptyLines": 206,
+      "callGraph": [
+        {
+          "caller": "write_u64",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 57
+        },
+        {
+          "caller": "write_u64",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 57
+        },
+        {
+          "caller": "write_u64",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 58
+        },
+        {
+          "caller": "write_u64",
+          "callee": "static_cast<uint32_t>",
+          "lineNumber": 58
+        },
+        {
+          "caller": "write_fields",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 64
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 76
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 77
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 78
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 81
+        },
+        {
+          "caller": "encode",
+          "callee": "write_u64",
+          "lineNumber": 82
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 83
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 84
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 85
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 86
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 92
+        },
+        {
+          "caller": "encode",
+          "callee": "write_u64",
+          "lineNumber": 93
+        },
+        {
+          "caller": "encode",
+          "callee": "little_endian::write_u32",
+          "lineNumber": 94
+        },
+        {
+          "caller": "encode",
+          "callee": "write_fields",
+          "lineNumber": 101
+        },
+        {
+          "caller": "encode",
+          "callee": "write_fields",
+          "lineNumber": 108
+        },
+        {
+          "caller": "encode",
+          "callee": "protocol::xor_checksum",
+          "lineNumber": 110
+        },
+        {
+          "caller": "begin_loop",
+          "callee": "add",
+          "lineNumber": 129
+        },
+        {
+          "caller": "begin_loop",
+          "callee": "control::status",
+          "lineNumber": 132
+        },
+        {
+          "caller": "end_loop",
+          "callee": "add",
+          "lineNumber": 135
+        },
+        {
+          "caller": "record_stage",
+          "callee": "add",
+          "lineNumber": 136
+        },
+        {
+          "caller": "observe_rx_poll",
+          "callee": "micros",
+          "lineNumber": 139
+        },
+        {
+          "caller": "observe_rx_poll",
+          "callee": "add",
+          "lineNumber": 140
+        },
+        {
+          "caller": "observe_timeout",
+          "callee": "can_rx_pending",
+          "lineNumber": 159
+        },
+        {
+          "caller": "observe_timeout",
+          "callee": "micros",
+          "lineNumber": 160
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "millis",
+          "lineNumber": 176
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "can_control::diagnostic_output_ready",
+          "lineNumber": 178
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "micros",
+          "lineNumber": 178
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "availableForWrite",
+          "lineNumber": 183
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "send_now",
+          "lineNumber": 190
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "availableForWrite",
+          "lineNumber": 191
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "can_rx_overrun_count",
+          "lineNumber": 196
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "static_cast<uint8_t>",
+          "lineNumber": 199
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "control::status",
+          "lineNumber": 199
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "encode",
+          "lineNumber": 204
+        },
+        {
+          "caller": "publish_if_due",
+          "callee": "write",
+          "lineNumber": 206
+        }
+      ],
+      "metrics": {
+        "importCount": 6,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

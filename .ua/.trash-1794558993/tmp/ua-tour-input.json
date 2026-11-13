@@ -1,0 +1,4173 @@
+{
+    "edges":  [
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "class:include/control.hpp:CommandPacket",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "class:include/control.hpp:CommandPacket",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "class:include/control.hpp:WheelRpmCommand",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "class:include/control.hpp:WheelRpmCommand",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "class:include/control.hpp:FaultSnapshot",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "class:include/control.hpp:FaultSnapshot",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "class:include/control.hpp:Status",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "class:include/control.hpp:Status",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "file:include/build_features.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:include/control.hpp",
+                      "target":  "file:include/vehicle_motion.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:include/rc_io.hpp",
+                      "target":  "class:include/rc_io.hpp:PwmInput",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/rc_io.hpp",
+                      "target":  "class:include/rc_io.hpp:PwmInput",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/rc_io.hpp",
+                      "target":  "file:include/control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "class:include/steering_config.hpp:CalibrationPoint",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "class:include/steering_config.hpp:CalibrationPoint",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "class:include/steering_config.hpp:ServoCalibration",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "class:include/steering_config.hpp:ServoCalibration",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "class:include/steering_config.hpp:MotionConfig",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "class:include/steering_config.hpp:MotionConfig",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "function:include/steering_config.hpp:pwm_duty",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "function:include/steering_config.hpp:pwm_duty",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "function:include/steering_config.hpp:valid_calibration",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "function:include/steering_config.hpp:valid_calibration",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "function:include/steering_config.hpp:pulse_for_angle",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "function:include/steering_config.hpp:pulse_for_angle",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/steering_config.hpp",
+                      "target":  "file:include/vehicle_kinematics.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "class:include/vehicle_kinematics.hpp:RcCommand",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "class:include/vehicle_kinematics.hpp:RcCommand",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "class:include/vehicle_kinematics.hpp:Geometry",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "class:include/vehicle_kinematics.hpp:Geometry",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "class:include/vehicle_kinematics.hpp:WheelTargets",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "class:include/vehicle_kinematics.hpp:WheelTargets",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:clamp",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:clamp",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:RcCommand.RcCommand",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:include/vehicle_kinematics.hpp:RcCommand",
+                      "target":  "function:include/vehicle_kinematics.hpp:RcCommand.RcCommand",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:RcCommand.RcCommand",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:speed_to_rpm",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:speed_to_rpm",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:curvature_from_inner_angle",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:curvature_from_inner_angle",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:inverse",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_kinematics.hpp",
+                      "target":  "function:include/vehicle_kinematics.hpp:inverse",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/steering_config.hpp:pulse_for_angle",
+                      "target":  "function:include/steering_config.hpp:valid_calibration",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/steering_config.hpp:pulse_for_angle",
+                      "target":  "function:include/vehicle_kinematics.hpp:clamp",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/vehicle_kinematics.hpp:inverse",
+                      "target":  "function:include/vehicle_kinematics.hpp:clamp",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/vehicle_kinematics.hpp:inverse",
+                      "target":  "function:include/vehicle_kinematics.hpp:speed_to_rpm",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "class:include/vehicle_motion.hpp:MotionController",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "class:include/vehicle_motion.hpp:MotionController",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.MotionController",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:include/vehicle_motion.hpp:MotionController",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.MotionController",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.MotionController",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.calibrated",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:include/vehicle_motion.hpp:MotionController",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.calibrated",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.calibrated",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.valid_configuration",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:include/vehicle_motion.hpp:MotionController",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.valid_configuration",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.valid_configuration",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.stopped",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:include/vehicle_motion.hpp:MotionController",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.stopped",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.stopped",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.inhibit",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:include/vehicle_motion.hpp:MotionController",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.inhibit",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.inhibit",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.update",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:include/vehicle_motion.hpp:MotionController",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.update",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.update",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.ramp",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:include/vehicle_motion.hpp:MotionController",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.ramp",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/vehicle_motion.hpp",
+                      "target":  "file:include/steering_config.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "function:src/main.cpp:setup",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "function:src/main.cpp:setup",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "function:src/main.cpp:loop",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "function:src/main.cpp:loop",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "file:include/can_control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "file:include/can_debug.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "file:include/control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "file:include/rc_io.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "file:include/serial_protocol.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/main.cpp",
+                      "target":  "file:include/timing_diagnostics.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "class:src/rc_io.cpp:PulseFilter",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "class:src/rc_io.cpp:PulseFilter",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:PulseFilter.PulseFilter",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/rc_io.cpp:PulseFilter",
+                      "target":  "function:src/rc_io.cpp:PulseFilter.PulseFilter",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:PulseFilter.PulseFilter",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:PulseFilter.push",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/rc_io.cpp:PulseFilter",
+                      "target":  "function:src/rc_io.cpp:PulseFilter.push",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:PulseFilter.push",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:v_decodePWM",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:v_decodePWM",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:w_decodePWM",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:w_decodePWM",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:mode_decodePWM",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:mode_decodePWM",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:initialize_inputs",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:initialize_inputs",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:read_mode",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:read_mode",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:read_pwm",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:read_pwm",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:initialize_steering",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:initialize_steering",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:offset_with_deadband",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:offset_with_deadband",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:write_steering",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "function:src/rc_io.cpp:write_steering",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/rc_io.cpp",
+                      "target":  "file:include/rc_io.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "function:include/vehicle_motion.hpp:MotionController.calibrated",
+                      "target":  "function:include/steering_config.hpp:valid_calibration",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/vehicle_motion.hpp:MotionController.update",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.calibrated",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/vehicle_motion.hpp:MotionController.update",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.valid_configuration",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/vehicle_motion.hpp:MotionController.update",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.inhibit",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/vehicle_motion.hpp:MotionController.update",
+                      "target":  "function:include/vehicle_kinematics.hpp:inverse",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/vehicle_motion.hpp:MotionController.update",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.ramp",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/vehicle_motion.hpp:MotionController.update",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.stopped",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/main.cpp:setup",
+                      "target":  "function:src/rc_io.cpp:initialize_steering",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/main.cpp:setup",
+                      "target":  "function:src/rc_io.cpp:initialize_inputs",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/main.cpp:loop",
+                      "target":  "function:src/rc_io.cpp:read_mode",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/main.cpp:loop",
+                      "target":  "function:src/rc_io.cpp:read_pwm",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/main.cpp:loop",
+                      "target":  "function:src/rc_io.cpp:write_steering",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/rc_io.cpp:v_decodePWM",
+                      "target":  "function:src/rc_io.cpp:PulseFilter.push",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/rc_io.cpp:w_decodePWM",
+                      "target":  "function:src/rc_io.cpp:PulseFilter.push",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/rc_io.cpp:mode_decodePWM",
+                      "target":  "function:src/rc_io.cpp:PulseFilter.push",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/rc_io.cpp:initialize_steering",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.calibrated",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/rc_io.cpp:initialize_steering",
+                      "target":  "function:include/steering_config.hpp:pwm_duty",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/rc_io.cpp:initialize_steering",
+                      "target":  "function:include/steering_config.hpp:pulse_for_angle",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/rc_io.cpp:write_steering",
+                      "target":  "function:include/vehicle_motion.hpp:MotionController.calibrated",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/rc_io.cpp:write_steering",
+                      "target":  "function:include/steering_config.hpp:pulse_for_angle",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/rc_io.cpp:write_steering",
+                      "target":  "function:include/steering_config.hpp:pwm_duty",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_control.hpp",
+                      "target":  "class:include/can_control.hpp:MotorTelemetry",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/can_control.hpp",
+                      "target":  "class:include/can_control.hpp:MotorTelemetry",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_control.hpp",
+                      "target":  "class:include/can_control.hpp:DriverVoltageTelemetry",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/can_control.hpp",
+                      "target":  "class:include/can_control.hpp:DriverVoltageTelemetry",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_control.hpp",
+                      "target":  "class:include/can_control.hpp:Telemetry",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/can_control.hpp",
+                      "target":  "class:include/can_control.hpp:Telemetry",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_control.hpp",
+                      "target":  "file:include/build_features.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:include/can_control.hpp",
+                      "target":  "file:include/flexcan0.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:include/can_debug.hpp",
+                      "target":  "file:include/build_features.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:include/can_debug.hpp",
+                      "target":  "file:include/flexcan0.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_debug.cpp",
+                      "target":  "file:include/can_control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_debug.cpp",
+                      "target":  "file:include/can_debug.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_debug.cpp",
+                      "target":  "file:include/control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_debug.cpp",
+                      "target":  "file:include/little_endian.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_debug.cpp",
+                      "target":  "file:include/serial_protocol.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:begin",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:begin",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:parse_complete_command_frame",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:feed_command_parser",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:receive_commands",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:receive_commands",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:xor_checksum",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:xor_checksum",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:build_system_error_bits",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:telemetry_validity_bits",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:send_system_status",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:send_status_if_ready",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "function:src/serial_protocol.cpp:send_status_if_ready",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "file:include/can_control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "file:include/can_debug.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "file:include/control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "file:include/little_endian.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/serial_protocol.cpp",
+                      "target":  "file:include/serial_protocol.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_command_frame",
+                      "target":  "function:src/serial_protocol.cpp:xor_checksum",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_command_frame",
+                      "target":  "function:src/control.cpp:report",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_command_frame",
+                      "target":  "function:include/little_endian.hpp:read_i16",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_command_frame",
+                      "target":  "function:src/control.cpp:enter_control_mode",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_command_frame",
+                      "target":  "function:src/control.cpp:accept_command",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+                      "target":  "function:src/serial_protocol.cpp:xor_checksum",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+                      "target":  "function:src/control.cpp:report",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+                      "target":  "function:src/control.cpp:reset_mcu",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+                      "target":  "function:src/serial_protocol.cpp:parse_complete_command_frame",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+                      "target":  "function:src/serial_protocol.cpp:parse_complete_reset_frame",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+                      "target":  "function:src/control.cpp:report",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:feed_command_parser",
+                      "target":  "function:src/control.cpp:report",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:feed_command_parser",
+                      "target":  "function:src/serial_protocol.cpp:parse_complete_serial_frame",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:receive_commands",
+                      "target":  "function:src/serial_protocol.cpp:feed_command_parser",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_system_status",
+                      "target":  "function:src/control.cpp:refresh_errors",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_system_status",
+                      "target":  "function:src/control.cpp:fault_snapshot",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_system_status",
+                      "target":  "function:src/control.cpp:motor_state",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_system_status",
+                      "target":  "function:include/little_endian.hpp:write_u16",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_system_status",
+                      "target":  "function:src/serial_protocol.cpp:build_system_error_bits",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_system_status",
+                      "target":  "function:src/serial_protocol.cpp:telemetry_validity_bits",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_system_status",
+                      "target":  "function:include/little_endian.hpp:write_u32",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_system_status",
+                      "target":  "function:src/serial_protocol.cpp:xor_checksum",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_system_status",
+                      "target":  "function:src/control.cpp:consume_error_reports",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_status_if_ready",
+                      "target":  "function:src/can_control.cpp:status_pending",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_status_if_ready",
+                      "target":  "function:src/serial_protocol.cpp:send_system_status",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/serial_protocol.cpp:send_status_if_ready",
+                      "target":  "function:src/can_control.cpp:status_sent",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/flexcan0.hpp",
+                      "target":  "class:include/flexcan0.hpp:CanFrame",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/flexcan0.hpp",
+                      "target":  "class:include/flexcan0.hpp:CanFrame",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/flexcan0.hpp",
+                      "target":  "class:include/flexcan0.hpp:CanRxStats",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/flexcan0.hpp",
+                      "target":  "class:include/flexcan0.hpp:CanRxStats",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/md200t_can.hpp",
+                      "target":  "file:include/flexcan0.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:report",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:report",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:reported",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:reported",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:report_safety_tx_failure",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:report_safety_tx_failure",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:initialize_power",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:initialize_power",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:finish_boot",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:finish_boot",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:initialize_motion",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:initialize_motion",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:initialize_session",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:initialize_session",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:update_power",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:update_power",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:consume_error_reports",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:consume_error_reports",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:rpm_to_i16",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:rpm_to_i16",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:accept_command",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:accept_command",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:update_drive",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:update_drive",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:reset_mcu",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:reset_mcu",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:enter_control_mode",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:enter_control_mode",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:has_driver_fault",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:has_driver_fault",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:refresh_errors",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:refresh_errors",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:fault_snapshot",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:fault_snapshot",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:motor_state",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "function:src/control.cpp:motor_state",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "file:include/can_control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "file:include/can_debug.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "file:include/control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "file:include/error_report.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "file:include/md200t_can.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "file:include/rc_io.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/control.cpp",
+                      "target":  "file:include/serial_protocol.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:wait_until_set",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:wait_until_clear",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:pack_word",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_isr",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:abort_tx_mb",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_begin",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_begin",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_transmit",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_transmit",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_receive",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_receive",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_receive_timed",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_receive_timed",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_overrun_detected",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_overrun_detected",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_overrun_report_sent",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_overrun_report_sent",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_clear_rx_overrun_reports",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_clear_rx_overrun_reports",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_is_initialized",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_is_initialized",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_pending",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_pending",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_overrun_count",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_overrun_count",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_stats",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "function:src/flexcan0.cpp:can_rx_stats",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "file:include/error_report.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/flexcan0.cpp",
+                      "target":  "file:include/flexcan0.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:send_frame",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:send_frame",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:md200t_set_velocity",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:md200t_set_velocity",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:md200t_torque_off",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:md200t_torque_off",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:md200t_request_pid_data",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:md200t_request_pid_data",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:md200t_decode_response_id",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "function:src/md200t_can.cpp:md200t_decode_response_id",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "file:include/flexcan0.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "file:include/little_endian.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/md200t_can.cpp",
+                      "target":  "file:include/md200t_can.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "function:src/control.cpp:report_safety_tx_failure",
+                      "target":  "function:src/control.cpp:report",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.cpp:initialize_session",
+                      "target":  "function:src/flexcan0.cpp:can_clear_rx_overrun_reports",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.cpp:update_power",
+                      "target":  "function:src/control.cpp:initialize_session",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.cpp:consume_error_reports",
+                      "target":  "function:src/flexcan0.cpp:can_rx_overrun_report_sent",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.cpp:enter_control_mode",
+                      "target":  "function:src/control.cpp:initialize_session",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.cpp:refresh_errors",
+                      "target":  "function:src/control.cpp:report",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.cpp:fault_snapshot",
+                      "target":  "function:src/control.cpp:has_driver_fault",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.cpp:fault_snapshot",
+                      "target":  "function:src/flexcan0.cpp:can_rx_overrun_detected",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/flexcan0.cpp:abort_tx_mb",
+                      "target":  "function:src/flexcan0.cpp:wait_until_set",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/flexcan0.cpp:can_begin",
+                      "target":  "function:src/flexcan0.cpp:wait_until_clear",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/flexcan0.cpp:can_begin",
+                      "target":  "function:src/flexcan0.cpp:wait_until_set",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/flexcan0.cpp:can_transmit",
+                      "target":  "function:src/flexcan0.cpp:abort_tx_mb",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/flexcan0.cpp:can_transmit",
+                      "target":  "function:src/flexcan0.cpp:pack_word",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/flexcan0.cpp:can_transmit",
+                      "target":  "function:src/flexcan0.cpp:wait_until_set",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/flexcan0.cpp:can_receive",
+                      "target":  "function:src/flexcan0.cpp:can_receive_timed",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/md200t_can.cpp:send_frame",
+                      "target":  "function:src/flexcan0.cpp:can_transmit",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/md200t_can.cpp:md200t_set_velocity",
+                      "target":  "function:include/little_endian.hpp:write_i16",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/md200t_can.cpp:md200t_set_velocity",
+                      "target":  "function:src/md200t_can.cpp:send_frame",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/md200t_can.cpp:md200t_torque_off",
+                      "target":  "function:src/md200t_can.cpp:send_frame",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/md200t_can.cpp:md200t_request_pid_data",
+                      "target":  "function:src/md200t_can.cpp:send_frame",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "class:include/can_tx_schedule.hpp:ScheduledVoltageRequest",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "class:include/can_tx_schedule.hpp:ScheduledVoltageRequest",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_wheel_round_complete",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_wheel_round_complete",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_response_pair_complete",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_response_pair_complete",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_response_window_expired",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_response_window_expired",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "function:include/can_tx_schedule.hpp:scheduled_voltage_poll",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "function:include/can_tx_schedule.hpp:scheduled_voltage_poll",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/can_tx_schedule.hpp",
+                      "target":  "file:include/md200t_can.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:read_u16",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:read_u16",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:read_i16",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:read_i16",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:read_u32",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:read_u32",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:read_i32",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:read_i32",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:write_u16",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:write_u16",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:write_i16",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:write_i16",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:write_u32",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:write_u32",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:write_i32",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:include/little_endian.hpp",
+                      "target":  "function:include/little_endian.hpp:write_i32",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:include/timing_diagnostics.hpp",
+                      "target":  "file:include/build_features.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "class:src/can_control.cpp:Md200tDriverCommand",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "class:src/can_control.cpp:Md200tDriverCommand",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "class:src/can_control.cpp:CanTxScheduler",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "class:src/can_control.cpp:CanTxScheduler",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:status_pending",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:status_pending",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:status_sent",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:status_sent",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:begin",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:begin",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:drain_rx",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:drain_rx",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:send_torque_off",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:send_torque_off",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:md200t_response_window_open",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:md200t_process_rx_frame",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:process_queued_rx",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:process_queued_rx",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:update_health",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:update_health",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:invalidate_wheel_telemetry",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:close_driver_response_window",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:transmit_if_due",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:transmit_if_due",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:reset_session",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "function:src/can_control.cpp:reset_session",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "file:include/can_control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "file:include/can_debug.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "file:include/can_tx_schedule.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "file:include/control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "file:include/little_endian.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/can_control.cpp",
+                      "target":  "file:include/timing_diagnostics.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/timing_diagnostics.cpp",
+                      "target":  "file:include/can_control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/timing_diagnostics.cpp",
+                      "target":  "file:include/can_tx_schedule.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/timing_diagnostics.cpp",
+                      "target":  "file:include/control.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/timing_diagnostics.cpp",
+                      "target":  "file:include/little_endian.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/timing_diagnostics.cpp",
+                      "target":  "file:include/serial_protocol.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "file:src/timing_diagnostics.cpp",
+                      "target":  "file:include/timing_diagnostics.hpp",
+                      "type":  "imports",
+                      "direction":  "forward",
+                      "weight":  0.7
+                  },
+                  {
+                      "source":  "function:include/little_endian.hpp:read_i16",
+                      "target":  "function:include/little_endian.hpp:read_u16",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/little_endian.hpp:read_i32",
+                      "target":  "function:include/little_endian.hpp:read_u32",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/little_endian.hpp:write_i16",
+                      "target":  "function:include/little_endian.hpp:write_u16",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:include/little_endian.hpp:write_i32",
+                      "target":  "function:include/little_endian.hpp:write_u32",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:drain_rx",
+                      "target":  "function:src/can_control.cpp:process_queued_rx",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:md200t_response_window_open",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_response_window_expired",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:md200t_process_rx_frame",
+                      "target":  "function:src/can_control.cpp:md200t_response_window_open",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:md200t_process_rx_frame",
+                      "target":  "function:include/little_endian.hpp:read_i16",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:md200t_process_rx_frame",
+                      "target":  "function:include/little_endian.hpp:read_i32",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:md200t_process_rx_frame",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_response_pair_complete",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:md200t_process_rx_frame",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_wheel_round_complete",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:process_queued_rx",
+                      "target":  "function:src/can_control.cpp:md200t_process_rx_frame",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:close_driver_response_window",
+                      "target":  "function:src/can_control.cpp:process_queued_rx",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:close_driver_response_window",
+                      "target":  "function:src/can_control.cpp:invalidate_wheel_telemetry",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:transmit_if_due",
+                      "target":  "function:include/can_tx_schedule.hpp:can_tx_response_window_expired",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:transmit_if_due",
+                      "target":  "function:src/can_control.cpp:close_driver_response_window",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_control.cpp:transmit_if_due",
+                      "target":  "function:include/can_tx_schedule.hpp:scheduled_voltage_poll",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "document:README.md",
+                      "target":  "file:src/main.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:README.md",
+                      "target":  "config:platformio.ini",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:README.md",
+                      "target":  "file:include/steering_config.hpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:README.md",
+                      "target":  "file:include/can_tx_schedule.hpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "config:platformio.ini",
+                      "target":  "file:src/main.cpp",
+                      "type":  "configures",
+                      "direction":  "forward",
+                      "weight":  0.6
+                  },
+                  {
+                      "source":  "config:platformio.ini",
+                      "target":  "file:include/build_features.hpp",
+                      "type":  "configures",
+                      "direction":  "forward",
+                      "weight":  0.6
+                  },
+                  {
+                      "source":  "config:platformio.ini",
+                      "target":  "file:src/can_debug.cpp",
+                      "type":  "configures",
+                      "direction":  "forward",
+                      "weight":  0.6
+                  },
+                  {
+                      "source":  "config:platformio.ini",
+                      "target":  "file:src/timing_diagnostics.cpp",
+                      "type":  "configures",
+                      "direction":  "forward",
+                      "weight":  0.6
+                  },
+                  {
+                      "source":  "config:pyproject.toml",
+                      "target":  "file:src/can_cli.py",
+                      "type":  "configures",
+                      "direction":  "forward",
+                      "weight":  0.6
+                  },
+                  {
+                      "source":  "config:pyproject.toml",
+                      "target":  "file:src/control.py",
+                      "type":  "configures",
+                      "direction":  "forward",
+                      "weight":  0.6
+                  },
+                  {
+                      "source":  "config:pyproject.toml",
+                      "target":  "file:src/packet_monitor.py",
+                      "type":  "configures",
+                      "direction":  "forward",
+                      "weight":  0.6
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/main.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/rc_io.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/control.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/can_control.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/flexcan0.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/serial_protocol.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/can_debug.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/can_cli.py",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/packet_monitor.py",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/control.py",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/README.md",
+                      "target":  "file:src/timing_diagnostics.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/can-cli-windows.md",
+                      "target":  "file:src/can_cli.py",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/can-cli-windows.md",
+                      "target":  "file:src/control.py",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/can-cli-windows.md",
+                      "target":  "file:src/packet_monitor.py",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/can-rx-fifo.md",
+                      "target":  "file:src/can_control.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/can-rx-fifo.md",
+                      "target":  "file:src/flexcan0.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/can-rx-fifo.md",
+                      "target":  "file:src/md200t_can.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/can-rx-fifo.md",
+                      "target":  "file:include/can_tx_schedule.hpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/firmware-architecture.ko.md",
+                      "target":  "config:platformio.ini",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/firmware-architecture.ko.md",
+                      "target":  "file:src/main.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/firmware-architecture.ko.md",
+                      "target":  "file:src/control.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/firmware-architecture.ko.md",
+                      "target":  "file:src/serial_protocol.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/firmware-architecture.ko.md",
+                      "target":  "file:include/build_features.hpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/raspberry-pi-handoff.ko.md",
+                      "target":  "config:pyproject.toml",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/raspberry-pi-handoff.ko.md",
+                      "target":  "config:platformio.ini",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+                      "target":  "file:src/rc_io.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+                      "target":  "file:src/control.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+                      "target":  "file:src/flexcan0.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+                      "target":  "file:src/can_control.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+                      "target":  "file:src/serial_protocol.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-steering.ko.md",
+                      "target":  "file:src/rc_io.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-steering.ko.md",
+                      "target":  "file:src/control.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-steering.ko.md",
+                      "target":  "file:include/steering_config.hpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-steering.ko.md",
+                      "target":  "file:include/vehicle_kinematics.hpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/rc-steering.ko.md",
+                      "target":  "file:include/vehicle_motion.hpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/timing-diagnostics.md",
+                      "target":  "file:src/timing_diagnostics.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/timing-diagnostics.md",
+                      "target":  "file:src/can_cli.py",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/timing-diagnostics.md",
+                      "target":  "file:include/timing_diagnostics.hpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/usb-protocol.ko.md",
+                      "target":  "file:src/serial_protocol.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/usb-protocol.ko.md",
+                      "target":  "file:include/serial_protocol.hpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/usb-protocol.ko.md",
+                      "target":  "file:src/can_debug.cpp",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "document:docs/usb-protocol.ko.md",
+                      "target":  "file:src/control.py",
+                      "type":  "documents",
+                      "direction":  "forward",
+                      "weight":  0.5
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:wait_for_activity",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:wait_for_activity",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:xor_checksum",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:xor_checksum",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:parse_int",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:parse_int",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:parse_byte",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:parse_byte",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:parse_can_id",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:parse_can_id",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:find_teensy_port",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:find_teensy_port",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:build_bridge_request",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:build_bridge_request",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:build_benchmark_request",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:build_benchmark_request",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:build_command_parser",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:build_command_parser",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:command_from_namespace",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:command_from_namespace",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:parse_interactive_command",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:parse_interactive_command",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:interactive_help",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:interactive_help",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:format_data",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:format_data",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:format_timing_packet",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:format_timing_packet",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:format_packet",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:format_packet",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:send_command",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:send_command",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:monitor",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:monitor",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:add_connection_options",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:add_connection_options",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:build_main_parser",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:build_main_parser",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:main",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:main",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:BridgeCommand",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:BridgeCommand",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:BenchmarkCommand",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:BenchmarkCommand",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:BenchmarkStatistics",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:BenchmarkStatistics",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:CommandError",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:CommandError",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:ExitRequested",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:ExitRequested",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:RaisingArgumentParser",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:RaisingArgumentParser",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:PacketStreamParser",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:PacketStreamParser",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:TerminalUi",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "class:src/can_cli.py:TerminalUi",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:xor_checksum",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:xor_checksum",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:build_command_packet",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:build_command_packet",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:build_reset_packet",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:build_reset_packet",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:find_teensy_port",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:find_teensy_port",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:send_packet",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:send_packet",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:send_command",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:send_command",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:send_reset",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:send_reset",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:main",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/control.py",
+                      "target":  "function:src/control.py:main",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/packet_monitor.py",
+                      "target":  "function:src/packet_monitor.py:extract_packets",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/packet_monitor.py",
+                      "target":  "function:src/packet_monitor.py:extract_packets",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/packet_monitor.py",
+                      "target":  "function:src/packet_monitor.py:main",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/packet_monitor.py",
+                      "target":  "function:src/packet_monitor.py:main",
+                      "type":  "exports",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:BenchmarkStatistics.start",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/can_cli.py:BenchmarkStatistics",
+                      "target":  "function:src/can_cli.py:BenchmarkStatistics.start",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:BenchmarkStatistics.cancel",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/can_cli.py:BenchmarkStatistics",
+                      "target":  "function:src/can_cli.py:BenchmarkStatistics.cancel",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:BenchmarkStatistics._format_distribution",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/can_cli.py:BenchmarkStatistics",
+                      "target":  "function:src/can_cli.py:BenchmarkStatistics._format_distribution",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:BenchmarkStatistics.consume",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/can_cli.py:BenchmarkStatistics",
+                      "target":  "function:src/can_cli.py:BenchmarkStatistics.consume",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:PacketStreamParser.feed",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/can_cli.py:PacketStreamParser",
+                      "target":  "function:src/can_cli.py:PacketStreamParser.feed",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:TerminalUi.__enter__",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/can_cli.py:TerminalUi",
+                      "target":  "function:src/can_cli.py:TerminalUi.__enter__",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:TerminalUi.read_characters",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/can_cli.py:TerminalUi",
+                      "target":  "function:src/can_cli.py:TerminalUi.read_characters",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "file:src/can_cli.py",
+                      "target":  "function:src/can_cli.py:TerminalUi.read_lines",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "class:src/can_cli.py:TerminalUi",
+                      "target":  "function:src/can_cli.py:TerminalUi.read_lines",
+                      "type":  "contains",
+                      "direction":  "forward",
+                      "weight":  1
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:main",
+                      "target":  "function:src/can_cli.py:build_main_parser",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:main",
+                      "target":  "function:src/can_cli.py:command_from_namespace",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:main",
+                      "target":  "function:src/can_cli.py:find_teensy_port",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:main",
+                      "target":  "function:src/can_cli.py:monitor",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:monitor",
+                      "target":  "function:src/can_cli.py:wait_for_activity",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:monitor",
+                      "target":  "function:src/can_cli.py:parse_interactive_command",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:monitor",
+                      "target":  "function:src/can_cli.py:format_packet",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:monitor",
+                      "target":  "function:src/can_cli.py:PacketStreamParser.feed",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:monitor",
+                      "target":  "function:src/can_cli.py:BenchmarkStatistics.consume",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:send_command",
+                      "target":  "function:src/can_cli.py:build_bridge_request",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:send_command",
+                      "target":  "function:src/can_cli.py:build_benchmark_request",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:build_bridge_request",
+                      "target":  "function:src/can_cli.py:xor_checksum",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:build_benchmark_request",
+                      "target":  "function:src/can_cli.py:xor_checksum",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:format_packet",
+                      "target":  "function:src/can_cli.py:format_timing_packet",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/can_cli.py:parse_interactive_command",
+                      "target":  "function:src/can_cli.py:command_from_namespace",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.py:send_command",
+                      "target":  "function:src/control.py:build_command_packet",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.py:send_command",
+                      "target":  "function:src/control.py:send_packet",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.py:send_reset",
+                      "target":  "function:src/control.py:build_reset_packet",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/control.py:send_reset",
+                      "target":  "function:src/control.py:send_packet",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  },
+                  {
+                      "source":  "function:src/packet_monitor.py:main",
+                      "target":  "function:src/packet_monitor.py:extract_packets",
+                      "type":  "calls",
+                      "direction":  "forward",
+                      "weight":  0.8
+                  }
+              ],
+    "layers":  [
+                   {
+                       "id":  "layer:runtime-control",
+                       "name":  "실행 루프와 구동 상태",
+                       "description":  "Arduino 실행 순서와 RC 모드별 구동 권한, 전원 상태, 오류 보고 정책을 조정한다."
+                   },
+                   {
+                       "id":  "layer:rc-motion",
+                       "name":  "RC 입력과 차량 모션",
+                       "description":  "RC 펄스 입력을 해석하고 서보 보정, MANUAL·PIVOT 운동학 및 조향·RPM 지령 전환을 처리한다."
+                   },
+                   {
+                       "id":  "layer:can-motor",
+                       "name":  "CAN 통신과 모터 텔레메트리",
+                       "description":  "FlexCAN 레지스터·수신 큐에서 MD200T 명령과 응답 해석까지 연결하고 주기 송신 및 응답 유효성을 관리한다."
+                   },
+                   {
+                       "id":  "layer:usb-diagnostics",
+                       "name":  "USB 프로토콜과 진단",
+                       "description":  "USB 명령·상태 프레임의 직렬화와 파싱을 담당하고 선택적 CAN 브릿지·반복 요청 측정·타이밍 진단을 제공한다."
+                   },
+                   {
+                       "id":  "layer:host-tools",
+                       "name":  "Python 호스트 도구",
+                       "description":  "PC에서 USB 수신 전용 관측, 단발 제어 명령 및 대화형 CAN 브릿지·벤치마크 작업을 수행한다."
+                   },
+                   {
+                       "id":  "layer:project-config",
+                       "name":  "빌드와 도구 설정",
+                       "description":  "Teensy 펌웨어의 네 빌드 프로필과 기능 플래그, Python 의존성·버전 및 분석 도구의 출력 언어를 지정한다."
+                   },
+                   {
+                       "id":  "layer:documentation",
+                       "name":  "운영 문서와 검토 기록",
+                       "description":  "현재 구조·제어·통신·계측·호스트 도구의 사용 조건과 인계 절차를 설명하고 날짜가 명시된 사고 검토의 확인 범위를 보존한다."
+                   }
+               ],
+    "nodes":  [
+                  {
+                      "id":  "file:include/control.hpp",
+                      "type":  "file",
+                      "name":  "control.hpp",
+                      "filePath":  "include/control.hpp",
+                      "summary":  "구동 모드·오류·상태 자료형과 제어 모듈의 공개 인터페이스를 정의한다. USB 명령, RC 구동, 전원 전환 및 CAN 오류 보고가 공유하는 계약이다."
+                  },
+                  {
+                      "id":  "file:include/rc_io.hpp",
+                      "type":  "file",
+                      "name":  "rc_io.hpp",
+                      "filePath":  "include/rc_io.hpp",
+                      "summary":  "RC PWM 입력의 범위·중립 데드밴드와 입력 읽기·조향 출력 인터페이스를 정의한다. 채널별 ISR 값을 읽으며 채널 간 원자적 스냅샷은 보장하지 않는다."
+                  },
+                  {
+                      "id":  "file:include/steering_config.hpp",
+                      "type":  "file",
+                      "name":  "steering_config.hpp",
+                      "filePath":  "include/steering_config.hpp",
+                      "summary":  "좌우 서보의 각도–펄스 보정표와 차량 모션 제한값을 정의하고 보정 유효성 검사 및 보간을 제공한다. 소스의 verified 플래그는 이번 분석의 실물 검증 결과가 아니다."
+                  },
+                  {
+                      "id":  "file:include/vehicle_kinematics.hpp",
+                      "type":  "file",
+                      "name":  "vehicle_kinematics.hpp",
+                      "filePath":  "include/vehicle_kinematics.hpp",
+                      "summary":  "차체 속도·곡률 또는 후륜 중심 PIVOT 각속도를 전륜 조향각과 네 바퀴 RPM 지령으로 변환한다. 조향 범위를 벗어나면 전체 명령을 불가로 표시하고 RPM을 0으로 만든다."
+                  },
+                  {
+                      "id":  "file:include/vehicle_motion.hpp",
+                      "type":  "file",
+                      "name":  "vehicle_motion.hpp",
+                      "filePath":  "include/vehicle_motion.hpp",
+                      "summary":  "기동·제동·조향·정착·주행 상태를 관리하고 네 바퀴 RPM을 공통 비율로 제한·램핑한다. PIVOT은 조향 지령을 즉시 고정각으로 바꾸며 일반 조향 지령 속도 제한을 우회한다."
+                  },
+                  {
+                      "id":  "file:src/main.cpp",
+                      "type":  "file",
+                      "name":  "main.cpp",
+                      "filePath":  "src/main.cpp",
+                      "summary":  "Arduino setup과 loop에서 전원·RC·USB·CAN·모션·진단 처리 순서를 조정한다. 선택적 디버그 및 타이밍 기능은 빌드 플래그에 따라 호출된다."
+                  },
+                  {
+                      "id":  "file:src/rc_io.cpp",
+                      "type":  "file",
+                      "name":  "rc_io.cpp",
+                      "filePath":  "src/rc_io.cpp",
+                      "summary":  "세 RC 채널의 에지 인터럽트에서 펄스폭을 측정하고 10표본 이동평균으로 모드를 선택한다. 보정표를 사용해 전륜 서보 PWM을 출력하며 입력 펄스 만료 검사는 구현하지 않는다."
+                  },
+                  {
+                      "id":  "file:include/build_features.hpp",
+                      "type":  "file",
+                      "name":  "build_features.hpp",
+                      "filePath":  "include/build_features.hpp",
+                      "summary":  "PlatformIO 환경이 지정하는 CAN 디버그와 타이밍 진단 기능 플래그의 기본값을 정의하고, 0 또는 1 이외의 값을 컴파일 오류로 거부한다."
+                  },
+                  {
+                      "id":  "file:include/can_control.hpp",
+                      "type":  "file",
+                      "name":  "can_control.hpp",
+                      "filePath":  "include/can_control.hpp",
+                      "summary":  "모터 RPM·엔코더·수신 시각과 전압 텔레메트리의 자료형을 정의한다. CAN 수신 처리, 응답 유효성 및 주기 송신을 제어하는 인터페이스를 제공한다."
+                  },
+                  {
+                      "id":  "file:include/can_debug.hpp",
+                      "type":  "file",
+                      "name":  "can_debug.hpp",
+                      "filePath":  "include/can_debug.hpp",
+                      "summary":  "디버그 빌드에서 CAN 브릿지와 반복 요청 측정 인터페이스를 노출한다. 비활성 빌드에는 공통 제어 전환에서 호출할 빈 cancel 함수를 제공한다."
+                  },
+                  {
+                      "id":  "file:include/serial_protocol.hpp",
+                      "type":  "file",
+                      "name":  "serial_protocol.hpp",
+                      "filePath":  "include/serial_protocol.hpp",
+                      "summary":  "AA 55 USB 프레임의 타입·길이·필드 위치와 허용 명령 범위를 정의한다. 명령 수신, XOR 체크섬 및 상태 송신 인터페이스의 기준이다."
+                  },
+                  {
+                      "id":  "file:src/can_debug.cpp",
+                      "type":  "file",
+                      "name":  "can_debug.cpp",
+                      "filePath":  "src/can_debug.cpp",
+                      "summary":  "디버그 빌드에서 USB 요청을 CAN 프레임으로 중계하고 반복 송신의 응답·시간초과·RTT 결과를 수집한다. 브릿지는 첫 수신 프레임을 반환하며, 반복 측정은 ID와 PID 및 수신 시각으로 응답을 구분한다."
+                  },
+                  {
+                      "id":  "file:src/serial_protocol.cpp",
+                      "type":  "file",
+                      "name":  "serial_protocol.cpp",
+                      "filePath":  "src/serial_protocol.cpp",
+                      "summary":  "바이트 상태 기계로 USB 명령과 리셋·디버그 프레임을 분류하고 체크섬과 범위를 검증한다. CAN 텔레메트리와 오류 스냅샷을 0x82 상태 프레임으로 직렬화하며 전체 송신 성공 후 보고 횟수를 소비한다."
+                  },
+                  {
+                      "id":  "file:include/error_report.hpp",
+                      "type":  "file",
+                      "name":  "error_report.hpp",
+                      "filePath":  "include/error_report.hpp",
+                      "summary":  "검출된 오류를 정규 0x82 상태 프레임으로 반복 보고할 횟수 10회를 정의한다. 오류가 재검출되면 남은 보고 횟수를 다시 채우는 정책의 공통 상수다."
+                  },
+                  {
+                      "id":  "file:include/flexcan0.hpp",
+                      "type":  "file",
+                      "name":  "flexcan0.hpp",
+                      "filePath":  "include/flexcan0.hpp",
+                      "summary":  "표준 CAN 프레임과 RX 통계 자료형, 32칸 수신 큐 및 송수신 API를 정의한다. 수신 타임스탬프는 버스 도착 시각이 아니라 ISR이 FIFO를 읽은 시각이다."
+                  },
+                  {
+                      "id":  "file:include/md200t_can.hpp",
+                      "type":  "file",
+                      "name":  "md200t_can.hpp",
+                      "filePath":  "include/md200t_can.hpp",
+                      "summary":  "MD200T 드라이버 ID와 요청·모니터·전압 PID를 정의한다. 두 채널 속도 명령, TQ-OFF, PID 요청 및 응답 ID 해석 인터페이스를 제공한다."
+                  },
+                  {
+                      "id":  "file:src/control.cpp",
+                      "type":  "file",
+                      "name":  "control.cpp",
+                      "filePath":  "src/control.cpp",
+                      "summary":  "RC 모드와 전원·시리얼 모드에 따라 구동 허용 상태를 결정하고 운동학 출력과 오류 보고를 관리한다. MANUAL과 PIVOT만 구동하며 AUTO USB 명령은 수신 기록만 유지하고 구동을 차단한다."
+                  },
+                  {
+                      "id":  "file:src/flexcan0.cpp",
+                      "type":  "file",
+                      "name":  "flexcan0.cpp",
+                      "filePath":  "src/flexcan0.cpp",
+                      "summary":  "Teensy 3.2의 FlexCAN0 레지스터를 500 kbit/s로 초기화하고 MB8 송신 및 FIFO 인터럽트 수신을 구현한다. 단일 생산자·소비자 큐로 프레임과 ISR 시각을 전달하고 FIFO·큐 넘침 통계를 누적한다."
+                  },
+                  {
+                      "id":  "file:src/md200t_can.cpp",
+                      "type":  "file",
+                      "name":  "md200t_can.cpp",
+                      "filePath":  "src/md200t_can.cpp",
+                      "summary":  "MD200T의 PID 207 속도 명령, PID 174 TQ-OFF 및 PID 4 데이터 요청을 표준 CAN 프레임으로 만든다. 응답은 MID 7을 검증한 뒤 드라이버 ID를 추출한다."
+                  },
+                  {
+                      "id":  "file:include/can_tx_schedule.hpp",
+                      "type":  "file",
+                      "name":  "can_tx_schedule.hpp",
+                      "filePath":  "include/can_tx_schedule.hpp",
+                      "summary":  "10 ms 명령 주기와 드라이버별 3 ms 응답 구간, 휠 응답 마스크 및 전압 요청 시점을 정의한다. 두 드라이버의 전압은 각각 1 Hz로 요청하고 500 ms 간격을 둔다."
+                  },
+                  {
+                      "id":  "file:include/little_endian.hpp",
+                      "type":  "file",
+                      "name":  "little_endian.hpp",
+                      "filePath":  "include/little_endian.hpp",
+                      "summary":  "CAN·USB 바이트 배열에서 16/32비트 정수를 little-endian으로 읽고 쓰는 공통 변환 함수를 제공한다."
+                  },
+                  {
+                      "id":  "file:include/timing_diagnostics.hpp",
+                      "type":  "file",
+                      "name":  "timing_diagnostics.hpp",
+                      "filePath":  "include/timing_diagnostics.hpp",
+                      "summary":  "루프 처리 단계와 타이밍 관측 인터페이스를 정의하며 measure 템플릿으로 작업 전후 CPU cycle 차이를 기록한다. 비활성 빌드에서는 작업 실행만 남긴다."
+                  },
+                  {
+                      "id":  "file:src/can_control.cpp",
+                      "type":  "file",
+                      "name":  "can_control.cpp",
+                      "filePath":  "src/can_control.cpp",
+                      "summary":  "CAN 응답을 ISR 수신 시각 기준으로 검증하고 RPM·엔코더·전압 상태를 갱신한다. 10 ms 주기에서 두 드라이버 명령, 응답 시간초과, 전압 요청과 USB 상태 송신 요청을 조정한다."
+                  },
+                  {
+                      "id":  "file:src/timing_diagnostics.cpp",
+                      "type":  "file",
+                      "name":  "timing_diagnostics.cpp",
+                      "filePath":  "src/timing_diagnostics.cpp",
+                      "summary":  "선택적 타이밍 빌드에서 CPU cycle·RX 간격·휠 응답·시간초과 통계를 수집하고 0x84 USB 진단 패킷으로 내보낸다. USB 여유 공간과 CAN 스케줄을 확인해 진단 송신을 미룬다."
+                  },
+                  {
+                      "id":  "document:README.md",
+                      "type":  "document",
+                      "name":  "README.md",
+                      "filePath":  "README.md",
+                      "summary":  "Teensy 3.2 기반 RC 전륜 조향·4륜 구동 프로젝트의 진입 문서다. 네 빌드 프로필, MANUAL/PIVOT 동작, 문서 탐색 순서와 소스 설명의 검증 한계를 정리한다."
+                  },
+                  {
+                      "id":  "config:platformio.ini",
+                      "type":  "config",
+                      "name":  "platformio.ini",
+                      "filePath":  "platformio.ini",
+                      "summary":  "Teensy 3.2의 Arduino 빌드 환경과 CONTROL·DEBUG·TIMING 조합의 네 프로필을 정의한다. 전처리 기능 플래그와 소스 필터로 선택 모듈의 포함 여부를 결정한다."
+                  },
+                  {
+                      "id":  "config:pyproject.toml",
+                      "type":  "config",
+                      "name":  "pyproject.toml",
+                      "filePath":  "pyproject.toml",
+                      "summary":  "Python 호스트 도구의 프로젝트 메타데이터, Python 3.14 이상 요구와 pyserial 의존성을 선언한다."
+                  },
+                  {
+                      "id":  "document:docs/README.md",
+                      "type":  "document",
+                      "name":  "README.md",
+                      "filePath":  "docs/README.md",
+                      "summary":  "2026-11-13 소스 기준 문서의 탐색 순서와 각 기능의 코드 근거를 연결한다. 현재 소스의 빌드·테스트·실물 통신 및 업로드 바이너리 일치 여부가 미확인임을 명시한다."
+                  },
+                  {
+                      "id":  "document:docs/can-cli-windows.md",
+                      "type":  "document",
+                      "name":  "can-cli-windows.md",
+                      "filePath":  "docs/can-cli-windows.md",
+                      "summary":  "수신 전용 모니터, 대화형 CAN CLI, 단발 명령 도구의 역할과 사용 조건을 설명한다. 브릿지·벤치마크 실행 조건 및 일반 주행과의 비교 한계를 구분한다."
+                  },
+                  {
+                      "id":  "document:docs/can-rx-fifo.md",
+                      "type":  "document",
+                      "name":  "can-rx-fifo.md",
+                      "filePath":  "docs/can-rx-fifo.md",
+                      "summary":  "드라이버와 휠 매핑, CAN 송수신 스케줄, 응답 창과 전압 판정을 설명한다. FIFO·ISR·RAM 큐 경로 및 진단 수치의 해석 한계를 정리한다."
+                  },
+                  {
+                      "id":  "document:docs/firmware-architecture.ko.md",
+                      "type":  "document",
+                      "name":  "firmware-architecture.ko.md",
+                      "filePath":  "docs/firmware-architecture.ko.md",
+                      "summary":  "네 빌드 프로필과 모듈별 상태 소유권, setup/loop 실행 순서, 기능별 프로토콜 포함 여부를 설명한다. RC 제어에서 CAN 구동까지의 처리 경로를 안내한다."
+                  },
+                  {
+                      "id":  "document:docs/raspberry-pi-handoff.ko.md",
+                      "type":  "document",
+                      "name":  "raspberry-pi-handoff.ko.md",
+                      "filePath":  "docs/raspberry-pi-handoff.ko.md",
+                      "summary":  "Raspberry Pi 인계 시 저장소 상태와 환경을 식별하고 필요한 문서·프로필을 전달하는 절차를 설명한다."
+                  },
+                  {
+                      "id":  "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+                      "type":  "document",
+                      "name":  "rc-loss-of-control-review-2026-11-09.ko.md",
+                      "filePath":  "docs/rc-loss-of-control-review-2026-11-09.ko.md",
+                      "summary":  "2026-11-09 조종 기능 상실 관측과 펌웨어 정적 검토의 원인 후보를 기록한다. 소스상 경로, 조건부 추론, 미확인 장비 상태를 구분하며 CAN abort·RC 입력 만료·전원 등의 후보를 실제 사고 원인으로 확정하지 않는다."
+                  },
+                  {
+                      "id":  "document:docs/rc-steering.ko.md",
+                      "type":  "document",
+                      "name":  "rc-steering.ko.md",
+                      "filePath":  "docs/rc-steering.ko.md",
+                      "summary":  "RC 펄스와 모드 구간, 전원·구동 권한, 차량 기하·서보 보정 및 모션 제한을 설명한다. MANUAL/PIVOT 운동학과 STOP 요청의 물리적 정지 확인 한계를 정리한다."
+                  },
+                  {
+                      "id":  "document:docs/timing-diagnostics.md",
+                      "type":  "document",
+                      "name":  "timing-diagnostics.md",
+                      "filePath":  "docs/timing-diagnostics.md",
+                      "summary":  "조건부 타이밍 진단의 누적 시간, CAN 응답 누락 분류 및 0x84 패킷을 설명한다. 출력 부하와 스냅샷 지속 등 측정값 해석 조건을 명시한다."
+                  },
+                  {
+                      "id":  "document:docs/usb-protocol.ko.md",
+                      "type":  "document",
+                      "name":  "usb-protocol.ko.md",
+                      "filePath":  "docs/usb-protocol.ko.md",
+                      "summary":  "AA 55 프레임의 길이·XOR 규칙과 제어·보호 리셋·상태·브릿지·벤치마크 패킷의 바이트 계약을 정의한다. 프로필별 지원 범위와 제어 권한 제약도 함께 설명한다."
+                  },
+                  {
+                      "id":  "file:.python-version",
+                      "type":  "file",
+                      "name":  ".python-version",
+                      "filePath":  ".python-version",
+                      "summary":  "호스트 도구 실행 환경에서 사용할 Python 버전을 3.14로 지정한다."
+                  },
+                  {
+                      "id":  "config:.ua/config.json",
+                      "type":  "config",
+                      "name":  "config.json",
+                      "filePath":  ".ua/config.json",
+                      "summary":  "Understand-Anything 분석 결과의 출력 언어를 한국어로 지정한다. 펌웨어의 실행 설정과는 별개의 분석 도구 설정이다."
+                  },
+                  {
+                      "id":  "file:include/README",
+                      "type":  "file",
+                      "name":  "README",
+                      "filePath":  "include/README",
+                      "summary":  "헤더별 공개 인터페이스·설정·운동학·CAN 역할과 모듈 내부 상태 소유 원칙을 안내한다."
+                  },
+                  {
+                      "id":  "file:lib/README",
+                      "type":  "file",
+                      "name":  "README",
+                      "filePath":  "lib/README",
+                      "summary":  "별도 라이브러리 소스가 없는 디렉터리임을 설명하고 자체 CAN 구현 및 의존성 기준 파일로 안내한다."
+                  },
+                  {
+                      "id":  "file:src/can_cli.py",
+                      "type":  "file",
+                      "name":  "can_cli.py",
+                      "filePath":  "src/can_cli.py",
+                      "summary":  "Windows와 POSIX에서 CAN 브릿지 명령, 반복 요청 벤치마크, 수신 패킷·타이밍 진단을 처리하는 대화형 호스트 CLI다. 요청 인코딩, 증분 프레임 파싱, 세션별 RTT 통계와 터미널 입력을 한 파일에서 관리한다."
+                  },
+                  {
+                      "id":  "file:src/control.py",
+                      "type":  "file",
+                      "name":  "control.py",
+                      "filePath":  "src/control.py",
+                      "summary":  "속도·각속도 제어 패킷과 보호 리셋 패킷을 생성해 USB 시리얼로 한 번 전송한다. 제어 응답은 텍스트 한 줄로 읽으므로 바이너리 상태 패킷을 해석하는 도구는 아니다."
+                  },
+                  {
+                      "id":  "file:src/packet_monitor.py",
+                      "type":  "file",
+                      "name":  "packet_monitor.py",
+                      "filePath":  "src/packet_monitor.py",
+                      "summary":  "명령을 송신하지 않고 MCU 직렬 스트림에서 유효 프레임을 추출해 HEX로 표시한다. 불완전 프레임을 유지하고 길이·XOR 검사 실패 후 헤더를 다시 찾는다."
+                  }
+              ]
+}

@@ -1,0 +1,122 @@
+{
+  "nodes": [
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Teensy 3.2 기반 RC 전륜 조향·4륜 구동 프로젝트의 진입 문서다. 네 빌드 프로필, MANUAL/PIVOT 동작, 문서 탐색 순서와 소스 설명의 검증 한계를 정리한다.",
+      "tags": [
+        "프로젝트-개요",
+        "문서",
+        "진입점"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:platformio.ini",
+      "type": "config",
+      "name": "platformio.ini",
+      "filePath": "platformio.ini",
+      "summary": "Teensy 3.2의 Arduino 빌드 환경과 CONTROL·DEBUG·TIMING 조합의 네 프로필을 정의한다. 전처리 기능 플래그와 소스 필터로 선택 모듈의 포함 여부를 결정한다.",
+      "tags": [
+        "빌드-설정",
+        "프로필",
+        "조건부-컴파일"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:pyproject.toml",
+      "type": "config",
+      "name": "pyproject.toml",
+      "filePath": "pyproject.toml",
+      "summary": "Python 호스트 도구의 프로젝트 메타데이터, Python 3.14 이상 요구와 pyserial 의존성을 선언한다.",
+      "tags": [
+        "의존성",
+        "환경-설정",
+        "호스트-도구"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:README.md",
+      "target": "file:src/main.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:platformio.ini",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:include/steering_config.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:include/can_tx_schedule.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:platformio.ini",
+      "target": "file:src/main.cpp",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:platformio.ini",
+      "target": "file:include/build_features.hpp",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:platformio.ini",
+      "target": "file:src/can_debug.cpp",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:platformio.ini",
+      "target": "file:src/timing_diagnostics.cpp",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:src/can_cli.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:src/control.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:src/packet_monitor.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

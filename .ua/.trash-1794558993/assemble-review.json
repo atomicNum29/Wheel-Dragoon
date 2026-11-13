@@ -1,0 +1,17 @@
+{
+  "fixedSectionOk": true,
+  "nodesRecovered": 0,
+  "edgesRestored": 0,
+  "crossBatchEdgesAdded": 0,
+  "typesRemapped": 0,
+  "complexityRemapped": 0,
+  "notes": [
+    "7개 논리 배치의 8개 파일을 확인했다. 입력 213개 노드·547개 관계가 조립 결과에 유지되었으며 복구할 삭제 항목은 없다.",
+    "스캔 목록 43개 파일 모두 파일 단위 노드가 있다. importMap의 53개 의존 관계를 확인했으며 누락 관계는 0개다.",
+    "조건부 컴파일·템플릿·참조/포인터 반환 선언에 대한 C++ 구조 추출 누락은 해당 파일의 languageNotes에 보존했다. 이 그래프는 파일 범위는 완전하지만 모든 함수의 완전한 호출 그래프는 아니다.",
+    "platformio.ini 및 확장자가 없는 보조 파일은 파서 미지원 이후 내용을 읽어 포함했다. Python 주요 메서드의 범위는 이름만 제공하는 추출 결과를 소스로 보완했다.",
+    "사고 검토 문서는 정적 코드 경로·추론·미확인 조건을 구분한다. 사고 원인 확정 또는 실물 검증 결과로 확대하지 않았다.",
+    "합병 로그의 NativeCommandError 표시는 PowerShell의 표준 오류 출력 포장이다. 합병 자체는 성공했으며 노드·관계 삭제나 ID 수정 내역이 없다.",
+    "문서/소스 불일치: docs/can-rx-fifo.md:76은 각 FIFO pop 후 CAN0_TIMER를 읽는다고 설명하지만, src/flexcan0.cpp:159–199의 can_rx_isr()에는 해당 읽기가 없고 161–162행 주석은 FIFO BUF5I acknowledge와 mailbox TIMER unlock을 구분한다. 정적 관측이며 어느 구현이 하드웨어상 올바른지는 검증하지 않았다."
+  ]
+}

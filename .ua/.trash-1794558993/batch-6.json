@@ -1,0 +1,417 @@
+{
+  "nodes": [
+    {
+      "id": "document:docs/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "docs/README.md",
+      "summary": "2026-11-13 소스 기준 문서의 탐색 순서와 각 기능의 코드 근거를 연결한다. 현재 소스의 빌드·테스트·실물 통신 및 업로드 바이너리 일치 여부가 미확인임을 명시한다.",
+      "tags": [
+        "문서-목차",
+        "근거-수준",
+        "구조-안내"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/can-cli-windows.md",
+      "type": "document",
+      "name": "can-cli-windows.md",
+      "filePath": "docs/can-cli-windows.md",
+      "summary": "수신 전용 모니터, 대화형 CAN CLI, 단발 명령 도구의 역할과 사용 조건을 설명한다. 브릿지·벤치마크 실행 조건 및 일반 주행과의 비교 한계를 구분한다.",
+      "tags": [
+        "호스트-도구",
+        "사용-안내",
+        "진단"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/can-rx-fifo.md",
+      "type": "document",
+      "name": "can-rx-fifo.md",
+      "filePath": "docs/can-rx-fifo.md",
+      "summary": "드라이버와 휠 매핑, CAN 송수신 스케줄, 응답 창과 전압 판정을 설명한다. FIFO·ISR·RAM 큐 경로 및 진단 수치의 해석 한계를 정리한다.",
+      "tags": [
+        "can",
+        "응답-유효성",
+        "수신-큐"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/firmware-architecture.ko.md",
+      "type": "document",
+      "name": "firmware-architecture.ko.md",
+      "filePath": "docs/firmware-architecture.ko.md",
+      "summary": "네 빌드 프로필과 모듈별 상태 소유권, setup/loop 실행 순서, 기능별 프로토콜 포함 여부를 설명한다. RC 제어에서 CAN 구동까지의 처리 경로를 안내한다.",
+      "tags": [
+        "펌웨어-구조",
+        "상태-소유권",
+        "실행-흐름"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/raspberry-pi-handoff.ko.md",
+      "type": "document",
+      "name": "raspberry-pi-handoff.ko.md",
+      "filePath": "docs/raspberry-pi-handoff.ko.md",
+      "summary": "Raspberry Pi 인계 시 저장소 상태와 환경을 식별하고 필요한 문서·프로필을 전달하는 절차를 설명한다.",
+      "tags": [
+        "작업-인계",
+        "환경-설정",
+        "문서"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "type": "document",
+      "name": "rc-loss-of-control-review-2026-11-09.ko.md",
+      "filePath": "docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "summary": "2026-11-09 조종 기능 상실 관측과 펌웨어 정적 검토의 원인 후보를 기록한다. 소스상 경로, 조건부 추론, 미확인 장비 상태를 구분하며 CAN abort·RC 입력 만료·전원 등의 후보를 실제 사고 원인으로 확정하지 않는다.",
+      "tags": [
+        "사고-기록",
+        "정적-검토",
+        "미확인-원인"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/rc-steering.ko.md",
+      "type": "document",
+      "name": "rc-steering.ko.md",
+      "filePath": "docs/rc-steering.ko.md",
+      "summary": "RC 펄스와 모드 구간, 전원·구동 권한, 차량 기하·서보 보정 및 모션 제한을 설명한다. MANUAL/PIVOT 운동학과 STOP 요청의 물리적 정지 확인 한계를 정리한다.",
+      "tags": [
+        "rc-제어",
+        "조향",
+        "운동학"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/timing-diagnostics.md",
+      "type": "document",
+      "name": "timing-diagnostics.md",
+      "filePath": "docs/timing-diagnostics.md",
+      "summary": "조건부 타이밍 진단의 누적 시간, CAN 응답 누락 분류 및 0x84 패킷을 설명한다. 출력 부하와 스냅샷 지속 등 측정값 해석 조건을 명시한다.",
+      "tags": [
+        "타이밍",
+        "계측",
+        "can-진단"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/usb-protocol.ko.md",
+      "type": "document",
+      "name": "usb-protocol.ko.md",
+      "filePath": "docs/usb-protocol.ko.md",
+      "summary": "AA 55 프레임의 길이·XOR 규칙과 제어·보호 리셋·상태·브릿지·벤치마크 패킷의 바이트 계약을 정의한다. 프로필별 지원 범위와 제어 권한 제약도 함께 설명한다.",
+      "tags": [
+        "usb",
+        "프로토콜",
+        "직렬화"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/main.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/rc_io.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/can_control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/flexcan0.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/serial_protocol.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/can_debug.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/can_cli.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/packet_monitor.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/control.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/README.md",
+      "target": "file:src/timing_diagnostics.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-cli-windows.md",
+      "target": "file:src/can_cli.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-cli-windows.md",
+      "target": "file:src/control.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-cli-windows.md",
+      "target": "file:src/packet_monitor.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-rx-fifo.md",
+      "target": "file:src/can_control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-rx-fifo.md",
+      "target": "file:src/flexcan0.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-rx-fifo.md",
+      "target": "file:src/md200t_can.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/can-rx-fifo.md",
+      "target": "file:include/can_tx_schedule.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/firmware-architecture.ko.md",
+      "target": "config:platformio.ini",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/firmware-architecture.ko.md",
+      "target": "file:src/main.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/firmware-architecture.ko.md",
+      "target": "file:src/control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/firmware-architecture.ko.md",
+      "target": "file:src/serial_protocol.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/firmware-architecture.ko.md",
+      "target": "file:include/build_features.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/raspberry-pi-handoff.ko.md",
+      "target": "config:pyproject.toml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/raspberry-pi-handoff.ko.md",
+      "target": "config:platformio.ini",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/rc_io.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/flexcan0.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/can_control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-loss-of-control-review-2026-11-09.ko.md",
+      "target": "file:src/serial_protocol.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:src/rc_io.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:src/control.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:include/steering_config.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:include/vehicle_kinematics.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/rc-steering.ko.md",
+      "target": "file:include/vehicle_motion.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/timing-diagnostics.md",
+      "target": "file:src/timing_diagnostics.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/timing-diagnostics.md",
+      "target": "file:src/can_cli.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/timing-diagnostics.md",
+      "target": "file:include/timing_diagnostics.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/usb-protocol.ko.md",
+      "target": "file:src/serial_protocol.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/usb-protocol.ko.md",
+      "target": "file:include/serial_protocol.hpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/usb-protocol.ko.md",
+      "target": "file:src/can_debug.cpp",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/usb-protocol.ko.md",
+      "target": "file:src/control.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}
