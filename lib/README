@@ -1,46 +1,10 @@
+프로젝트 전용 라이브러리 디렉터리
+=================================
 
-This directory is intended for project specific (private) libraries.
-PlatformIO will compile them to static libraries and link into the executable file.
+현재 이 디렉터리에는 별도의 라이브러리 소스가 없다.
+CAN 구현은 외부 FlexCAN 라이브러리가 아니라 src/flexcan0.cpp와
+src/md200t_can.cpp에 있고, 애플리케이션 모듈은 src/ 및 include/에 있다.
 
-The source code of each library should be placed in a separate directory
-("lib/your_library_name/[Code]").
-
-For example, see the structure of the following example libraries `Foo` and `Bar`:
-
-|--lib
-|  |
-|  |--Bar
-|  |  |--docs
-|  |  |--examples
-|  |  |--src
-|  |     |- Bar.c
-|  |     |- Bar.h
-|  |  |- library.json (optional. for custom build options, etc) https://docs.platformio.org/page/librarymanager/config.html
-|  |
-|  |--Foo
-|  |  |- Foo.c
-|  |  |- Foo.h
-|  |
-|  |- README --> THIS FILE
-|
-|- platformio.ini
-|--src
-   |- main.c
-
-Example contents of `src/main.c` using Foo and Bar:
-```
-#include <Foo.h>
-#include <Bar.h>
-
-int main (void)
-{
-  ...
-}
-
-```
-
-The PlatformIO Library Dependency Finder will find automatically dependent
-libraries by scanning project source files.
-
-More information about PlatformIO Library Dependency Finder
-- https://docs.platformio.org/page/librarymanager/ldf.html
+구조 안내: ../docs/firmware-architecture.ko.md
+빌드 환경과 의존성 기준: ../platformio.ini
+Python 의존성은 ../pyproject.toml 및 ../uv.lock에서 관리한다.

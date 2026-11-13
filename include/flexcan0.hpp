@@ -2,11 +2,14 @@
 
 #include <stdint.h>
 
+constexpr uint8_t CAN_PAYLOAD_SIZE = 8;
+constexpr uint16_t CAN_STANDARD_ID_MAX = 0x7FF;
+
 struct CanFrame
 {
     uint16_t id;
     uint8_t dlc;
-    uint8_t data[8];
+    uint8_t data[CAN_PAYLOAD_SIZE];
 };
 
 bool can_begin(uint32_t bitrate);

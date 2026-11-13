@@ -1,10 +1,24 @@
+# Independent steering — historical design
+
+> **2026-11-07 정리 전 보관 문서 / Historical archive.** 아래 접힌 본문은 당시 구현·검증 기록이다.
+> 현재 빌드·운용·테스트 지시로 사용하지 않는다. Current usage: [문서 안내](../../../../docs/README.md).
+
+## 현재 코드와 달라진 점 / Current differences
+
+| 당시 항목 / Historical item | 현재 구현 / Current implementation |
+| --- | --- |
+| 스키드 기본값·런타임 운동학 전환 | RC MANUAL 곡률 조향과 PIVOT 후륜 중심 회전; AUTO 구동 차단 |
+| 미검증 ±20°·임시 중립값 | [2026-11-09 등록 보정](../../../../docs/rc-steering.ko.md); 양쪽 inverted/verified=true |
+| `0x83`, `0x81`, 조향 error bit12..15 | 송신 없음; bit12..15 예약 |
+| 단일 `main.cpp`, `teensy32` 환경 | [모듈 분리와 네 프로필](../../../../docs/firmware-architecture.ko.md) |
+| polling CAN 또는 무조건 BRIDGE 지원 | [FIFO/ISR/큐](../../../../docs/can-rx-fifo.md); 디버그 프로필에서만 BRIDGE |
+| 테스트 실행·빌드 성공 서술 | 당시 결과일 뿐이며 활성 `test/`는 제거됨; 이번 정리에서 실행하지 않음 |
+
+<details>
+<summary>정리 전 설계 본문 / Archived design text</summary>
+
 # Independent front steering and four wheel drive
 
-> Current RC curvature input, doubled acceleration/deceleration and provisional
-> +/-70 degree PWM mapping are documented in [the RC steering update](rc-steering.ko.md).
-> This initial implementation record contains historical defaults (skid mode,
-> disabled calibration, +/-20 degree tables and polled CAN). Current settings use
-> independent steering, user-enabled provisional calibration and FIFO/ISR CAN.
 
 Implementation status: host-tested and compiled for Teensy 3.2. No new physical driving, PWM, servo, or CAN timing validation has been performed. The checked-in configuration deliberately inhibits drive until **both** steering calibrations are verified. Skid-steer remains the selected mode.
 
@@ -139,3 +153,5 @@ pio run -e teensy32
 ```
 
 Host tests cover cases A–H and J, calibration rejection/nonlinear/inverted mappings, limits and rounding, time wrap, mode guard, E-stop/timeout integration, wheel channel mapping, and the existing CAN transaction-spacing/status/telemetry regressions for case I. They do not validate CAN electrical behavior, PWM accuracy, servo performance, loaded braking, tire scrub, receiver failsafe, or ROS host handling of additive diagnostics. Repeat secured low-speed hardware tests and communication monitoring before driving.
+
+</details>

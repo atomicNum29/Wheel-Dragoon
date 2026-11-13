@@ -12,6 +12,9 @@
 namespace
 {
 constexpr uint32_t kSupportedBitrate = 500000u;
+constexpr uint32_t kInitTimeoutUs = 1000u;
+constexpr uint32_t kStandardDataFilterMask = 0xC0000000u; // Compare RTR and IDE.
+constexpr uint8_t kDlcMask = 0x0Fu;
 constexpr uint8_t kMaxMbIndex = 15u;
 // FIFO occupies MB0..5, its eight Format-A filter words occupy MB6..7.
 constexpr uint8_t kTxMb = 8u;
@@ -71,13 +74,7 @@ std::atomic<uint32_t> g_queue_high_water{0}, g_max_queue_age_us{0};
 
 volatile uint32_t &mb_reg(uint8_t mb, uintptr_t offset)
 {
-#if defined(FLEXCAN0_HOST_TEST)
-    // Only the register-model harness replaces MMIO; target builds use hardware.
-    static volatile uint32_t registers[16][4] = {};
-    return registers[mb][offset / sizeof(uint32_t)];
-#else
     return *reinterpret_cast<volatile uint32_t *>(kCan0MbBase + (static_cast<uintptr_t>(mb) * kCan0MbStride) + offset);
-#endif
 }
 
 volatile uint32_t &mb_cs(uint8_t mb)
@@ -176,9 +173,9 @@ void can_rx_isr()
         RxEntry entry = {};
         entry.received_us = micros();
         const uint32_t cs = mb_cs(kRxMb);
-        entry.frame.id = static_cast<uint16_t>((mb_id(kRxMb) >> kMbIdStdShift) & 0x7FFu);
-        uint8_t dlc = static_cast<uint8_t>((cs >> kMbDlcShift) & 0x0Fu);
-        entry.frame.dlc = dlc > 8u ? 8u : dlc;
+        entry.frame.id = static_cast<uint16_t>((mb_id(kRxMb) >> kMbIdStdShift) & CAN_STANDARD_ID_MAX);
+        uint8_t dlc = static_cast<uint8_t>((cs >> kMbDlcShift) & kDlcMask);
+        entry.frame.dlc = dlc > CAN_PAYLOAD_SIZE ? CAN_PAYLOAD_SIZE : dlc;
         unpack_word(mb_word0(kRxMb), entry.frame.data, 0, entry.frame.dlc);
         unpack_word(mb_word1(kRxMb), entry.frame.data, 4, entry.frame.dlc);
         CAN0_IFLAG1 = kFifoAvailable; // Pop only after the complete local copy.
@@ -242,11 +239,11 @@ bool can_begin(uint32_t bitrate)
     CAN0_MCR |= kMcrFrz;
     CAN0_MCR &= ~kMcrMdis;
 
-    if (!wait_until_clear(CAN0_MCR, kMcrLpmAck, 1000u))
+    if (!wait_until_clear(CAN0_MCR, kMcrLpmAck, kInitTimeoutUs))
         return false;
 
     CAN0_MCR |= kMcrSoftRst;
-    if (!wait_until_clear(CAN0_MCR, kMcrSoftRst, 1000u))
+    if (!wait_until_clear(CAN0_MCR, kMcrSoftRst, kInitTimeoutUs))
         return false;
 
     CAN0_MCR = (CAN0_MCR & ~(kMcrMaxMbMask | kMcrRfen | kMcrMdis | kMcrIdamMask | kMcrIrmq)) |
@@ -255,13 +252,13 @@ bool can_begin(uint32_t bitrate)
                kMcrSrxDis |
                kMaxMbIndex;
 
-    if (!wait_until_set(CAN0_MCR, kMcrFrzAck, 1000u))
+    if (!wait_until_set(CAN0_MCR, kMcrFrzAck, kInitTimeoutUs))
         return false;
 
     CAN0_CTRL1 = kCtrl1Timing500k;
     // RFFN=0: eight filter words; FIFO first; standard data frames only.
     CAN0_CTRL2 = 0u;
-    CAN0_RXFGMASK = 0xC0000000u; // Compare RTR/IDE, accept every standard ID.
+    CAN0_RXFGMASK = kStandardDataFilterMask; // Compare RTR/IDE, accept every standard ID.
     CAN0_RXMGMASK = 0u;
     CAN0_RX14MASK = 0u;
     CAN0_RX15MASK = 0u;
@@ -285,7 +282,7 @@ bool can_begin(uint32_t bitrate)
     CAN0_IMASK1 = kFifoAvailable | kFifoWarning | kFifoOverflow;
 
     CAN0_MCR &= ~kMcrHalt;
-    if (!wait_until_clear(CAN0_MCR, kMcrFrzAck, 1000u))
+    if (!wait_until_clear(CAN0_MCR, kMcrFrzAck, kInitTimeoutUs))
         return false;
 
     g_can_initialized = true;
@@ -295,7 +292,7 @@ bool can_begin(uint32_t bitrate)
 
 bool can_transmit(const CanFrame &frame, uint32_t timeout_us)
 {
-    if (!g_can_initialized || frame.id > 0x7FFu || frame.dlc > 8u)
+    if (!g_can_initialized || frame.id > CAN_STANDARD_ID_MAX || frame.dlc > CAN_PAYLOAD_SIZE)
         return false;
 
     const uint32_t flag = 1u << kTxMb;
@@ -304,7 +301,7 @@ bool can_transmit(const CanFrame &frame, uint32_t timeout_us)
     if (!abort_tx_mb(timeout_us))
         return false;
 
-    mb_id(kTxMb) = (static_cast<uint32_t>(frame.id) & 0x7FFu) << kMbIdStdShift;
+    mb_id(kTxMb) = (static_cast<uint32_t>(frame.id) & CAN_STANDARD_ID_MAX) << kMbIdStdShift;
     mb_word0(kTxMb) = pack_word(frame.data, 0u, frame.dlc);
     mb_word1(kTxMb) = pack_word(frame.data, 4u, frame.dlc);
     mb_cs(kTxMb) = mb_code(kMbCodeTxDataOnce) | (static_cast<uint32_t>(frame.dlc) << kMbDlcShift);

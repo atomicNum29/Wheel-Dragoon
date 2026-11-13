@@ -1,37 +1,18 @@
+프로젝트 헤더 안내
+==================
 
-This directory is intended for project header files.
+현재 모듈 구성과 실행 흐름: ../docs/firmware-architecture.ko.md
+전체 문서: ../docs/README.md
 
-A header file is a file containing C declarations and macro definitions
-to be shared between several project source files. You request the use of a
-header file in your project source file (C, C++, etc) located in `src` folder
-by including it, with the C preprocessing directive `#include'.
+- build_features.hpp: 디버그 / 타이밍 빌드 기능 플래그
+- control.hpp, rc_io.hpp, can_control.hpp, serial_protocol.hpp:
+  일반 제어 모듈의 공개 인터페이스
+- can_debug.hpp, timing_diagnostics.hpp: 선택 기능과 비활성 빌드 연결
+- steering_config.hpp: 차량 기하, 서보 보정, 모션 제한, PIVOT 요청 각속도 설정
+- vehicle_kinematics.hpp, vehicle_motion.hpp: MANUAL 곡률 / PIVOT 회전 운동학과 모션 전환
+- can_tx_schedule.hpp: 일반 CAN 주기와 응답 창
+- md200t_can.hpp, flexcan0.hpp: 드라이버 명령과 하드웨어 CAN 인터페이스
+- error_report.hpp, little_endian.hpp: 오류 보고 및 바이트 인코딩 공통 처리
 
-```src/main.c
-
-#include "header.h"
-
-int main (void)
-{
- ...
-}
-```
-
-Including a header file produces the same results as copying the header file
-into each source file that needs it. Such copying would be time-consuming
-and error-prone. With a header file, the related declarations appear
-in only one place. If they need to be changed, they can be changed in one
-place, and programs that include the header file will automatically use the
-new version when next recompiled. The header file eliminates the labor of
-finding and changing all the copies as well as the risk that a failure to
-find one copy will result in inconsistencies within a program.
-
-In C, the convention is to give header files names that end with `.h'.
-
-Read more about using header files in official GCC documentation:
-
-* Include Syntax
-* Include Operation
-* Once-Only Headers
-* Computed Includes
-
-https://gcc.gnu.org/onlinedocs/cpp/Header-Files.html
+변경 가능한 모듈 상태는 해당 src/*.cpp 안에 두며 공개 extern 전역으로 공유하지 않는다.
+설정값을 바꿀 때는 docs/rc-steering.ko.md 등 해당 기준 문서도 함께 갱신한다.

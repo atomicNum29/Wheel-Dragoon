@@ -3,9 +3,16 @@
 
 namespace vehicle {
 constexpr float servo_frequency_hz = 50.0f;
+constexpr uint8_t servo_resolution_bits = 16;
+constexpr uint32_t servo_duty_max = (1u << servo_resolution_bits) - 1u;
+constexpr float microseconds_per_second = 1000000.0f;
 inline int pwm_duty(int pulse_us) {
-    return static_cast<int>(lroundf(pulse_us * servo_frequency_hz * 65535.0f / 1000000.0f));
+    return static_cast<int>(lroundf(pulse_us * servo_frequency_hz * servo_duty_max / microseconds_per_second));
 }
+constexpr uint8_t calibration_min_points = 3, calibration_max_points = 5;
+constexpr int servo_valid_min_us = 500, servo_valid_max_us = 2500;
+constexpr float rc_maximum_inner_angle = 70 * deg;
+constexpr float rc_pivot_maximum_angular_velocity = 5.0f; // rad/s before common wheel RPM limiting
 struct CalibrationPoint { float angle; int pulse_us; };
 struct ServoCalibration {
     bool verified;
@@ -13,15 +20,15 @@ struct ServoCalibration {
     int minimum_us, maximum_us;
     bool inverted; // Negate vehicle angle before looking up the PWM table.
     float minimum_angle, maximum_angle;
-    CalibrationPoint points[5]; // increasing actuator angle; 0-degree point defines neutral
+    CalibrationPoint points[calibration_max_points]; // increasing actuator angle; 0-degree point defines neutral
     uint8_t count;
 };
 inline bool valid_calibration(const ServoCalibration &c) {
-    if (!c.verified || c.count < 3 || c.count > 5 || c.minimum_us < 500 ||
-        c.maximum_us > 2500 || c.minimum_us >= c.maximum_us ||
+    if (!c.verified || c.count < calibration_min_points || c.count > calibration_max_points || c.minimum_us < servo_valid_min_us ||
+        c.maximum_us > servo_valid_max_us || c.minimum_us >= c.maximum_us ||
         !isfinite(c.minimum_angle) || !isfinite(c.maximum_angle) ||
         c.minimum_angle >= 0 || c.maximum_angle <= 0 ||
-        c.minimum_angle < -70*deg || c.maximum_angle > 70*deg) return false;
+        c.minimum_angle < -rc_maximum_inner_angle || c.maximum_angle > rc_maximum_inner_angle) return false;
     bool neutral = false;
     for (uint8_t i=0;i<c.count;++i) {
         if (!isfinite(c.points[i].angle) || c.points[i].pulse_us < c.minimum_us ||
@@ -49,14 +56,13 @@ inline int pulse_for_angle(const ServoCalibration &c, float angle) {
 // left 2100/1577/1044 us; right 1990/1443/908 us.
 // Both outputs decrease with vehicle angle. Store increasing PWM against
 // actuator angle and invert the vehicle angle before table lookup.
-constexpr float rc_maximum_inner_angle = 70 * deg;
 static const ServoCalibration left_servo = {
     // verified, pin, minimum_us, maximum_us, inverted, minimum_angle, maximum_angle
-    true, 9, 1044, 2100, true, -70*deg, 70*deg,
-    {{-70*deg,1044},{0,1577},{70*deg,2100},{0,0},{0,0}}, 3};
+    true, 9, 1044, 2100, true, -rc_maximum_inner_angle, rc_maximum_inner_angle,
+    {{-rc_maximum_inner_angle,1044},{0,1577},{rc_maximum_inner_angle,2100},{0,0},{0,0}}, 3};
 static const ServoCalibration right_servo = {
-    true, 10, 908, 1990, true, -70*deg, 70*deg,
-    {{-70*deg,908},{0,1443},{70*deg,1990},{0,0},{0,0}}, 3};
+    true, 10, 908, 1990, true, -rc_maximum_inner_angle, rc_maximum_inner_angle,
+    {{-rc_maximum_inner_angle,908},{0,1443},{rc_maximum_inner_angle,1990},{0,0},{0,0}}, 3};
 constexpr float mdh100_maximum_rpm = 400.0f;
 struct MotionConfig {
     Geometry geometry;

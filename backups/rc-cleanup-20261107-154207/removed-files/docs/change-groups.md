@@ -1,3 +1,15 @@
+# 변경 그룹 메모 — 2026-11-07 기록
+
+> 과거 커밋 분리와 검증 결과를 보존한 메모다. 현재 작업 트리 상태나 실행 지시가 아니다.
+> 최신 문서: [문서 안내](../../../../docs/README.md).
+
+현재는 main 기능을 모듈로 분리했고 빌드 환경은 네 개다. 조향 세부 계측 26레코드,
+`0x83`, 추가 조향 오류 비트는 제거됐으며 타이밍은 22레코드다. 활성 `test/`도 제거됐다.
+아래 테스트·빌드 성공 수치는 당시 분리 트리의 기록이며 현재 소스 검증으로 인용하지 않는다.
+
+<details>
+<summary>당시 변경 그룹과 staging 메모</summary>
+
 # Pending change groups
 
 2026-11-07. CAN group committed as `3062dad` (`fix(can): buffer RX with FIFO and an interrupt-driven queue`).
@@ -72,3 +84,5 @@ multiple features and cannot be separated by filename alone. Check that each pro
 commit builds independently before committing. Completed order is CAN, Windows CLI,
 common timing. Steering and its additional timing probes can be reviewed next.
 Keep unrelated editor settings in `.vscode/extensions.json` outside these feature commits.
+
+</details>

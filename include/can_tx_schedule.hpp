@@ -12,6 +12,7 @@ constexpr uint32_t CAN_TX_DRIVER_B_PHASE_US = 3000u;
 constexpr uint32_t CAN_TX_RESPONSE_TIMEOUT_US = 3000u;
 constexpr uint32_t CAN_TX_VOLTAGE_PHASE_US = 6000u;
 constexpr uint8_t CAN_TX_SUPERFRAME_CYCLES = 100u;
+constexpr uint8_t CAN_TX_DRIVER_B_VOLTAGE_CYCLE = CAN_TX_SUPERFRAME_CYCLES / 2u;
 
 constexpr uint8_t CAN_TX_WHEEL_LF_MASK = 1u << 0;
 constexpr uint8_t CAN_TX_WHEEL_RF_MASK = 1u << 1;
@@ -62,7 +63,7 @@ inline bool scheduled_voltage_poll(uint8_t cycle, ScheduledVoltageRequest &reque
             MD200T_DRIVER_A_ID, MD200T_PID_VOLT_IN, CAN_TX_VOLTAGE_PHASE_US};
         return true;
     }
-    if (cycle == 50u)
+    if (cycle == CAN_TX_DRIVER_B_VOLTAGE_CYCLE)
     {
         request = ScheduledVoltageRequest{
             MD200T_DRIVER_B_ID, MD200T_PID_VOLT_IN, CAN_TX_VOLTAGE_PHASE_US};
