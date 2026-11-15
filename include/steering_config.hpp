@@ -67,9 +67,9 @@ constexpr float mdh100_maximum_rpm = 400.0f;
 struct MotionConfig {
     Geometry geometry;
     float rpm_limit = 200; // conservative commissioning cap, below MDH100 400 RPM specification
-    float acceleration_rpm_s = 200;
-    float deceleration_rpm_s = 400;
-    float steering_rate = 180*deg; // maximum commanded rate; both axes share arrival time
+    float acceleration_rpm_s = 300;
+    float deceleration_rpm_s = 300;
+    float steering_rate = 180*deg; // commanded rate bound for both axes, including PIVOT transitions
     uint32_t settle_ms = 500;
     uint32_t startup_ms = 1500;
     uint32_t stopped_dwell_ms = 200;

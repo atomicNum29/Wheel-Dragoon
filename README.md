@@ -53,6 +53,7 @@ RC STOP은 CAN TQ-OFF를 요청하며, POWERDOWN은 GPIO 5/6의 전원 제어 �
 세부 제약은 [RC 제어](docs/rc-steering.ko.md)와
 [2026-11-09 조종 기능 상실 검토](docs/rc-loss-of-control-review-2026-11-09.ko.md)에 정리했다.
 
-PIVOT은 후륜 중심 회전이며, 고정 조향각 지령에는 일반 조향 속도 제한이 적용되지 않는다.
+주행 중 조향각과 휠 RPM은 같은 중간 운동 상태에서 생성하며, 각 출력의 변화율을 함께 제한한다.
+PIVOT은 후륜 중심 회전이며, 모드 전환 시 감속·정지 대기·조향 속도 제한·안정 대기를 적용한다.
 입력 구간과 전환 조건은 [RC 제어와 조향](docs/rc-steering.ko.md)을 따른다.
 소스 기준일과 검증 상태는 [문서 안내](docs/README.md)에 있다.

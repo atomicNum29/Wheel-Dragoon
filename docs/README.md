@@ -2,7 +2,7 @@
 
 [프로젝트 개요](../README.md)
 
-문서는 **2026-11-13 소스 기준**의 기능·설정·인터페이스를 설명한다.
+문서는 **2026-11-15 소스 기준**의 기능·설정·인터페이스를 설명한다.
 처음 읽을 때는 펌웨어 구조 → RC 제어 → CAN 송수신 → USB 프로토콜 순서로 살펴본다.
 PC 관측과 장비 인계는 해당 사용 안내를 참고한다.
 
@@ -17,6 +17,7 @@ PC 관측과 장비 인계는 해당 사용 안내를 참고한다.
 | PC 관측, CLI, 단발 명령 | [호스트 도구](can-cli-windows.md) | [can_cli.py](../src/can_cli.py), [packet_monitor.py](../src/packet_monitor.py), [control.py](../src/control.py) |
 | 누적 시간·응답 누락·0x84 해석 | [타이밍 진단](timing-diagnostics.md) | [timing_diagnostics.cpp](../src/timing_diagnostics.cpp) |
 | 다른 PC/Pi로 전달 | [인계 절차](raspberry-pi-handoff.ko.md) | [pyproject.toml](../pyproject.toml), [uv.lock](../uv.lock) |
+| 보류 중인 확인·개선 항목 | [후속 작업](todo.ko.md) | [vehicle_motion.hpp](../include/vehicle_motion.hpp) |
 
 ## 구현의 기준
 
@@ -28,8 +29,9 @@ PC 관측과 장비 인계는 해당 사용 안내를 참고한다.
 
 ## 검증 상태와 해석 범위
 
-문서의 동작 설명은 소스에서 확인할 수 있는 처리 규칙이다. 현재 작업 트리에 대한 빌드·테스트·
-실물 통신 검증 결과는 없으며, 장비에 업로드된 바이너리와의 일치 여부도 미확인이다.
+문서의 동작 설명은 소스에서 확인할 수 있는 처리 규칙이다. 모션 헤더를 PC에서 컴파일한
+오프라인 시뮬레이션을 수행했다. 현재 변경에 대한 Teensy 대상 펌웨어 빌드·실물 통신 검증은
+수행하지 않았으며, 장비에 업로드된 바이너리와의 일치 여부도 미확인이다.
 활성 `test/` 디렉터리는 없다. 소프트웨어의 구동 상태·조향 도달 추정은 실제 정지·서보 도달을
 확인하는 피드백이 아니다. 각 기능의 제약은 해당 문서에서 설명한다.
 

@@ -142,5 +142,5 @@ CONTROL에서만 출력한다. 계측 출력은 CAN 응답 창 이후 +7..10 ms�
 최대 PIVOT 요청 각속도는 `steering_config.hpp`의 `rc_pivot_maximum_angular_velocity`다.
 
 MANUAL/PIVOT은 네 프로필의 CONTROL 경로에 공통으로 포함된다. 두 모드의 CAN 명령·응답과
-USB 상태 패킷 형식은 동일하다. PIVOT의 즉시 고정 조향 지령과 RPM 전환 조건은
+USB 상태 패킷 형식은 동일하다. 공통 운동 상태에서의 조향·RPM 생성과 PIVOT 전환 조건은
 [RC 제어](rc-steering.ko.md)를 참고한다.
