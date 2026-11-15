@@ -1,0 +1,621 @@
+{
+  "dt_s": 0.01,
+  "observation_s": 5,
+  "totals": {
+    "first_failures": 268,
+    "reuse_pass": 256,
+    "reuse_fail": 12,
+    "unavailable": 0,
+    "previous_initial_reuse_pass": 73,
+    "failed_vs_previous_accepted": {
+      "increased": 256,
+      "unchanged": 0,
+      "decreased": 12
+    },
+    "failed_vs_previous_initial": {
+      "increased": 251,
+      "unchanged": 0,
+      "decreased": 17
+    },
+    "all_vs_previous_accepted": {
+      "increased": 735,
+      "unchanged": 8033,
+      "decreased": 133
+    },
+    "all_vs_previous_initial": {
+      "increased": 721,
+      "unchanged": 8033,
+      "decreased": 147
+    },
+    "reused_pass_vs_original_accepted": {
+      "larger": 42,
+      "equal": 0,
+      "smaller": 214
+    }
+  },
+  "results": [
+    {
+      "case": "01_straight_acceleration",
+      "title": "직진 가속",
+      "mode": "step",
+      "first_failures": 31,
+      "unavailable": 0,
+      "reuse_pass": 31,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 31,
+      "failed_vs_previous_accepted": {
+        "increased": 31,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 31,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 88,
+        "unchanged": 411,
+        "decreased": 1
+      },
+      "all_vs_previous_initial": {
+        "increased": 88,
+        "unchanged": 411,
+        "decreased": 1
+      },
+      "max_attempts": 2,
+      "original_outputs_match": true
+    },
+    {
+      "case": "01_straight_acceleration",
+      "title": "직진 가속",
+      "mode": "ramp",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "all_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "02_constant_speed_turn",
+      "title": "일정 선속도에서 선회",
+      "mode": "step",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 43,
+        "unchanged": 456,
+        "decreased": 1
+      },
+      "all_vs_previous_initial": {
+        "increased": 43,
+        "unchanged": 456,
+        "decreased": 1
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "02_constant_speed_turn",
+      "title": "일정 선속도에서 선회",
+      "mode": "ramp",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "all_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "03_speed_and_curvature",
+      "title": "선속도·곡률 동시 증가",
+      "mode": "step",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 94,
+        "unchanged": 405,
+        "decreased": 1
+      },
+      "all_vs_previous_initial": {
+        "increased": 94,
+        "unchanged": 405,
+        "decreased": 1
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "03_speed_and_curvature",
+      "title": "선속도·곡률 동시 증가",
+      "mode": "ramp",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 6,
+        "unchanged": 462,
+        "decreased": 32
+      },
+      "all_vs_previous_initial": {
+        "increased": 6,
+        "unchanged": 462,
+        "decreased": 32
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "04_slowdown_into_turn",
+      "title": "감속하며 선회",
+      "mode": "step",
+      "first_failures": 50,
+      "unavailable": 0,
+      "reuse_pass": 49,
+      "reuse_fail": 1,
+      "previous_initial_reuse_pass": 3,
+      "failed_vs_previous_accepted": {
+        "increased": 49,
+        "unchanged": 0,
+        "decreased": 1
+      },
+      "failed_vs_previous_initial": {
+        "increased": 49,
+        "unchanged": 0,
+        "decreased": 1
+      },
+      "all_vs_previous_accepted": {
+        "increased": 56,
+        "unchanged": 443,
+        "decreased": 1
+      },
+      "all_vs_previous_initial": {
+        "increased": 56,
+        "unchanged": 443,
+        "decreased": 1
+      },
+      "max_attempts": 2,
+      "original_outputs_match": true
+    },
+    {
+      "case": "04_slowdown_into_turn",
+      "title": "감속하며 선회",
+      "mode": "ramp",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "all_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "05_left_to_right",
+      "title": "좌회전에서 우회전으로",
+      "mode": "step",
+      "first_failures": 67,
+      "unavailable": 0,
+      "reuse_pass": 66,
+      "reuse_fail": 1,
+      "previous_initial_reuse_pass": 8,
+      "failed_vs_previous_accepted": {
+        "increased": 66,
+        "unchanged": 0,
+        "decreased": 1
+      },
+      "failed_vs_previous_initial": {
+        "increased": 66,
+        "unchanged": 0,
+        "decreased": 1
+      },
+      "all_vs_previous_accepted": {
+        "increased": 94,
+        "unchanged": 405,
+        "decreased": 1
+      },
+      "all_vs_previous_initial": {
+        "increased": 94,
+        "unchanged": 405,
+        "decreased": 1
+      },
+      "max_attempts": 2,
+      "original_outputs_match": true
+    },
+    {
+      "case": "05_left_to_right",
+      "title": "좌회전에서 우회전으로",
+      "mode": "ramp",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "all_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "06_stationary_steering",
+      "title": "정지 상태 조향",
+      "mode": "step",
+      "first_failures": 89,
+      "unavailable": 0,
+      "reuse_pass": 88,
+      "reuse_fail": 1,
+      "previous_initial_reuse_pass": 14,
+      "failed_vs_previous_accepted": {
+        "increased": 88,
+        "unchanged": 0,
+        "decreased": 1
+      },
+      "failed_vs_previous_initial": {
+        "increased": 88,
+        "unchanged": 0,
+        "decreased": 1
+      },
+      "all_vs_previous_accepted": {
+        "increased": 102,
+        "unchanged": 397,
+        "decreased": 1
+      },
+      "all_vs_previous_initial": {
+        "increased": 102,
+        "unchanged": 397,
+        "decreased": 1
+      },
+      "max_attempts": 2,
+      "original_outputs_match": true
+    },
+    {
+      "case": "06_stationary_steering",
+      "title": "정지 상태 조향",
+      "mode": "ramp",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "all_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 500,
+        "decreased": 0
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "07_reverse_acceleration",
+      "title": "후진 속도·곡률 증가",
+      "mode": "step",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 94,
+        "unchanged": 405,
+        "decreased": 1
+      },
+      "all_vs_previous_initial": {
+        "increased": 94,
+        "unchanged": 405,
+        "decreased": 1
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "07_reverse_acceleration",
+      "title": "후진 속도·곡률 증가",
+      "mode": "ramp",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 6,
+        "unchanged": 462,
+        "decreased": 32
+      },
+      "all_vs_previous_initial": {
+        "increased": 6,
+        "unchanged": 462,
+        "decreased": 32
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "08_direction_reversal",
+      "title": "일정 곡률에서 전후진 전환",
+      "mode": "step",
+      "first_failures": 15,
+      "unavailable": 0,
+      "reuse_pass": 15,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 15,
+      "failed_vs_previous_accepted": {
+        "increased": 15,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 15,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 64,
+        "unchanged": 337,
+        "decreased": 0
+      },
+      "all_vs_previous_initial": {
+        "increased": 64,
+        "unchanged": 337,
+        "decreased": 0
+      },
+      "max_attempts": 2,
+      "original_outputs_match": true
+    },
+    {
+      "case": "08_direction_reversal",
+      "title": "일정 곡률에서 전후진 전환",
+      "mode": "ramp",
+      "first_failures": 16,
+      "unavailable": 0,
+      "reuse_pass": 7,
+      "reuse_fail": 9,
+      "previous_initial_reuse_pass": 2,
+      "failed_vs_previous_accepted": {
+        "increased": 7,
+        "unchanged": 0,
+        "decreased": 9
+      },
+      "failed_vs_previous_initial": {
+        "increased": 2,
+        "unchanged": 0,
+        "decreased": 14
+      },
+      "all_vs_previous_accepted": {
+        "increased": 29,
+        "unchanged": 435,
+        "decreased": 36
+      },
+      "all_vs_previous_initial": {
+        "increased": 15,
+        "unchanged": 435,
+        "decreased": 50
+      },
+      "max_attempts": 2,
+      "original_outputs_match": true
+    },
+    {
+      "case": "09_fast_steering",
+      "title": "빠른 조향 요청",
+      "mode": "step",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 43,
+        "unchanged": 456,
+        "decreased": 1
+      },
+      "all_vs_previous_initial": {
+        "increased": 43,
+        "unchanged": 456,
+        "decreased": 1
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    },
+    {
+      "case": "09_fast_steering",
+      "title": "빠른 조향 요청",
+      "mode": "ramp",
+      "first_failures": 0,
+      "unavailable": 0,
+      "reuse_pass": 0,
+      "reuse_fail": 0,
+      "previous_initial_reuse_pass": 0,
+      "failed_vs_previous_accepted": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "failed_vs_previous_initial": {
+        "increased": 0,
+        "unchanged": 0,
+        "decreased": 0
+      },
+      "all_vs_previous_accepted": {
+        "increased": 16,
+        "unchanged": 459,
+        "decreased": 25
+      },
+      "all_vs_previous_initial": {
+        "increased": 16,
+        "unchanged": 459,
+        "decreased": 25
+      },
+      "max_attempts": 1,
+      "original_outputs_match": true
+    }
+  ],
+  "source_sha256": {
+    "vehicle_motion.hpp": "9bee01e919a671fa7640f04de3783f90433b375a83a5c4672b5c62a814e68757",
+    "vehicle_kinematics.hpp": "442fb63799214107993dc2677dc08ed573893bd635a30361fe7feb264ed86237",
+    "steering_config.hpp": "a92832deeb71da707200e3b1c9e9a75efab81bb9934aa6616c399e2ff3da54f3"
+  },
+  "compiler": "g++ (MinGW.org GCC-6.3.0-1) 6.3.0",
+  "flags": "-std=c++11 -O2 -msse2 -mfpmath=sse -ffp-contract=off"
+}

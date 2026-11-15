@@ -1,0 +1,561 @@
+{
+  "config": {
+    "wheelbase": 0.42,
+    "front_track": 0.439,
+    "rear_track": 0.439,
+    "radius": 0.065,
+    "MAX_LINEAR_SPEED_MPS": 2.0,
+    "rpm_limit": 200.0,
+    "acceleration_rpm_s": 300.0,
+    "deceleration_rpm_s": 300.0,
+    "steering_rate": 180.0,
+    "rc_maximum_inner_angle": 70.0,
+    "source_sha256": {
+      "vehicle_kinematics.hpp": "442fb63799214107993dc2677dc08ed573893bd635a30361fe7feb264ed86237",
+      "steering_config.hpp": "d3fb3315313acea881a2fd302a2dd6bd176402bb1825dd0e83a12d1803e3bb4c"
+    }
+  },
+  "requested_dt_s": 0.01,
+  "results": [
+    {
+      "case": {
+        "key": "01_straight_acceleration",
+        "title": "직진 가속",
+        "v0": 0.2,
+        "v1": 1.2,
+        "k0": 0,
+        "k1": 0,
+        "duration": 1.0
+      },
+      "sample_count": 101,
+      "effective_dt_s": 0.01,
+      "max_abs_angle_deg": 0.0,
+      "max_abs_steering_rate_deg_s": 0.0,
+      "max_abs_rpm": 176.29470619409943,
+      "max_rpm_magnitude_increase_rpm_s": 146.91225516174953,
+      "max_rpm_magnitude_decrease_rpm_s": 0.0,
+      "exceeds": {
+        "steering_angle": false,
+        "steering_rate": false,
+        "rpm": false,
+        "rpm_acceleration": false,
+        "rpm_deceleration": false,
+        "linear_speed": false
+      },
+      "wheels": {
+        "LF": {
+          "start_rpm": 29.382451032349906,
+          "end_rpm": 176.29470619409943,
+          "min_rpm": 29.382451032349906,
+          "max_rpm": 176.29470619409943,
+          "min_signed_rate_rpm_s": 146.91225516174953,
+          "max_signed_rate_rpm_s": 146.91225516174953
+        },
+        "RF": {
+          "start_rpm": 29.382451032349906,
+          "end_rpm": 176.29470619409943,
+          "min_rpm": 29.382451032349906,
+          "max_rpm": 176.29470619409943,
+          "min_signed_rate_rpm_s": 146.91225516174953,
+          "max_signed_rate_rpm_s": 146.91225516174953
+        },
+        "LR": {
+          "start_rpm": 29.382451032349906,
+          "end_rpm": 176.29470619409943,
+          "min_rpm": 29.382451032349906,
+          "max_rpm": 176.29470619409943,
+          "min_signed_rate_rpm_s": 146.91225516174953,
+          "max_signed_rate_rpm_s": 146.91225516174953
+        },
+        "RR": {
+          "start_rpm": 29.382451032349906,
+          "end_rpm": 176.29470619409943,
+          "min_rpm": 29.382451032349906,
+          "max_rpm": 176.29470619409943,
+          "min_signed_rate_rpm_s": 146.91225516174953,
+          "max_signed_rate_rpm_s": 146.91225516174953
+        }
+      }
+    },
+    {
+      "case": {
+        "key": "02_constant_speed_turn",
+        "title": "일정 선속도에서 선회",
+        "v0": 0.8,
+        "v1": 0.8,
+        "k0": 0,
+        "k1": 2,
+        "duration": 1.0
+      },
+      "sample_count": 101,
+      "effective_dt_s": 0.01,
+      "max_abs_angle_deg": 56.26273662018635,
+      "max_abs_steering_rate_deg_s": 61.27369148276667,
+      "max_abs_rpm": 195.83163570410954,
+      "max_rpm_magnitude_increase_rpm_s": 94.32978351258932,
+      "max_rpm_magnitude_decrease_rpm_s": 51.595584012806434,
+      "exceeds": {
+        "steering_angle": false,
+        "steering_rate": false,
+        "rpm": false,
+        "rpm_acceleration": false,
+        "rpm_deceleration": false,
+        "linear_speed": false
+      },
+      "wheels": {
+        "LF": {
+          "start_rpm": 117.52980412939962,
+          "end_rpm": 118.71795993310609,
+          "min_rpm": 104.16263287465098,
+          "max_rpm": 118.71795993310609,
+          "min_signed_rate_rpm_s": -51.595584012806434,
+          "max_signed_rate_rpm_s": 53.443624187323614
+        },
+        "RF": {
+          "start_rpm": 117.52980412939962,
+          "end_rpm": 195.83163570410954,
+          "min_rpm": 117.52980412939962,
+          "max_rpm": 195.83163570410954,
+          "min_signed_rate_rpm_s": 51.595584012806434,
+          "max_signed_rate_rpm_s": 94.32978351258932
+        },
+        "LR": {
+          "start_rpm": 117.52980412939962,
+          "end_rpm": 65.93422011659318,
+          "min_rpm": 65.93422011659318,
+          "max_rpm": 117.52980412939962,
+          "min_signed_rate_rpm_s": -51.595584012806434,
+          "max_signed_rate_rpm_s": -51.595584012806434
+        },
+        "RR": {
+          "start_rpm": 117.52980412939962,
+          "end_rpm": 169.12538814220605,
+          "min_rpm": 117.52980412939962,
+          "max_rpm": 169.12538814220605,
+          "min_signed_rate_rpm_s": 51.595584012806434,
+          "max_signed_rate_rpm_s": 51.595584012806434
+        }
+      }
+    },
+    {
+      "case": {
+        "key": "03_speed_and_curvature",
+        "title": "선속도·곡률 동시 증가",
+        "v0": 0.3,
+        "v1": 1.0,
+        "k0": 0,
+        "k1": 2,
+        "duration": 1.0
+      },
+      "sample_count": 101,
+      "effective_dt_s": 0.01,
+      "max_abs_angle_deg": 56.26273662018635,
+      "max_abs_steering_rate_deg_s": 61.27369148276667,
+      "max_abs_rpm": 244.78954463013693,
+      "max_rpm_magnitude_increase_rpm_s": 289.2649106318325,
+      "max_rpm_magnitude_decrease_rpm_s": 6.802037413989012,
+      "exceeds": {
+        "steering_angle": false,
+        "steering_rate": false,
+        "rpm": true,
+        "rpm_acceleration": false,
+        "rpm_deceleration": false,
+        "linear_speed": false
+      },
+      "wheels": {
+        "LF": {
+          "start_rpm": 44.07367654852486,
+          "end_rpm": 148.3974499163826,
+          "min_rpm": 44.07367654852486,
+          "max_rpm": 148.3974499163826,
+          "min_signed_rate_rpm_s": 77.31362494506347,
+          "max_signed_rate_rpm_s": 170.68274517562233
+        },
+        "RF": {
+          "start_rpm": 44.07367654852486,
+          "end_rpm": 244.78954463013693,
+          "min_rpm": 44.07367654852486,
+          "max_rpm": 244.78954463013693,
+          "min_signed_rate_rpm_s": 122.18692261802707,
+          "max_signed_rate_rpm_s": 289.2649106318325
+        },
+        "LR": {
+          "start_rpm": 44.07367654852486,
+          "end_rpm": 82.41777514574147,
+          "min_rpm": 44.07367654852486,
+          "max_rpm": 82.67300286838888,
+          "min_signed_rate_rpm_s": -6.802037413989012,
+          "max_signed_rate_rpm_s": 83.49023460842226
+        },
+        "RR": {
+          "start_rpm": 44.07367654852486,
+          "end_rpm": 211.40673517775758,
+          "min_rpm": 44.07367654852486,
+          "max_rpm": 211.40673517775758,
+          "min_signed_rate_rpm_s": 122.18692261802707,
+          "max_signed_rate_rpm_s": 212.47919464043835
+        }
+      }
+    },
+    {
+      "case": {
+        "key": "04_slowdown_into_turn",
+        "title": "감속하며 선회",
+        "v0": 1.0,
+        "v1": 0.3,
+        "k0": 0,
+        "k1": 2,
+        "duration": 1.0
+      },
+      "sample_count": 101,
+      "effective_dt_s": 0.01,
+      "max_abs_angle_deg": 56.26273662018635,
+      "max_abs_steering_rate_deg_s": 61.27369148276667,
+      "max_abs_rpm": 146.91225516174953,
+      "max_rpm_magnitude_increase_rpm_s": 0.0,
+      "max_rpm_magnitude_decrease_rpm_s": 167.3330586292327,
+      "exceeds": {
+        "steering_angle": false,
+        "steering_rate": false,
+        "rpm": false,
+        "rpm_acceleration": false,
+        "rpm_deceleration": false,
+        "linear_speed": false
+      },
+      "wheels": {
+        "LF": {
+          "start_rpm": 146.91225516174953,
+          "end_rpm": 44.51923497491479,
+          "min_rpm": 44.51923497491479,
+          "max_rpm": 146.91225516174953,
+          "min_signed_rate_rpm_s": -167.3330586292327,
+          "max_signed_rate_rpm_s": -76.65984185458856
+        },
+        "RF": {
+          "start_rpm": 146.91225516174953,
+          "end_rpm": 73.4368633890411,
+          "min_rpm": 73.4368633890411,
+          "max_rpm": 146.91225516174953,
+          "min_signed_rate_rpm_s": -135.97901242387482,
+          "max_signed_rate_rpm_s": -38.08832856852248
+        },
+        "LR": {
+          "start_rpm": 146.91225516174953,
+          "end_rpm": 24.72533254372245,
+          "min_rpm": 24.72533254372245,
+          "max_rpm": 146.91225516174953,
+          "min_signed_rate_rpm_s": -167.3330586292327,
+          "max_signed_rate_rpm_s": -77.04078660682146
+        },
+        "RR": {
+          "start_rpm": 146.91225516174953,
+          "end_rpm": 63.422020553327286,
+          "min_rpm": 63.422020553327286,
+          "max_rpm": 146.91225516174953,
+          "min_signed_rate_rpm_s": -128.63637061962788,
+          "max_signed_rate_rpm_s": -38.34409859721662
+        }
+      }
+    },
+    {
+      "case": {
+        "key": "05_left_to_right",
+        "title": "좌회전에서 우회전으로",
+        "v0": 0.6,
+        "v1": 0.6,
+        "k0": 2,
+        "k1": -2,
+        "duration": 1.0
+      },
+      "sample_count": 101,
+      "effective_dt_s": 0.01,
+      "max_abs_angle_deg": 56.26273662018635,
+      "max_abs_steering_rate_deg_s": 122.53704194745588,
+      "max_abs_rpm": 146.87372677808216,
+      "max_rpm_magnitude_increase_rpm_s": 141.49467526888395,
+      "max_rpm_magnitude_decrease_rpm_s": 141.49467526888395,
+      "exceeds": {
+        "steering_angle": false,
+        "steering_rate": false,
+        "rpm": false,
+        "rpm_acceleration": false,
+        "rpm_deceleration": false,
+        "linear_speed": false
+      },
+      "wheels": {
+        "LF": {
+          "start_rpm": 89.03846994982956,
+          "end_rpm": 146.87372677808216,
+          "min_rpm": 78.12527098049554,
+          "max_rpm": 146.87372677808216,
+          "min_signed_rate_rpm_s": -80.16543628098542,
+          "max_signed_rate_rpm_s": 141.49467526888395
+        },
+        "RF": {
+          "start_rpm": 146.87372677808216,
+          "end_rpm": 89.03846994982956,
+          "min_rpm": 78.12527098049554,
+          "max_rpm": 146.87372677808216,
+          "min_signed_rate_rpm_s": -141.49467526888395,
+          "max_signed_rate_rpm_s": 80.16543628098542
+        },
+        "LR": {
+          "start_rpm": 49.45066508744489,
+          "end_rpm": 126.84404110665454,
+          "min_rpm": 49.45066508744489,
+          "max_rpm": 126.84404110665454,
+          "min_signed_rate_rpm_s": 77.39337601920964,
+          "max_signed_rate_rpm_s": 77.39337601920964
+        },
+        "RR": {
+          "start_rpm": 126.84404110665454,
+          "end_rpm": 49.45066508744489,
+          "min_rpm": 49.45066508744489,
+          "max_rpm": 126.84404110665454,
+          "min_signed_rate_rpm_s": -77.39337601920964,
+          "max_signed_rate_rpm_s": -77.39337601920964
+        }
+      }
+    },
+    {
+      "case": {
+        "key": "06_stationary_steering",
+        "title": "정지 상태 조향",
+        "v0": 0,
+        "v1": 0,
+        "k0": -2,
+        "k1": 2,
+        "duration": 1.0
+      },
+      "sample_count": 101,
+      "effective_dt_s": 0.01,
+      "max_abs_angle_deg": 56.26273662018635,
+      "max_abs_steering_rate_deg_s": 122.53704194745588,
+      "max_abs_rpm": 0.0,
+      "max_rpm_magnitude_increase_rpm_s": 0.0,
+      "max_rpm_magnitude_decrease_rpm_s": 0.0,
+      "exceeds": {
+        "steering_angle": false,
+        "steering_rate": false,
+        "rpm": false,
+        "rpm_acceleration": false,
+        "rpm_deceleration": false,
+        "linear_speed": false
+      },
+      "wheels": {
+        "LF": {
+          "start_rpm": 0.0,
+          "end_rpm": 0.0,
+          "min_rpm": 0.0,
+          "max_rpm": 0.0,
+          "min_signed_rate_rpm_s": 0.0,
+          "max_signed_rate_rpm_s": 0.0
+        },
+        "RF": {
+          "start_rpm": 0.0,
+          "end_rpm": 0.0,
+          "min_rpm": 0.0,
+          "max_rpm": 0.0,
+          "min_signed_rate_rpm_s": 0.0,
+          "max_signed_rate_rpm_s": 0.0
+        },
+        "LR": {
+          "start_rpm": 0.0,
+          "end_rpm": 0.0,
+          "min_rpm": 0.0,
+          "max_rpm": 0.0,
+          "min_signed_rate_rpm_s": 0.0,
+          "max_signed_rate_rpm_s": 0.0
+        },
+        "RR": {
+          "start_rpm": 0.0,
+          "end_rpm": 0.0,
+          "min_rpm": 0.0,
+          "max_rpm": 0.0,
+          "min_signed_rate_rpm_s": 0.0,
+          "max_signed_rate_rpm_s": 0.0
+        }
+      }
+    },
+    {
+      "case": {
+        "key": "07_reverse_acceleration",
+        "title": "후진 속도·곡률 증가",
+        "v0": -0.3,
+        "v1": -1.0,
+        "k0": 0,
+        "k1": 2,
+        "duration": 1.0
+      },
+      "sample_count": 101,
+      "effective_dt_s": 0.01,
+      "max_abs_angle_deg": 56.26273662018635,
+      "max_abs_steering_rate_deg_s": 61.27369148276667,
+      "max_abs_rpm": 244.78954463013693,
+      "max_rpm_magnitude_increase_rpm_s": 289.2649106318325,
+      "max_rpm_magnitude_decrease_rpm_s": 6.802037413989012,
+      "exceeds": {
+        "steering_angle": false,
+        "steering_rate": false,
+        "rpm": true,
+        "rpm_acceleration": false,
+        "rpm_deceleration": false,
+        "linear_speed": false
+      },
+      "wheels": {
+        "LF": {
+          "start_rpm": -44.07367654852486,
+          "end_rpm": -148.3974499163826,
+          "min_rpm": -148.3974499163826,
+          "max_rpm": -44.07367654852486,
+          "min_signed_rate_rpm_s": -170.68274517562233,
+          "max_signed_rate_rpm_s": -77.31362494506347
+        },
+        "RF": {
+          "start_rpm": -44.07367654852486,
+          "end_rpm": -244.78954463013693,
+          "min_rpm": -244.78954463013693,
+          "max_rpm": -44.07367654852486,
+          "min_signed_rate_rpm_s": -289.2649106318325,
+          "max_signed_rate_rpm_s": -122.18692261802707
+        },
+        "LR": {
+          "start_rpm": -44.07367654852486,
+          "end_rpm": -82.41777514574147,
+          "min_rpm": -82.67300286838888,
+          "max_rpm": -44.07367654852486,
+          "min_signed_rate_rpm_s": -83.49023460842226,
+          "max_signed_rate_rpm_s": 6.802037413989012
+        },
+        "RR": {
+          "start_rpm": -44.07367654852486,
+          "end_rpm": -211.40673517775758,
+          "min_rpm": -211.40673517775758,
+          "max_rpm": -44.07367654852486,
+          "min_signed_rate_rpm_s": -212.47919464043835,
+          "max_signed_rate_rpm_s": -122.18692261802707
+        }
+      }
+    },
+    {
+      "case": {
+        "key": "08_direction_reversal",
+        "title": "일정 곡률에서 전후진 전환",
+        "v0": 0.6,
+        "v1": -0.6,
+        "k0": 1,
+        "k1": 1,
+        "duration": 1.0
+      },
+      "sample_count": 101,
+      "effective_dt_s": 0.01,
+      "max_abs_angle_deg": 28.28543194194996,
+      "max_abs_steering_rate_deg_s": 0.0,
+      "max_abs_rpm": 113.69232651664385,
+      "max_rpm_magnitude_increase_rpm_s": 227.3846530332877,
+      "max_rpm_magnitude_decrease_rpm_s": 227.3846530332877,
+      "exceeds": {
+        "steering_angle": false,
+        "steering_rate": false,
+        "rpm": false,
+        "rpm_acceleration": false,
+        "rpm_deceleration": false,
+        "linear_speed": false
+      },
+      "wheels": {
+        "LF": {
+          "start_rpm": 78.12761269505899,
+          "end_rpm": -78.12761269505899,
+          "min_rpm": -78.12761269505899,
+          "max_rpm": 78.12761269505899,
+          "min_signed_rate_rpm_s": -156.25522539011797,
+          "max_signed_rate_rpm_s": -156.25522539011797
+        },
+        "RF": {
+          "start_rpm": 113.69232651664385,
+          "end_rpm": -113.69232651664385,
+          "min_rpm": -113.69232651664385,
+          "max_rpm": 113.69232651664385,
+          "min_signed_rate_rpm_s": -227.3846530332877,
+          "max_signed_rate_rpm_s": -227.3846530332877
+        },
+        "LR": {
+          "start_rpm": 68.7990090922473,
+          "end_rpm": -68.7990090922473,
+          "min_rpm": -68.7990090922473,
+          "max_rpm": 68.7990090922473,
+          "min_signed_rate_rpm_s": -137.59801818449458,
+          "max_signed_rate_rpm_s": -137.59801818449458
+        },
+        "RR": {
+          "start_rpm": 107.49569710185213,
+          "end_rpm": -107.49569710185213,
+          "min_rpm": -107.49569710185213,
+          "max_rpm": 107.49569710185213,
+          "min_signed_rate_rpm_s": -214.99139420370426,
+          "max_signed_rate_rpm_s": -214.99139420370426
+        }
+      }
+    },
+    {
+      "case": {
+        "key": "09_fast_steering",
+        "title": "빠른 조향 요청",
+        "v0": 0.8,
+        "v1": 0.8,
+        "k0": 0,
+        "k1": 2,
+        "duration": 0.25
+      },
+      "sample_count": 26,
+      "effective_dt_s": 0.01,
+      "max_abs_angle_deg": 56.26273662018635,
+      "max_abs_steering_rate_deg_s": 245.07408389491175,
+      "max_abs_rpm": 195.83163570410954,
+      "max_rpm_magnitude_increase_rpm_s": 377.31913405035726,
+      "max_rpm_magnitude_decrease_rpm_s": 206.38233605122574,
+      "exceeds": {
+        "steering_angle": false,
+        "steering_rate": true,
+        "rpm": false,
+        "rpm_acceleration": true,
+        "rpm_deceleration": false,
+        "linear_speed": false
+      },
+      "wheels": {
+        "LF": {
+          "start_rpm": 117.52980412939962,
+          "end_rpm": 118.71795993310609,
+          "min_rpm": 104.16702797399405,
+          "max_rpm": 118.71795993310609,
+          "min_signed_rate_rpm_s": -206.38233605122574,
+          "max_signed_rate_rpm_s": 213.77449674929446
+        },
+        "RF": {
+          "start_rpm": 117.52980412939962,
+          "end_rpm": 195.83163570410954,
+          "min_rpm": 117.52980412939962,
+          "max_rpm": 195.83163570410954,
+          "min_signed_rate_rpm_s": 206.38233605122574,
+          "max_signed_rate_rpm_s": 377.31913405035726
+        },
+        "LR": {
+          "start_rpm": 117.52980412939962,
+          "end_rpm": 65.93422011659318,
+          "min_rpm": 65.93422011659318,
+          "max_rpm": 117.52980412939962,
+          "min_signed_rate_rpm_s": -206.38233605122574,
+          "max_signed_rate_rpm_s": -206.38233605122574
+        },
+        "RR": {
+          "start_rpm": 117.52980412939962,
+          "end_rpm": 169.12538814220605,
+          "min_rpm": 117.52980412939962,
+          "max_rpm": 169.12538814220605,
+          "min_signed_rate_rpm_s": 206.38233605122574,
+          "max_signed_rate_rpm_s": 206.38233605122574
+        }
+      }
+    }
+  ]
+}
