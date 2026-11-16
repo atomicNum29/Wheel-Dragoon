@@ -5,6 +5,8 @@
 Python 도구는 Windows와 POSIX 터미널에서 USB 수신, 단발 명령 전송, CAN 디버깅을 제공한다.
 소스는 [can_cli.py](../src/can_cli.py), [packet_monitor.py](../src/packet_monitor.py),
 [control.py](../src/control.py)다.
+새 `0x03` 명령과 `0x85/86/87` 필드 해석은 아직 이 도구들에 연결하지 않았다.
+현재 펌웨어의 제어·피드백 연동은 [ROS USB 가이드](ros-usb-integration.ko.md)를 기준으로 구현한다.
 
 ## 환경과 선택
 
@@ -78,9 +80,9 @@ USB 버퍼 쓰기와 PC의 결과 수신·저장은 별개다. 상세 취소 조
 
 `control.py v_mps w_radps --port COM3`는 `0x01`을 **한 번** 전송한다.
 속도 허용 범위는 ±2 m/s, 각속도는 ±5 rad/s이며 호스트는 이를 milli 단위 int16으로 만든다.
-현재 AUTO에서는 이 속도로 주행하지 않는다. MANUAL/PIVOT에서는 RC를 계속 사용하고
-`--disable`·`--estop`은 구동 중지 수단으로 적용되지 않는다.
-BRIDGE 중 유효 `0x01` 수신은 CONTROL 복귀를 유발하므로 단순 관측 명령으로 사용하지 않는다.
+현재 펌웨어는 이 `0x01`을 framing 오류로 거부하며 구동·timeout 갱신·CONTROL 복귀에 사용하지 않는다.
+따라서 이 도구의 `--disable`·`--estop`도 현재 펌웨어의 구동 중지 수단이 아니다.
+AUTO 구동에는 새 `0x03` 송신 구현이 필요하다. MANUAL/PIVOT에서는 RC를 계속 사용한다.
 
 일반 명령 뒤 응답 처리는 `readline().decode()`이며 바이너리 `0x82` 디코더가 아니다.
 출력 문자열이나 빈 응답으로 명령 수용·정지를 확인할 수 없다. 상태 관측에는 위 수신 도구를 사용한다.

@@ -15,7 +15,8 @@ namespace vehicle
         DRIVING,
         BRAKING,
         STEERING,
-        SETTLING
+        SETTLING,
+        EMERGENCY_STOP
     };
     class MotionController
     {
@@ -74,13 +75,7 @@ namespace vehicle
         }
         void update(RcCommand cmd, uint32_t now_ms, bool enabled)
         {
-            const float dt = initialized ? fminf(static_cast<uint32_t>(now_ms - last_ms) * SECONDS_PER_MILLISECOND, MAX_UPDATE_DT_SECONDS) : 0;
-            last_ms = now_ms;
-            if (!initialized)
-            {
-                initialized = true;
-                startup_at = now_ms;
-            }
+            const float dt = update_clock(now_ms);
             if (!calibrated() || !valid_configuration())
             {
                 ready = false;
@@ -98,6 +93,11 @@ namespace vehicle
             {
                 inhibit();
                 return;
+            }
+            if (transition == Transition::EMERGENCY_STOP)
+            {
+                transition = Transition::BRAKING;
+                timer_active = false;
             }
             float lo[STEERING_COUNT], hi[STEERING_COUNT];
             for (int i = 0; i < STEERING_COUNT; ++i)
@@ -187,6 +187,38 @@ namespace vehicle
                 advance_drive(cmd, target, lo, hi, dt);
         }
 
+        // Torque-off is handled by control/CAN. This only generates the opposing
+        // front-wheel pose; neither stopping force nor actual angle is measured.
+        void emergency_stop(uint32_t now_ms)
+        {
+            const float dt = update_clock(now_ms);
+            inhibit();
+            scheduled_pose_valid = false;
+            limited = false;
+            transition = Transition::EMERGENCY_STOP;
+            if (!calibrated() || !valid_configuration())
+            {
+                ready = feasible = false;
+                return;
+            }
+            ready = ready || static_cast<uint32_t>(now_ms - startup_at) >= config.startup_ms;
+            const float theta = atan2f(config.geometry.wheelbase, config.geometry.front_track * 0.5f);
+            const float pose[STEERING_COUNT] = {theta, -theta};
+            feasible = true;
+            float distance = 0;
+            for (int i = 0; i < STEERING_COUNT; ++i)
+            {
+                previous_angle[i] = angle[i];
+                target_angle[i] = pose[i];
+                feasible &= pose[i] >= calibration[i].minimum_angle && pose[i] <= calibration[i].maximum_angle;
+                distance = fmaxf(distance, fabsf(pose[i] - angle[i]));
+            }
+            if (!ready || !feasible) return;
+            const float fraction = distance > 0 ? fminf(1.0f, config.steering_rate * dt / distance) : 1.0f;
+            for (int i = 0; i < STEERING_COUNT; ++i)
+                angle[i] = fraction >= 1.0f ? pose[i] : angle[i] + fraction * (pose[i] - angle[i]);
+        }
+
     private:
         // This is the generated vehicle command, not a measured vehicle state.
         // MANUAL interpolates speed and virtual center steering angle. Curvature
@@ -196,6 +228,17 @@ namespace vehicle
         bool scheduled_pose_valid = false;
         bool initialized = false, timer_active = false;
         uint32_t last_ms = 0, startup_at = 0, timer_at = 0;
+        float update_clock(uint32_t now_ms)
+        {
+            const float dt = initialized ? fminf(static_cast<uint32_t>(now_ms - last_ms) * SECONDS_PER_MILLISECOND, MAX_UPDATE_DT_SECONDS) : 0;
+            last_ms = now_ms;
+            if (!initialized)
+            {
+                initialized = true;
+                startup_at = now_ms;
+            }
+            return dt;
+        }
         bool elapsed(uint32_t now, uint32_t interval)
         {
             if (!timer_active)

@@ -1,19 +1,66 @@
-# ROS 측 USB 피드백 연동 가이드
+# ROS 측 USB 제어·피드백 연동 가이드
 
 [문서 안내](README.md) · [바이트 규격](usb-protocol.ko.md) · [RC 제어](rc-steering.ko.md)
 
-이 문서는 MCU의 새 송신 패킷을 수신하는 호스트 노드를 개발하기 위한 기준이다.
+이 문서는 MCU 제어 명령과 피드백을 연결하는 호스트 노드를 개발하기 위한 기준이다.
 일반 피드백은 `0x85` 휠, `0x86` 전압, `0x87` 상태·지령의 세 종류다.
-기존 `0x82 v2`는 더 이상 생성하지 않는다. `control.py`, CLI, packet monitor의 새 패킷 디코더는
-이번 작업에 포함하지 않았다. 기존 프로그램이 새 필드를 표시할 것이라고 가정하지 않는다.
+기존 `0x82 v2`는 더 이상 생성하지 않는다. `control.py`, CLI, packet monitor의 새 명령 인코더와 피드백 디코더는
+이번 작업에 포함하지 않았다. 기존 프로그램이 새 명령을 보내거나 필드를 표시할 것이라고 가정하지 않는다.
 
 ## 현재 구현 범위
 
 - MCU 휠·전압 유효 응답 등록과 USB 공통 송신 큐, 목표 100Hz 상태·지령 보고가 구현되어 있다.
-- 호스트 → MCU `0x01`은 여전히 기존 v·ω 규격이다. 이번 작업은 v·θ 제어 패킷을 정의하거나 구현하지 않았다.
-- AUTO 구동은 차단 상태다. 새 피드백이 수신되어도 ROS가 차량을 구동할 권한을 얻는 것은 아니다.
-- 호스트 노드는 먼저 수신·관측 기능으로 구현한다. 제어 송신은 수신 명령 규격과 권한 정책을 별도로 확정한 후 연결한다.
-- 아래 코드는 수신 로직 예시이며 이번 작업에서 실행 검증하지 않았다. Teensy 빌드·업로드·실물 USB 검증도 미수행이다.
+- 호스트 → MCU `0x03 v1`의 수신·검증과 AUTO 스케줄러 연결이 구현되어 있다. 이전 `0x01`은 거부한다.
+- RC가 AUTO일 때 일반 v·θ 또는 PIVOT ω 명령을 적용한다. STOP/POWERDOWN이 우선하고 MANUAL/PIVOT은 RC가 제어한다.
+- 비상정지는 TQ-OFF와 PIVOT 반대 전륜 자세 요청을 사용한다. 세부 조건은 아래와 [RC 제어](rc-steering.ko.md)를 따른다.
+- 아래 코드는 송수신 로직 예시이며 이번 작업에서 실행 검증하지 않았다. Teensy 빌드·업로드·실물 USB 검증도 미수행이다.
+
+## ROS → MCU 명령
+
+`0x03`은 15바이트이며 `AA 55 0B 03`, version=1, u16 seq, u8 flags, i16 v/θ/ω, XOR 순서다.
+flags bit0=enable, bit1=estop, bit2=PIVOT이며 나머지는 0이다. 정수 단위는 각각 0.001m/s, 0.001rad, 0.001rad/s다.
+일반 주행은 ω=0, PIVOT은 v=θ=0으로 보낸다. v는 ±2000, ω는 ±5000이고 θ는 현재 기하에서 ±845 이내다.
+기하를 변경하면 θ 상한도 [바이트 규격](usb-protocol.ko.md)의 식으로 다시 산출한다.
+
+프레임을 만드는 예시이며 포트를 열거나 송신하지 않는다:
+
+```python
+import struct
+from functools import reduce
+from operator import xor
+
+def command_frame(seq, v_milli=0, theta_milli=0, w_milli=0,
+                  *, enable=False, estop=False, pivot=False):
+    if not 0 <= seq <= 0xffff:
+        raise ValueError("seq out of range")
+    if not (-2000 <= v_milli <= 2000 and -845 <= theta_milli <= 845
+            and -5000 <= w_milli <= 5000):
+        raise ValueError("command out of range for current geometry")
+    if (pivot and (v_milli != 0 or theta_milli != 0)) or (not pivot and w_milli != 0):
+        raise ValueError("unused motion fields must be zero")
+    flags = int(enable) | (int(estop) << 1) | (int(pivot) << 2)
+    packet = bytearray(b"\xaa\x55\x0b\x03\x01")
+    packet.extend(struct.pack("<HBhhh", seq, flags, v_milli, theta_milli, w_milli))
+    packet.append(reduce(xor, packet, 0))
+    return bytes(packet)
+```
+
+- 한 송신 주체가 seq를 관리한다. 새 명령마다 증가시키고 65535 다음 0으로 순환한다.
+- 같은 목표를 유지할 때도 새 seq로 재송신한다. 중복·역순 명령은 timeout을 갱신하지 않는다.
+- 마지막 수락 후 500ms 초과 또는 명령 미수신이면 구동을 차단한다. 송신 주기는 지연 여유를 두고 이보다 짧게 설정한다.
+- AUTO 진입 전 명령은 재사용하지 않는다. 진입 시 MCU가 이미 버퍼링한 바이트와 부분 프레임도 폐기하므로
+  호스트는 현재 목표를 계속 갱신해야 한다. 드라이버 시작 대기 중 명령도 구동용으로 저장하지 않는다.
+- CONTROL 세션 변경·AUTO 재진입·timeout 뒤 첫 수락 시 seq 기준을 새로 잡는다. 연결 중간에 호스트 seq만 초기화하면
+  역순으로 거부될 수 있다. 호스트 재시작 시에는 MCU의 timeout/새 세션 경계를 고려한다.
+- seq에는 생성 시각이 없다. 오래 대기한 명령의 나이·모든 재전송을 검출하지 못한다. host에서 과거 목표를 큐에 쌓거나
+  송신 실패 후 밀린 주기를 재생하지 말고, 최신 목표 하나를 유지한다.
+- 정상 정지는 enable=1인 v=0 또는 PIVOT ω=0이다. 일반 v=0에서도 θ를 지정해 정지 조향할 수 있다.
+- enable=0/timeout은 TQ-OFF 경로와 조향 유지를 사용한다. 통신 복구 후 새 enable=1, estop=0 명령으로 재개한다.
+- estop=1은 즉시 TQ-OFF를 시도하고 좌 +62.4°/우 −62.4° 자세로 180°/s 이하로 이동한다.
+  timeout이 겹쳐도 비상 자세 요청은 유지한다. 새 estop=0 명령으로 해제하고 enable 조건에 따라 복귀한다.
+  조향은 준비 대기와 보정 검사를 거치며 실제 제동 성능·서보 도달은 확인하지 않는다.
+- 호스트 estop은 RC AUTO 명령에만 적용한다. MANUAL/PIVOT의 RC 권한을 대신하는 전역 정지 명령이 아니다.
+- 수락 ACK/seq echo는 없다. `0x87`의 목표·적용값·구동 gate로 상태를 관측하되 개별 명령 수락 증명으로 해석하지 않는다.
 
 ## 패킷을 읽는 순서
 
@@ -86,7 +133,7 @@ def decode(packet):
         return dict(type=kind, seq=u16(5), driver=packet[7], rx_us=u32(8),
                     voltage_V=u16(12) / 1000.0)
     mode, transition = packet[8] & 0x0F, (packet[8] >> 4) & 0x0F
-    if mode > 4 or transition > 4:
+    if mode > 4 or transition > 5:
         raise ValueError("Unsupported mode/transition")
     return dict(type=kind, seq=u16(5),
                 state=packet[7], mode=mode, transition=transition,
@@ -131,13 +178,15 @@ MCU의 전압 stale 기준은 3000ms이며, 실제 전압 샘플 간격은 기�
 ### 상태와 지령
 
 `requested_v/theta/w`는 선택된 입력 목표이며 flags bit4가 1일 때만 해석한다.
-MANUAL은 v·θ, PIVOT은 ω를 사용한다. θ와 실제 좌우 조향각은 다른 값이다.
+flags bit12=0은 일반 v·θ, bit12=1은 PIVOT ω를 사용한다. AUTO에서는 RC mode만으로 요청 운동 모드를 알 수 없다.
+enable=0/estop 상태도 timeout 전이면 수락 목표를 보고한다. 목표 유효와 구동 허용은 별개다.
+θ와 실제 좌우 조향각은 다른 값이다.
 v는 후륜 축 중앙 기준 m/s, θ는 가상 전륜 중앙 휠 rad이며 양수는 좌조향이다.
 후진에서도 θ 부호 정의는 같으며 `ω=v*tan(θ)/L`의 부호는 v에 따라 달라진다.
 
 `applied_v/theta/w`는 스케줄러의 생성 지령이다. flags bit11이 1일 때만 `applied_mode`로 해석한다.
 적용 MANUAL=1은 v·θ, 적용 PIVOT=4는 ω를 사용한다. 모드 변경을 위한 감속 중에는 입력 모드와 적용 모드가 다를 수 있다.
-좌우 조향각을 직접 보간하는 STEERING/SETTLING 중에는 적용 모드=255, bit11=0, 세 값=0이다.
+좌우 조향각을 직접 보간하는 STEERING/SETTLING 및 EMERGENCY_STOP(5) 중에는 적용 모드=255, bit11=0, 세 값=0이다.
 초기화·잘못된 설정/보정도 무효다. 무효 적용값은 실제 정지·직진 자세로 해석하지 않는다.
 BRAKING에서는 기존 중앙각/고정 PIVOT 자세가 유지되는 경우에 한해 감속 중인 적용값이 유효하다.
 개별 조향각·RPM은 패킷에 포함하지 않는다. 적용 지령은 휠 피드백과 다른 토픽·필드로 보존한다.

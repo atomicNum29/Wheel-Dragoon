@@ -45,8 +45,11 @@ constexpr uint8_t MAX_TX_SIZE = 63, TX_ATTEMPTS_PER_LOOP = 2;
 static_assert(WHEEL_PACKET_SIZE <= MAX_TX_SIZE && VOLTAGE_PACKET_SIZE <= MAX_TX_SIZE &&
               STATE_PACKET_SIZE <= MAX_TX_SIZE, "Telemetry frame exceeds fixed TX storage");
 static_assert(wire::system::SESSION + 1 + CHECKSUM_SIZE == STATE_PACKET_SIZE, "State layout size mismatch");
+static_assert(CMD_PACKET_LENGTH + FRAME_OVERHEAD == CMD_PACKET_SIZE &&
+              wire::command::ANGULAR + 2 + CHECKSUM_SIZE == CMD_PACKET_SIZE &&
+              CMD_PACKET_SIZE <= SERIAL_PACKET_MAX_SIZE, "Command layout size mismatch");
 static_assert(DRIVE_MODE_PIVOT <= wire::system::MODE_MASK &&
-              static_cast<uint8_t>(vehicle::Transition::SETTLING) <= wire::system::MODE_MASK,
+              static_cast<uint8_t>(vehicle::Transition::EMERGENCY_STOP) <= wire::system::MODE_MASK,
               "Mode/transition must fit their four-bit wire fields");
 enum TxKind : uint8_t { WHEEL = 0, VOLTAGE = 1, STATE = 2, AUXILIARY = 3 };
 struct TxFrame {
@@ -89,16 +92,31 @@ void report_tx_drop() { tx_errors |= SYSTEM_ERR_USB_TX_DROP; ++tx_drop_revision;
 
 static inline bool command_in_range(const CommandPacket &command)
 {
-    return command.v_milli_mps >= CMD_LINEAR_MILLI_MPS_MIN &&
+    const auto &motion = control::motion_output();
+    if (!motion.valid_configuration()) return false;
+    const float theta_limit = vehicle::rc_maximum_center_angle(motion.config.geometry);
+    const bool pivot = (command.flags & CMD_FLAG_PIVOT) != 0;
+    return isfinite(theta_limit) &&
+           command.v_milli_mps >= CMD_LINEAR_MILLI_MPS_MIN &&
            command.v_milli_mps <= CMD_LINEAR_MILLI_MPS_MAX &&
+           fabsf(command.theta_milli_rad * 0.001f) <= theta_limit &&
            command.w_milli_radps >= CMD_ANGULAR_MILLI_RADPS_MIN &&
-           command.w_milli_radps <= CMD_ANGULAR_MILLI_RADPS_MAX;
+           command.w_milli_radps <= CMD_ANGULAR_MILLI_RADPS_MAX &&
+           (pivot ? command.v_milli_mps == 0 && command.theta_milli_rad == 0
+                  : command.w_milli_radps == 0);
 }
 
 static void command_parser_reset(CommandFrameParser &parser)
 {
     parser.index = 0;
     parser.state = CMD_RX_WAIT_HEADER_0;
+}
+
+void discard_pending_rx()
+{
+    command_parser_reset(command_rx_parser);
+    const int buffered = Serial.available();
+    for (int i = 0; i < buffered; ++i) Serial.read();
 }
 
 static void parse_complete_command_frame(const uint8_t *packet, unsigned long now)
@@ -109,8 +127,17 @@ static void parse_complete_command_frame(const uint8_t *packet, unsigned long no
         return;
     }
 
+    if (packet[wire::command::VERSION] != CMD_PACKET_VERSION ||
+        (packet[wire::command::FLAGS] & ~CMD_FLAGS_MASK) != 0)
+    {
+        control::report(control::Error::Framing);
+        return;
+    }
+
     CommandPacket command = {
+        little_endian::read_u16(&packet[wire::command::SEQUENCE]),
         little_endian::read_i16(&packet[wire::command::LINEAR]),
+        little_endian::read_i16(&packet[wire::command::THETA]),
         little_endian::read_i16(&packet[wire::command::ANGULAR]),
         packet[wire::command::FLAGS]};
 
@@ -150,6 +177,12 @@ static void parse_complete_serial_frame(const uint8_t *packet, unsigned long now
     if (packet[LENGTH] == CMD_PACKET_LENGTH && packet[TYPE] == CMD_PACKET_TYPE)
     {
         parse_complete_command_frame(packet, now);
+    }
+    else if (packet[LENGTH] == LEGACY_CMD_PACKET_LENGTH && packet[TYPE] == LEGACY_CMD_PACKET_TYPE)
+    {
+        // Consume the entire retired v/w frame; never grant drive authority or
+        // reinterpret its payload as nested command/reset packets.
+        control::report(control::Error::Framing);
     }
     else if (packet[LENGTH] == RESET_PACKET_LENGTH && packet[TYPE] == RESET_PACKET_TYPE)
     {
@@ -209,7 +242,7 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
         break;
 
     case CMD_RX_WAIT_LENGTH:
-        if (byte_in == CMD_PACKET_LENGTH ||
+        if (byte_in == CMD_PACKET_LENGTH || byte_in == LEGACY_CMD_PACKET_LENGTH ||
             byte_in == RESET_PACKET_LENGTH ||
             byte_in == CAN_BRIDGE_PACKET_LENGTH ||
             byte_in == CAN_BENCHMARK_PACKET_LENGTH)
@@ -227,6 +260,7 @@ static void feed_command_parser(uint8_t byte_in, unsigned long now)
 
     case CMD_RX_WAIT_TYPE:
         if ((command_rx_parser.packet[LENGTH] == CMD_PACKET_LENGTH && byte_in == CMD_PACKET_TYPE) ||
+            (command_rx_parser.packet[LENGTH] == LEGACY_CMD_PACKET_LENGTH && byte_in == LEGACY_CMD_PACKET_TYPE) ||
             (command_rx_parser.packet[LENGTH] == RESET_PACKET_LENGTH && byte_in == RESET_PACKET_TYPE) ||
             (command_rx_parser.packet[LENGTH] == CAN_BRIDGE_PACKET_LENGTH && byte_in == CAN_BRIDGE_PACKET_TYPE) ||
             (command_rx_parser.packet[LENGTH] == CAN_BENCHMARK_PACKET_LENGTH && byte_in == CAN_BENCHMARK_PACKET_TYPE))
@@ -409,8 +443,7 @@ static void capture_state(uint32_t now_ms)
     p[wire::system::STATE] = static_cast<uint8_t>(control::motor_state(fault));
     p[wire::system::MODE_MOTION] = (static_cast<uint8_t>(live.drive_mode) & wire::system::MODE_MASK) |
         ((static_cast<uint8_t>(motion.transition) & wire::system::MODE_MASK) << wire::system::TRANSITION_SHIFT);
-    const bool request_valid = !live.driver_powerdown && !live.driver_starting &&
-        (live.drive_mode == DRIVE_MODE_MANUAL || live.drive_mode == DRIVE_MODE_PIVOT);
+    const bool request_valid = live.requested_motion_valid;
     // Same pre-TX drive gate used by the CAN command scheduler; not a TX ACK.
     const bool drive_allowed = live.motor_enabled && !live.driver_powerdown && !live.driver_starting &&
         !live.estop_active && !live.command_timeout && !control::has_driver_fault() && !control::reported(control::Error::BatteryLow);
@@ -422,7 +455,8 @@ static void capture_state(uint32_t now_ms)
         (live.estop_active ? wire::system::ESTOP_ACTIVE : 0) | (live.command_timeout ? wire::system::TIMEOUT_ACTIVE : 0) |
         (live.driver_powerdown ? wire::system::POWERDOWN : 0) | (live.driver_starting ? wire::system::DRIVER_STARTING : 0) |
         (drive_allowed ? wire::system::DRIVE_ALLOWED : 0) | (motion.calibrated() ? wire::system::STEERING_VALID : 0) |
-        (applied_valid ? wire::system::APPLIED_VALID : 0);
+        (applied_valid ? wire::system::APPLIED_VALID : 0) |
+        (request_valid && live.requested_motion.pivot ? wire::system::REQUEST_PIVOT : 0);
     little_endian::write_u16(p + wire::system::FLAGS, flags);
     little_endian::write_u16(p + wire::system::ERROR, build_system_error_bits(fault) | tx_errors);
     p[wire::system::VALIDITY] = telemetry_validity_bits();

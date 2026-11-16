@@ -63,6 +63,8 @@ void drain_rx(unsigned long now)
 }
 void send_torque_off()
 {
+    // A later B slot must not revive a target captured before this stop.
+    can_tx_scheduler.pending_driver_b_command.enabled = false;
     // Immediate safety pair, outside the periodic response-window schedule.
     const bool a_ok = md200t_torque_off(MD200T_DRIVER_A_ID);
     const bool b_ok = md200t_torque_off(MD200T_DRIVER_B_ID);

@@ -20,6 +20,8 @@ Status live;
 uint32_t driver_power_on_ms = 0;
 unsigned long last_valid_command_ms = 0;
 CommandPacket auto_command = {};
+bool auto_command_valid = false;
+bool auto_command_expired = false;
 int reports[static_cast<uint8_t>(Error::Count)] = {};
 uint32_t report_revision = 0;
 vehicle::MotionController motion(vehicle::MotionConfig{}, vehicle::left_servo, vehicle::right_servo);
@@ -27,6 +29,16 @@ vehicle::MotionController motion(vehicle::MotionConfig{}, vehicle::left_servo, v
 
 static void motor_stop_all();
 static void update_vehicle_output(vehicle::RcCommand command, unsigned long now);
+static void invalidate_auto_command()
+{
+    auto_command = {};
+    auto_command_valid = false;
+    auto_command_expired = false;
+    last_valid_command_ms = 0;
+    live.estop_active = false;
+    live.requested_motion = {};
+    live.requested_motion_valid = false;
+}
 const Status &status() { return live; }
 const vehicle::MotionController &motion_output() { return motion; }
 void report(Error error) { reports[static_cast<uint8_t>(error)] = ERROR_REPORT_REPEAT_COUNT; ++report_revision; }
@@ -46,6 +58,8 @@ void initialize_motion() { motion.update({0, 0}, millis(), false); }
 
 void initialize_session(unsigned long now)
 {
+    invalidate_auto_command();
+    if (live.drive_mode == DRIVE_MODE_AUTO) protocol::discard_pending_rx();
     ++report_revision;
     protocol::reset_telemetry_session();
     for (int &remaining : reports) remaining = 0;
@@ -96,16 +110,47 @@ int16_t rpm_to_i16(float rpm)
 
 void accept_command(const CommandPacket &command, unsigned long now)
 {
-    // Preserve reception/status bookkeeping without granting host drive authority.
+    // Only commands received within the current AUTO authority window are usable.
+    if (live.drive_mode != DRIVE_MODE_AUTO || live.driver_powerdown || live.driver_starting)
+        return;
+    if (auto_command_valid && !auto_command_expired && now - last_valid_command_ms <= COMMAND_TIMEOUT_MS)
+    {
+        const uint16_t delta = static_cast<uint16_t>(command.sequence - auto_command.sequence);
+        if (delta == 0 || delta >= 0x8000u)
+        {
+            report(Error::Framing);
+            return; // Duplicate/out-of-order frames do not renew the timeout.
+        }
+    }
+    const bool estop = (command.flags & protocol::wire::CMD_FLAG_ESTOP) != 0;
+    if (estop && !live.estop_active)
+    {
+        live.motor_enabled = false;
+        live.target_wheel_rpm_cmd = {};
+        motion.inhibit();
+        // Do not wait for the next periodic CAN command slot or for steering.
+        can_control::send_torque_off();
+    }
+    live.estop_active = estop;
     auto_command = command;
+    auto_command_valid = true;
+    auto_command_expired = false;
     last_valid_command_ms = now;
+}
+
+void select_drive_mode(DriveMode drive_mode)
+{
+    if (drive_mode == live.drive_mode) return;
+    invalidate_auto_command();
+    live.drive_mode = drive_mode;
+    if (drive_mode == DRIVE_MODE_AUTO) protocol::discard_pending_rx();
 }
 
 void update_drive(DriveMode drive_mode,
                   unsigned int v_pwm, unsigned int w_pwm, unsigned long now)
 {
-    live.drive_mode = drive_mode;
     live.requested_motion = {};
+    live.requested_motion_valid = false;
     if (live.serial_mode != SERIAL_MODE_CONTROL)
     {
         live.command_timeout = false;
@@ -149,11 +194,36 @@ void update_drive(DriveMode drive_mode,
         return;
     }
 
-    // RC-only firmware: AUTO packets remain parseable, but never enable drive.
-    live.command_timeout = (last_valid_command_ms == 0u) || (now - last_valid_command_ms > COMMAND_TIMEOUT_MS);
-    live.estop_active = (auto_command.flags & protocol::wire::CMD_FLAG_ESTOP) != 0u;
-    live.motor_enabled = false;
-    motor_stop_all();
+    // Once expired, only a newly accepted frame can restore authority, including
+    // after millis() wraps. Keep the last estop request independently of freshness.
+    auto_command_expired |= auto_command_valid && now - last_valid_command_ms > COMMAND_TIMEOUT_MS;
+    live.command_timeout = !auto_command_valid || auto_command_expired;
+    live.estop_active = auto_command_valid && (auto_command.flags & protocol::wire::CMD_FLAG_ESTOP) != 0u;
+    const vehicle::RcCommand command(auto_command.v_milli_mps * 0.001f,
+                                    auto_command.theta_milli_rad * 0.001f,
+                                    (auto_command.flags & protocol::wire::CMD_FLAG_PIVOT) != 0u,
+                                    auto_command.w_milli_radps * 0.001f);
+    if (!live.command_timeout)
+    {
+        live.requested_motion = command;
+        live.requested_motion_valid = true;
+    }
+    if (live.estop_active)
+    {
+        // Keep the emergency pose request even if communication subsequently stops.
+        live.motor_enabled = false;
+        live.target_wheel_rpm_cmd = {};
+        motion.emergency_stop(static_cast<uint32_t>(now));
+        return;
+    }
+    if (live.command_timeout || (auto_command.flags & protocol::wire::CMD_FLAG_ENABLE) == 0u)
+    {
+        live.motor_enabled = false;
+        motor_stop_all(); // Hold steering, zero generated RPM, use CAN TQ-OFF.
+        return;
+    }
+    live.motor_enabled = true;
+    update_vehicle_output(command, now);
 }
 
 void reset_mcu(void)
@@ -262,6 +332,7 @@ static void motor_stop_all(void)
 static void update_vehicle_output(vehicle::RcCommand command, unsigned long now)
 {
     live.requested_motion = command;
+    live.requested_motion_valid = true;
     const bool allowed = !has_driver_fault() && !reports[static_cast<uint8_t>(Error::BatteryLow)];
     motion.update(command, static_cast<uint32_t>(now), allowed);
     live.motor_enabled = live.motor_enabled && motion.ready && allowed;
@@ -275,6 +346,7 @@ void enter_bridge_mode(void)
         return;
 
     live.serial_mode = SERIAL_MODE_BRIDGE;
+    invalidate_auto_command();
     live.motor_enabled = false;
     motor_stop_all();
 

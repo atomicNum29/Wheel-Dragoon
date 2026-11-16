@@ -1,7 +1,8 @@
 # Wheel-Dragoon
 
 Teensy 3.2에서 RC 전륜 조향과 MD200T 두 대의 4륜 구동을 처리하는 펌웨어다.
-현재 구동 입력은 **RC MANUAL과 PIVOT**이다. AUTO는 USB 명령을 수신하지만 구동은 차단한다.
+현재 구동 입력은 **RC MANUAL/PIVOT과 RC AUTO에서의 USB `0x03` 명령**이다.
+AUTO는 v·θ 또는 PIVOT ω를 기존 스케줄러에 연결하며 enable·timeout·estop 조건을 적용한다.
 Python 도구는 USB 패킷 관측, 단발 명령 전송, 디버깅용 CAN 브릿지를 제공한다.
 
 ## 문서 읽는 순서
@@ -61,4 +62,6 @@ USB 피드백은 휠 `0x85`, 전압 `0x86`, MCU 상태·지령 `0x87`로 분리�
 `0x87`은 29바이트로 입력 목표와 적용 차량 지령을 함께 보고하며, 오류는 플래그로 전달한다.
 바이트 규격은 [USB 프로토콜](docs/usb-protocol.ko.md), 호스트 구현은 [ROS USB 수신 가이드](docs/ros-usb-integration.ko.md)를 따른다.
 기존 `0x82` 송신은 종료했으며, 기존 호스트 도구의 디코더 갱신은 후속 작업이다.
+기존 `0x01` 명령도 거부한다. `control.py`와 CLI의 새 명령 송신 구현은 후속 작업이다.
+AUTO 비상정지는 TQ-OFF와 PIVOT 반대 조향 자세 요청을 사용한다. 해당 제동 효과는 실물 검증하지 않았다.
 소스 기준일과 검증 상태는 [문서 안내](docs/README.md)에 있다.

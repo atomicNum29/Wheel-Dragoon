@@ -33,7 +33,8 @@ uv run python src/packet_monitor.py --port /dev/ttyACM0
 
 | 인계 내용 | 기준 문서 / 파일 |
 | --- | --- |
-| MANUAL/PIVOT 구동, AUTO 차단, STOP·POWERDOWN | [RC 제어](rc-steering.ko.md) |
+| RC MANUAL/PIVOT, USB AUTO 구동, STOP·POWERDOWN·비상 조향 | [RC 제어](rc-steering.ko.md) |
+| 새 `0x03` 제어와 `0x85/86/87` 피드백 | [ROS USB 연동](ros-usb-integration.ko.md) |
 | 실측 서보 보정과 운동학 설정 | [steering_config.hpp](../include/steering_config.hpp) |
 | CAN 500 kbit/s, A/B 채널, PID196/201 | [CAN 송수신](can-rx-fifo.md) |
 | 상태·오류·리셋·디버그 패킷 | [USB 규격](usb-protocol.ko.md) |

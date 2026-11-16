@@ -5,7 +5,9 @@
 
 struct CommandPacket
 {
+    uint16_t sequence;
     int16_t v_milli_mps;
+    int16_t theta_milli_rad;
     int16_t w_milli_radps;
     uint8_t flags;
 };
@@ -71,7 +73,8 @@ enum class Error : uint8_t {
 };
 struct Status {
     DriveMode drive_mode = DRIVE_MODE_STOP;
-    vehicle::RcCommand requested_motion; // selected input before scheduling; MANUAL/PIVOT only
+    vehicle::RcCommand requested_motion; // selected RC or AUTO input before scheduling
+    bool requested_motion_valid = false;
     bool booting = true;
     bool driver_powerdown = false;
     bool driver_starting = false;
@@ -91,6 +94,8 @@ void initialize_power();
 void finish_boot();
 void initialize_motion();
 void update_power(DriveMode drive_mode, unsigned long now);
+// Called before USB RX so AUTO entry cannot reuse the previous mode's command.
+void select_drive_mode(DriveMode drive_mode);
 void accept_command(const CommandPacket &command, unsigned long now);
 void update_drive(DriveMode drive_mode,
                   unsigned int v_pwm, unsigned int w_pwm, unsigned long now);

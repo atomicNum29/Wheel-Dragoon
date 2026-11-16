@@ -33,6 +33,7 @@ void loop()
     const unsigned long now = millis();
     const DriveMode drive_mode = rc_io::read_mode();
     timing::measure(timing::POWER, [&]() { control::update_power(drive_mode, now); });
+    control::select_drive_mode(drive_mode);
     const rc_io::PwmInput pwm = rc_io::read_pwm();
 
     timing::measure(timing::SERIAL_RX, [&]() { protocol::receive_commands(now); });
@@ -46,7 +47,9 @@ void loop()
 #endif
     timing::measure(timing::HEALTH, [&]() { can_control::update_health(now); });
     timing::measure(timing::MOTION, [&]() {
-        control::update_drive(drive_mode, pwm.velocity_us, pwm.steering_us, now);
+        // RX handlers may inhibit motion using a later millis() value. Use the
+        // current clock so that a same-loop mode change cannot look like a wrap.
+        control::update_drive(drive_mode, pwm.velocity_us, pwm.steering_us, millis());
     });
     timing::measure(timing::ERRORS, [&]() { control::refresh_errors(now); });
     timing::measure(timing::CAN_SCHEDULE, [&]() { can_control::transmit_if_due(micros()); });

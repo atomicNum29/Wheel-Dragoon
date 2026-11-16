@@ -6,7 +6,8 @@
 [serial_protocol.cpp](../src/serial_protocol.cpp), [can_debug.cpp](../src/can_debug.cpp),
 [control.cpp](../src/control.cpp). 타이밍 패킷 필드는 [타이밍 진단](timing-diagnostics.md)에 둔다.
 ROS 측 구현 절차와 파서 예시는 [ROS USB 수신 가이드](ros-usb-integration.ko.md)를 따른다.
-이번 변경은 MCU 송신 규격이다. `0x01` 수신 명령과 AUTO 구동 정책은 변경하지 않았다.
+ROS 제어는 새 `0x03` v·θ/PIVOT 명령을 사용하며, RC AUTO에서만 구동에 적용한다.
+기존 `0x01` v·ω 명령은 폐기한 규격이며 수신해도 구동·timeout 갱신에 사용하지 않는다.
 
 ## 공통 프레이밍과 지원 범위
 
@@ -25,7 +26,8 @@ USB는 패킷 경계가 보존되는 메시지 API가 아니므로 host는 lengt
 
 | 방향 | type | length / 전체 크기 | 지원 |
 | --- | --- | --- | --- |
-| Host → MCU | `0x01` 제어 | 7 / 11 | 모든 프로필 |
+| Host → MCU | `0x03` 제어 v1 | 11 / 15 | 모든 프로필, 구동은 RC AUTO에서만 |
+| Host → MCU | `0x01` 이전 제어 | 7 / 11 | 프레임 전체 소비 후 framing 오류, 제어 적용 안 함 |
 | Host → MCU | `0x02` 보호 리셋 | 4 / 8 | 모든 프로필 |
 | MCU → Host | `0x85` 휠 피드백 v1 | 16 / 20 | 모든 프로필의 CONTROL, 유효 CAN 응답마다 |
 | MCU → Host | `0x86` 전압 피드백 v1 | 11 / 15 | 모든 프로필의 CONTROL, 유효 CAN 응답마다 |
@@ -38,27 +40,50 @@ USB는 패킷 경계가 보존되는 메시지 API가 아니므로 host는 lengt
 
 디버그가 없는 프로필은 알려진 `0x20`/`0x21` 프레임 전체를 소비한 뒤 framing 오류로 보고한다.
 모드 전환·CAN 전송·디버그 응답은 없다. `0x81`, 기존 `0x82`, `0x83`은 현재 송신하지 않는다.
-MCU 수신 파서는 위 네 요청의 정해진 length/type 조합만 허용한다.
+MCU 수신 파서는 위 요청의 정해진 length/type 조합만 허용한다.
 
-## 제어 `0x01`
+## 제어 `0x03`, version 1
 
 | Offset | 타입 | 내용 |
 | ---: | --- | --- |
-| 4 | u8 | seq: 현재 MCU 제어 처리에서 사용하지 않음 |
-| 5 | i16 | 선속도, milli-m/s; −2000..2000 |
-| 7 | i16 | 각속도, milli-rad/s; −5000..5000 |
-| 9 | u8 | flags: host 관례상 bit0 enable, bit1 estop |
-| 10 | u8 | checksum |
+| 4 | u8 | version=1 |
+| 5 | u16 | 명령 seq, 65535 다음 0 |
+| 7 | u8 | bit0 enable, bit1 estop, bit2 PIVOT, bit3..7 예약 0 |
+| 8 | i16 | v, milli-m/s; −2000..2000 |
+| 10 | i16 | 가상 중앙 휠 θ, milli-rad; 범위는 아래 설명 |
+| 12 | i16 | PIVOT ω, milli-rad/s; −5000..5000 |
+| 14 | u8 | checksum |
 
-checksum과 범위가 유효하면 디버그를 취소하고 CONTROL로 전환하여 명령과 수신 시각을 저장한다.
-CONTROL로 바뀌는 경우 세션 이력도 초기화한다. ACK나 seq echo는 없다.
-잘못된 checksum·범위는 유효 명령 시각을 갱신하지 않는다. flags의 미사용 비트는 검증하지 않는다.
+bit2=0은 일반 v·θ 주행이며 ω는 0이어야 한다. bit2=1은 PIVOT이며 v=θ=0이어야 한다.
+θ는 RC와 같은 기하에서 내륜 ±70°에 대응하는 중앙각 이내여야 한다. 현재 약 ±0.845rad이며,
+정수 상한은 `floor(rc_maximum_center_angle(geometry) * 1000)`이다. 범위 밖 값을 잘라 수락하지 않는다.
+검증은 estop/enable 해제 명령에도 적용한다. 정지 전용 명령은 사용하지 않는 속도·각도 값을 0으로 보낸다.
+checksum 오류는 error bit0, version/예약 flags 오류는 bit5, 범위·운동 모드 필드 조합 오류는 bit6이다.
 
-현재 bit0은 구동 권한을 부여하지 않는다. MANUAL/PIVOT은 RC를 사용하며 bit1도 무시한다.
-AUTO는 구동을 차단한 채 bit1과 마지막 유효 명령으로부터 500 ms 초과 timeout을 상태에 반영한다.
-따라서 `v=0,w=0` 또는 enable 해제 패킷을 MANUAL/PIVOT 정지 명령으로 해석할 수 없다.
-PIVOT의 각속도 입력은 RC 조향 채널이다. `0x01`의 각속도는 PIVOT 구동에 적용되지 않으며,
-USB로 RC 모드를 선택하는 패킷은 없다.
+유효 프레임은 디버그를 취소하고 CONTROL로 전환한다. 명령 저장·시각 갱신·estop 처리는
+RC AUTO이고 POWERDOWN/드라이버 시작 대기가 아닐 때만 수행한다. MANUAL/PIVOT에서는 RC 입력을 유지한다.
+AUTO 진입 시 이전 명령과 조립 중 RX 프레임, 그 시점에 MCU USB 버퍼에 이미 있는 바이트를 버린다.
+CONTROL 세션 초기화와 BRIDGE 진입도 저장 명령을 무효화한다. AUTO는 이후 새 명령을 기다린다.
+
+연속 수신 중에는 `delta=(new_seq-last_seq)&0xffff`가 1..32767인 명령만 수락한다.
+중복·역순은 error bit5로 보고하며 timeout을 갱신하지 않는다. 최초 명령, AUTO/CONTROL 재진입,
+500ms 초과 timeout 후 첫 명령은 새로운 seq 기준을 설정한다. seq gap은 허용한다.
+seq는 전송 시각이 아니며 호스트/USB에 오래 대기한 명령의 나이를 판별하지 못한다.
+호스트는 송신 backlog를 쌓지 말고 현재 목표만 주기적으로 갱신해야 한다. ACK나 수락 seq echo는 없다.
+
+enable=1, estop=0, 마지막 수락 후 500ms 이내이면 기존 모션 스케줄러에 전달한다.
+새 명령이 없거나 500ms를 초과하면 구동을 차단하고 조향은 유지한다. 정상 v=0/PIVOT ω=0은
+enable=1을 유지한 채 보내며 기존 스케줄러로 감속한다. enable=0은 감속 보간을 우회해 TQ-OFF 경로를 사용한다.
+timeout 후 새 유효 enable=1, estop=0 명령으로 재개할 수 있다.
+
+estop 활성화 시 두 드라이버 TQ-OFF를 주기 슬롯을 기다리지 않고 시도하며, 이후 주기 송신도 TQ-OFF다.
+조향은 PIVOT 반대 자세인 좌 +atan2(L,Tf/2), 우 −atan2(L,Tf/2), 현재 약 +62.4°/−62.4°로
+기존 180°/s 제한을 적용해 이동한다. 모션 상태는 EMERGENCY_STOP=5이고 적용 차량 지령은 무효다.
+최초 모션 준비 대기·보정 유효성·조향 범위 검사는 유지한다. 이 자세의 제동 효과나 실제 도달은 측정하지 않는다.
+통신 timeout이 추가로 발생해도 활성 estop과 해당 자세 요청은 유지한다. 새 유효 estop=0 명령으로 해제한다.
+해제 후 enable=1이면 BRAKING의 정지 dwell → STEERING → SETTLING을 거쳐 주행으로 복귀한다.
+enable=0이면 그때의 조향각을 유지한다. RC 모드 변경은 AUTO 명령을 무효화하며 새 RC 모드가 우선한다.
+USB로 RC 모드 자체를 선택하는 패킷은 없다.
 자세한 제어 권한은 [RC 제어](rc-steering.ko.md)를 따른다.
 
 ## 보호 리셋 `0x02`
@@ -123,9 +148,10 @@ RPM·encoder는 원시값이며 거리·차체 속도로 보정한 값이 아니
 | 28 | u8 | checksum |
 
 RC mode는 STOP=0, MANUAL=1, AUTO=2, POWERDOWN=3, PIVOT=4다.
-모션 상태는 STARTUP=0, DRIVING=1, BRAKING=2, STEERING=3, SETTLING=4다.
+모션 상태는 STARTUP=0, DRIVING=1, BRAKING=2, STEERING=3, SETTLING=4, EMERGENCY_STOP=5다.
 `mode = packet[8] & 0x0F`, `transition = (packet[8] >> 4) & 0x0F`로 분리한다.
-예를 들어 PIVOT/STEERING은 `0x34`다. 각 4bit의 5..15는 예약이며 유효한 상태로 해석하지 않는다.
+예를 들어 PIVOT/STEERING은 `0x34`, AUTO/EMERGENCY_STOP은 `0x52`다.
+RC mode의 5..15와 모션 상태의 6..15는 예약이다.
 
 시간·uptime·누락 누적값·개별 휠 지령은 싣지 않는다. 이전 미확정 초안은 이 29바이트 규격으로 대체했다.
 
@@ -139,7 +165,7 @@ POWERDOWN·드라이버 시작 대기에도 송신하고 BRIDGE/RESETTING에서�
 | 1 | 모션 ready |
 | 2 | 모션 feasible (마지막 목표 평가 결과) |
 | 3 | 모션 limited: RPM 크기 상한 적용, 변화율 제한 전체를 뜻하지 않음 |
-| 4 | 목표 v·θ·ω 필드 유효; 현재는 MANUAL/PIVOT이며 전원 대기·POWERDOWN이 아닐 때 |
+| 4 | 선택된 목표 필드 유효; RC MANUAL/PIVOT 또는 timeout 전의 수락된 AUTO 명령 |
 | 5 | 활성 host estop (현재 MANUAL/PIVOT에서는 무시) |
 | 6 | 활성 host command timeout |
 | 7 | driver_powerdown |
@@ -147,14 +173,17 @@ POWERDOWN·드라이버 시작 대기에도 송신하고 BRIDGE/RESETTING에서�
 | 9 | 현재 CAN 구동 허용 gate; 0이면 적용 지령을 실제 구동 중이라고 해석하지 않음 |
 | 10 | 조향 보정 유효; 0이면 각도 필드를 실제 PWM 출력으로 해석하지 않음 |
 | 11 | 적용 지령 v·θ·ω와 적용 모드가 유효함 |
-| 12..15 | 예약 0 |
+| 12 | 목표 운동 모드 PIVOT; bit4=1일 때 해석, 0이면 일반 v·θ |
+| 13..15 | 예약 0 |
 
 MANUAL 목표는 후륜 축 중앙 v와 가상 전륜 중앙 θ다. PIVOT은 v=θ=0, ω가 유효하다.
-AUTO는 아직 구동이 차단되어 bit4=0이고 목표 필드는 0이다. 이는 USB 수신 명령의 echo가 아니다.
+AUTO에서도 bit4/12로 목표의 유효성과 운동 모드를 판별한다. RC mode=AUTO만으로 일반/PIVOT을 구분할 수 없다.
+AUTO의 enable=0 또는 estop=1이어도 timeout 전 수락된 목표는 보고하므로, bit4를 구동 허용으로 해석하지 않는다.
+timeout 후에는 bit4/12=0이고 목표는 0이다. 이는 모든 USB 수신 명령의 echo가 아니다.
 적용 지령은 스케줄러의 `scheduled` 상태다. 적용 MANUAL은 v·θ, 적용 PIVOT은 ω를 사용하고 나머지 필드는 0이다.
 모드 변경을 위한 BRAKING 중에는 이전 적용 모드가 유지되므로 RC mode와 적용 모드가 다를 수 있다.
 일반 DRIVING과 표현 가능한 BRAKING에서 적용 지령을 보고한다. 실제 두 조향축을 직접 보간하는
-STEERING/SETTLING 중에는 bit11=0, 적용 모드=255, 적용 v·θ·ω=0으로 보고한다. 초기화·잘못된 보정/설정도 무효다.
+STEERING/SETTLING/EMERGENCY_STOP 중에는 bit11=0, 적용 모드=255, 적용 v·θ·ω=0으로 보고한다. 초기화·잘못된 보정/설정도 무효다.
 이 무효값을 직진·정지 자세로 해석하지 않는다. 그 상태에서는 중앙 조향각만으로 좌우 자세를 복원할 수 없다.
 적용 지령은 실제 측정값, CAN A/B 라운드 스냅샷, TX 완료·드라이버 적용 ACK가 아니다.
 호스트는 같은 기하 모델로 휠 출력을 계산할 수 있지만, 0.001 단위 양자화 때문에 MCU 내부 float와 완전히 같지는 않다.
@@ -325,4 +354,4 @@ RX는 ISR FIFO 읽기 시각이고 RTT는 이 둘의 unsigned 차이다. mask가
 취소 시 아직 전송을 시작하지 않은 진단 프레임을 버린다. 무손실 전달이나 호스트 수신 ACK는 제공하지 않는다.
 
 반복 종료 후에도 BRIDGE에 남으며 자동 TQ-OFF는 없다. 새 benchmark 요청, 유효 raw 요청,
-유효 `0x01`, 보호 리셋, POWERDOWN 전환 등으로 취소할 수 있다. 호스트 CLI 종료는 취소 명령이 아니다.
+유효 `0x03`, 보호 리셋, POWERDOWN 전환 등으로 취소할 수 있다. 호스트 CLI 종료는 취소 명령이 아니다.

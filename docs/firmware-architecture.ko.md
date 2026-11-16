@@ -2,8 +2,8 @@
 
 [문서 안내](README.md) · [RC 제어](rc-steering.ko.md) · [USB 규격](usb-protocol.ko.md)
 
-현재 펌웨어는 RC MANUAL 전륜 조향·4륜 구동과 후륜 중심 PIVOT 회전을 지원한다. AUTO 구동은 차단하며,
-호스트 제어 패킷은 수신·상태 기록과 CONTROL 복귀 목적으로 처리한다.
+현재 펌웨어는 RC MANUAL 전륜 조향·4륜 구동과 후륜 중심 PIVOT 회전을 지원한다.
+RC AUTO에서는 호스트 `0x03`의 일반 v·θ/PIVOT ω를 같은 스케줄러에 연결하고, enable·timeout·estop을 처리한다.
 
 ## 네 프로필
 
@@ -83,7 +83,7 @@ RC 인터럽트 연결 → LED·100 ms 대기 → 세션 초기화 → CAN 초�
 `loop()`의 순서는 다음과 같다.
 
 1. 계측 시작, 현재 시각과 RC 모드 읽기.
-2. 전원 상태 처리 후 RC 속도·조향 입력 읽기.
+2. 전원 상태 처리, RC 모드 선택과 AUTO 진입 시 이전 명령·RX 버퍼 폐기, RC 속도·조향 입력 읽기.
 3. USB 명령 처리.
 4. 디버그 결과 큐 등록 시도 → CAN 수신 처리 → 디버그 진행·결과 큐 등록 시도.
 5. 텔레메트리 freshness → 구동 명령 → 오류 보고 갱신.
@@ -103,14 +103,14 @@ CAN 큐의 일반 소비·분배는 `can_control::process_queued_rx()`가 맡는
 
 | 패킷 | control | debug | timing | debug_timing |
 | --- | --- | --- | --- | --- |
-| 제어 `0x01`, 보호 리셋 `0x02` 수신 | 지원 | 지원 | 지원 | 지원 |
+| 제어 `0x03`, 보호 리셋 `0x02` 수신 | 지원 | 지원 | 지원 | 지원 |
 | 휠·전압·상태 `0x85/86/87` | CONTROL에서 송신 | CONTROL에서 송신 | CONTROL에서 송신 | CONTROL에서 송신 |
 | 브릿지 `0x20` / `0xA0` | 미지원 | 지원 | 미지원 | 지원 |
 | 벤치마크 `0x21` / `0xA1` | 미지원 | 지원 | 미지원 | 지원 |
 | 타이밍 `0x84` | 미지원 | 미지원 | CONTROL에서 송신 | CONTROL에서 송신 |
 
 모든 프로필은 CONTROL로 부팅한다. 디버그 프로필은 유효한 브릿지·벤치마크 요청을 받으면
-BRIDGE에 진입하며 이때 TQ-OFF를 시도한다. 유효 `0x01` 수신이나 POWERDOWN 전환은
+BRIDGE에 진입하며 이때 TQ-OFF를 시도한다. 유효 `0x03` 수신이나 POWERDOWN 전환은
 벤치마크를 취소하고 CONTROL로 전환한다. 리셋은 RESETTING 상태로
 주기 송신을 막는다. POWERDOWN·드라이버 시작 대기가 아닐 때 TQ-OFF를 시도한 뒤,
 전송 성공 여부와 무관하게 MCU 리셋을 수행한다.
