@@ -133,13 +133,13 @@ void update_drive(DriveMode drive_mode,
         }
 
         // Clamp receiver range, remove the inclusive 1450..1550 us deadband,
-        // and map each remaining 450 us continuously to the full steering range.
+        // and map each remaining 450 us linearly to the virtual center angle.
+        // Derive its endpoints from the unchanged +/-70 degree inner-wheel limit.
         // Keep the previous throttle scale: endpoints request +/-1.8 m/s before RPM limiting.
         const float v_velocity = static_cast<float>(rc_io::offset_with_deadband(v_pwm)) / rc_io::THROTTLE_US_PER_MPS;
         const float steering_input = static_cast<float>(rc_io::offset_with_deadband(w_pwm)) / rc_io::PWM_ACTIVE_SPAN_US;
-        const float inner_angle = steering_input * vehicle::rc_maximum_inner_angle;
-        const float curvature = vehicle::curvature_from_inner_angle(inner_angle, motion.config.geometry);
-        update_vehicle_output({v_velocity, curvature}, now);
+        const float steering_angle = steering_input * vehicle::rc_maximum_center_angle(motion.config.geometry);
+        update_vehicle_output({v_velocity, steering_angle}, now);
         return;
     }
 

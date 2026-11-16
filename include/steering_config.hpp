@@ -11,7 +11,11 @@ inline int pwm_duty(int pulse_us) {
 }
 constexpr uint8_t calibration_min_points = 3, calibration_max_points = 5;
 constexpr int servo_valid_min_us = 500, servo_valid_max_us = 2500;
+// Physical wheel/calibration limit, NOT the virtual center-angle RC command.
 constexpr float rc_maximum_inner_angle = 70 * deg;
+inline float rc_maximum_center_angle(const Geometry &geometry) {
+    return center_angle_from_inner_angle(rc_maximum_inner_angle, geometry);
+}
 constexpr float rc_pivot_maximum_angular_velocity = 5.0f; // rad/s before common wheel RPM limiting
 struct CalibrationPoint { float angle; int pulse_us; };
 struct ServoCalibration {

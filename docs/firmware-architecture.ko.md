@@ -137,7 +137,8 @@ CONTROL에서만 출력한다. 계측 출력은 CAN 응답 창 이후 +7..10 ms�
 ## RC 구동 경로
 
 `control.hpp`는 RC 모드를 정의하며, `rc_io.cpp`가 필터링된 모드 PWM을 해석한다.
-`control.cpp`는 MANUAL에서 선속도·곡률 명령을, PIVOT에서 후륜 중심 각속도 명령을 생성한다.
+`control.cpp`는 MANUAL에서 선속도·가상 중앙 휠 조향각 명령을, PIVOT에서 후륜 중심 각속도 명령을 생성한다.
+MANUAL 보간 상태는 선속도와 중앙 조향각이며, 휠 출력을 계산할 때 `κ = tan(θ) / wheelbase`로 변환한다.
 두 경로 모두 `vehicle_kinematics.hpp`의 휠 목표 계산과 `vehicle_motion.hpp`의 모션 전환을 사용한다.
 최대 PIVOT 요청 각속도는 `steering_config.hpp`의 `rc_pivot_maximum_angular_velocity`다.
 

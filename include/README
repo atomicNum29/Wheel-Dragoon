@@ -9,7 +9,7 @@
   일반 제어 모듈의 공개 인터페이스
 - can_debug.hpp, timing_diagnostics.hpp: 선택 기능과 비활성 빌드 연결
 - steering_config.hpp: 차량 기하, 서보 보정, 모션 제한, PIVOT 요청 각속도 설정
-- vehicle_kinematics.hpp, vehicle_motion.hpp: MANUAL 곡률 / PIVOT 회전 운동학과 모션 전환
+- vehicle_kinematics.hpp, vehicle_motion.hpp: MANUAL 중앙 조향각 / PIVOT 회전 운동학과 모션 전환
 - can_tx_schedule.hpp: 일반 CAN 주기와 응답 창
 - md200t_can.hpp, flexcan0.hpp: 드라이버 명령과 하드웨어 CAN 인터페이스
 - error_report.hpp, little_endian.hpp: 오류 보고 및 바이트 인코딩 공통 처리

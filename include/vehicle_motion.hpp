@@ -166,7 +166,7 @@ namespace vehicle
                 }
                 else if (elapsed(now_ms, config.settle_ms))
                 {
-                    scheduled = RcCommand(0, cmd.curvature, cmd.pivot, 0);
+                    scheduled = RcCommand(0, cmd.steering_angle, cmd.pivot, 0);
                     transition = Transition::DRIVING;
                     timer_active = false;
                 }
@@ -177,6 +177,8 @@ namespace vehicle
 
     private:
         // This is the generated vehicle command, not a measured vehicle state.
+        // MANUAL interpolates speed and virtual center steering angle. Curvature
+        // is derived only when evaluating the coupled wheel outputs.
         // In DRIVING, angle[] and rpm[] always come from this same command.
         RcCommand scheduled;
         bool initialized = false, timer_active = false;
@@ -271,7 +273,7 @@ namespace vehicle
                 if (fraction < 1)
                 {
                     next.linear_velocity = scheduled.linear_velocity + (goal.linear_velocity - scheduled.linear_velocity) * fraction;
-                    next.curvature = scheduled.curvature + (goal.curvature - scheduled.curvature) * fraction;
+                    next.steering_angle = scheduled.steering_angle + (goal.steering_angle - scheduled.steering_angle) * fraction;
                     next.angular_velocity = scheduled.angular_velocity + (goal.angular_velocity - scheduled.angular_velocity) * fraction;
                     outputs = evaluate(next, lo, hi, intermediate_limited);
                 }

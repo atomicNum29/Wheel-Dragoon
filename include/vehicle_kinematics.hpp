@@ -11,14 +11,15 @@ constexpr float SECONDS_PER_MINUTE = 60.0f;
 constexpr float pi = 3.14159265358979323846f;
 constexpr float deg = pi / 180.0f;
 inline float clamp(float x, float lo, float hi) { return fminf(hi, fmaxf(lo, x)); }
-// MANUAL uses curvature even at zero speed; PIVOT uses angular velocity instead.
+// MANUAL uses the virtual front-center wheel angle, including at zero speed.
+// PIVOT uses angular velocity and a separate fixed wheel pose instead.
 struct RcCommand {
     float linear_velocity; // m/s
-    float curvature; // 1/m
+    float steering_angle; // rad, virtual front-center wheel; positive is left
     bool pivot;
     float angular_velocity; // rad/s about the rear-axle center, PIVOT only
-    RcCommand(float v = 0, float k = 0, bool p = false, float w = 0)
-        : linear_velocity(v), curvature(k), pivot(p), angular_velocity(w) {}
+    RcCommand(float v = 0, float theta = 0, bool p = false, float w = 0)
+        : linear_velocity(v), steering_angle(theta), pivot(p), angular_velocity(w) {}
 };
 struct Geometry {
     float wheelbase = 0.420f;
@@ -40,14 +41,27 @@ inline float curvature_from_inner_angle(float angle, const Geometry &g) {
     const float tangent = tanf(angle);
     return tangent / (g.wheelbase + g.front_track * 0.5f * fabsf(tangent));
 }
+// Express the same physical inner-wheel endpoint as a virtual center angle.
+inline float center_angle_from_inner_angle(float angle, const Geometry &g) {
+    return atanf(g.wheelbase * curvature_from_inner_angle(angle, g));
+}
+// Reject the tan() singularity and zero/invalid wheelbase before division.
+inline float curvature_from_center_angle(float theta, const Geometry &g) {
+    if (!isfinite(theta) || fabsf(theta) >= pi * 0.5f ||
+        !isfinite(g.wheelbase) || g.wheelbase <= 0)
+        return NAN;
+    return tanf(theta) / g.wheelbase;
+}
 // Reject the entire command. Never clamp one angle and retain inconsistent RPMs.
 inline WheelTargets inverse(RcCommand cmd, const Geometry &g,
                             const float previous[STEERING_COUNT], const float minimum[STEERING_COUNT],
                             const float maximum[STEERING_COUNT]) {
     WheelTargets out;
     for (int i = 0; i < STEERING_COUNT; ++i) out.angle[i] = previous[i];
-    const float v = cmd.linear_velocity, k = cmd.curvature;
-    if (!isfinite(v) || !isfinite(k) || !isfinite(cmd.angular_velocity) || fabsf(v) > MAX_LINEAR_SPEED_MPS) {
+    const float v = cmd.linear_velocity;
+    const float k = cmd.pivot ? 0.0f : curvature_from_center_angle(cmd.steering_angle, g);
+    if (!isfinite(v) || !isfinite(cmd.steering_angle) || !isfinite(k) ||
+        !isfinite(cmd.angular_velocity) || fabsf(v) > MAX_LINEAR_SPEED_MPS) {
         out.feasible = false;
         return out;
     }
