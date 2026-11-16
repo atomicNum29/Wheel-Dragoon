@@ -5,6 +5,7 @@
 #include "can_debug.hpp"
 #include "timing_diagnostics.hpp"
 #include "little_endian.hpp"
+#include "serial_protocol.hpp"
 
 namespace can_control {
 namespace {
@@ -41,17 +42,13 @@ struct CanTxScheduler
     Md200tDriverCommand pending_driver_b_command;
     uint8_t expected_wheel_mask;
     uint8_t received_wheel_mask;
-    bool round_status_tx_requested;
 };
 
 Telemetry received = {};
 CanTxScheduler can_tx_scheduler = {};
-bool system_status_tx_pending = false;
 } // namespace
 
 const Telemetry &telemetry() { return received; }
-bool status_pending() { return system_status_tx_pending; }
-void status_sent() { system_status_tx_pending = false; }
 void begin()
 {
     if (!can_begin(MD200T_CAN_BITRATE)) {
@@ -160,12 +157,14 @@ static void md200t_process_rx_frame(const CanFrame &frame,
         motor->rx_timestamp_us = rx_timestamp_us;
         motor->last_update_ms = now;
         motor->valid = true;
+        const uint8_t wheel_id = motor == &received.lf ? 0 : motor == &received.rf ? 1 : motor == &received.lr ? 2 : 3;
+        protocol::queue_wheel(wheel_id, motor->status, motor->actual_rpm, motor->encoder_count, rx_timestamp_us);
         if (motor->status != 0u)
             control::report(control::Error::DriverStatus);
 
         // With user-configured PID149=7, PID207/174 returns PID196/201. Count those
-        // four command-triggered frames in the current 10 ms command round and
-        // request combined USB status transmission as soon as all wheels are present.
+        // four command-triggered frames for response-window health checks.
+        // USB publication is per accepted wheel response, independent of the pair.
         if (control::status().serial_mode == control::SERIAL_MODE_CONTROL &&
             can_tx_scheduler.initialized &&
             (can_tx_scheduler.expected_wheel_mask & wheel_mask) != 0u)
@@ -177,13 +176,6 @@ static void md200t_process_rx_frame(const CanFrame &frame,
             if (can_tx_response_pair_complete(CAN_TX_DRIVER_B_WHEELS_MASK,
                                               can_tx_scheduler.received_wheel_mask))
                 can_tx_scheduler.driver_b_response_checked = true;
-            if (!can_tx_scheduler.round_status_tx_requested &&
-                can_tx_wheel_round_complete(can_tx_scheduler.expected_wheel_mask,
-                                            can_tx_scheduler.received_wheel_mask))
-            {
-                can_tx_scheduler.round_status_tx_requested = true;
-                system_status_tx_pending = true;
-            }
         }
         return;
     }
@@ -207,7 +199,9 @@ static void md200t_process_rx_frame(const CanFrame &frame,
 
     voltage->millivolts = static_cast<uint16_t>(static_cast<uint16_t>(raw_deci_volts) * MILLIVOLTS_PER_DECI_V);
     voltage->last_update_ms = now;
+    voltage->rx_timestamp_us = rx_timestamp_us;
     voltage->valid = true;
+    protocol::queue_voltage(driver_id == MD200T_DRIVER_A_ID ? 0 : 1, voltage->millivolts, rx_timestamp_us);
 }
 
 void process_queued_rx(unsigned long now)
@@ -316,18 +310,13 @@ void transmit_if_due(uint32_t now_us)
 
     if (control::status().driver_powerdown || control::status().driver_starting)
     {
-        // Keep USB status at 100 Hz without opening CAN response windows.
+        // USB state publication has its own clock, including while CAN is off.
         if (static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us) >= CAN_TX_COMMAND_PERIOD_US)
-        {
             can_tx_scheduler.cycle_start_us = now_us;
-            system_status_tx_pending = true;
-        }
         return;
     }
 
-    // Advance directly to the current cycle. A round that did not collect all
-    // four responses still requests one fallback status so diagnostics remain
-    // visible, but missed CAN events are never replayed across cycle boundaries.
+    // Advance directly to the current cycle; missed CAN events are not replayed.
     const uint32_t elapsed_us = static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us);
     if (elapsed_us >= CAN_TX_COMMAND_PERIOD_US)
     {
@@ -348,9 +337,6 @@ void transmit_if_due(uint32_t now_us)
             close_driver_response_window(MD200T_DRIVER_B_ID);
         }
 
-        if (!can_tx_scheduler.round_status_tx_requested)
-            system_status_tx_pending = true;
-
         const uint32_t skipped_cycles = elapsed_us / CAN_TX_COMMAND_PERIOD_US;
         can_tx_scheduler.cycle_start_us += skipped_cycles * CAN_TX_COMMAND_PERIOD_US;
         can_tx_scheduler.superframe_cycle = static_cast<uint8_t>(
@@ -363,7 +349,6 @@ void transmit_if_due(uint32_t now_us)
         can_tx_scheduler.voltage_poll_handled = false;
         can_tx_scheduler.expected_wheel_mask = 0u;
         can_tx_scheduler.received_wheel_mask = 0u;
-        can_tx_scheduler.round_status_tx_requested = false;
     }
 
     const uint32_t cycle_phase_us = static_cast<uint32_t>(now_us - can_tx_scheduler.cycle_start_us);
@@ -431,14 +416,6 @@ void transmit_if_due(uint32_t now_us)
     if (!can_tx_scheduler.driver_b_response_checked)
         close_driver_response_window(MD200T_DRIVER_B_ID);
 
-    // A complete pair requests 0x82 transmission from RX immediately. A partial/empty
-    // pair requests one fallback with timeout bits here at the deadline.
-    if (!can_tx_scheduler.round_status_tx_requested)
-    {
-        can_tx_scheduler.round_status_tx_requested = true;
-        system_status_tx_pending = true;
-    }
-
     if (!can_tx_scheduler.voltage_poll_handled)
     {
         ScheduledVoltageRequest voltage_request = {};
@@ -462,7 +439,6 @@ void transmit_if_due(uint32_t now_us)
 void reset_session(uint32_t now_us)
 {
     received = {};
-    system_status_tx_pending = false;
     reset_can_tx_scheduler(now_us);
 }
 #if FIRMWARE_TIMING_DIAGNOSTICS

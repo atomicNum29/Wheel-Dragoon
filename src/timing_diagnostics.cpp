@@ -180,18 +180,6 @@ void publish_if_due()
     if (new_snapshot && now_ms - timing_captured_ms < SNAPSHOT_INTERVAL_MS)
         return;
 
-    int writable = Serial.availableForWrite();
-    if (writable > 0 && writable < PACKET_SIZE) {
-        // Teensy reports only the remaining space in its current 64-byte USB
-        // packet. A 63-byte 0x82 at cycle +6 ms leaves one byte until its 5-ms
-        // auto-flush, permanently excluding diagnostics from +7..10 ms.
-        // send_now() only queues that partial packet; it does not wait for the
-        // host, insert bytes, or alter CAN scheduling. Still honor backpressure.
-        Serial.send_now();
-        writable = Serial.availableForWrite();
-    }
-    if (writable < PACKET_SIZE)
-        return;
     if (new_snapshot) {
         timing_live.overrun_observations = can_rx_overrun_count();
         timing_snapshot = timing_live;
@@ -203,7 +191,7 @@ void publish_if_due()
     uint8_t packet[PACKET_SIZE];
     encode(timing_snapshot, timing_record, timing_sequence, timing_captured_ms,
                    F_CPU, timing_snapshot_mode, packet);
-    if (Serial.write(packet, sizeof(packet)) == sizeof(packet)) {
+    if (protocol::queue_auxiliary(packet, sizeof(packet))) {
         ++timing_record;
         timing_last_packet_ms = now_ms;
     }

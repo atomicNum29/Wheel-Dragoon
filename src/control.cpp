@@ -21,6 +21,7 @@ uint32_t driver_power_on_ms = 0;
 unsigned long last_valid_command_ms = 0;
 CommandPacket auto_command = {};
 int reports[static_cast<uint8_t>(Error::Count)] = {};
+uint32_t report_revision = 0;
 vehicle::MotionController motion(vehicle::MotionConfig{}, vehicle::left_servo, vehicle::right_servo);
 } // namespace
 
@@ -28,7 +29,8 @@ static void motor_stop_all();
 static void update_vehicle_output(vehicle::RcCommand command, unsigned long now);
 const Status &status() { return live; }
 const vehicle::MotionController &motion_output() { return motion; }
-void report(Error error) { reports[static_cast<uint8_t>(error)] = ERROR_REPORT_REPEAT_COUNT; }
+void report(Error error) { reports[static_cast<uint8_t>(error)] = ERROR_REPORT_REPEAT_COUNT; ++report_revision; }
+uint32_t error_report_revision() { return report_revision; }
 bool reported(Error error) { return reports[static_cast<uint8_t>(error)] > 0; }
 void report_safety_tx_failure() { report(Error::SafetyCanTx); }
 
@@ -44,6 +46,8 @@ void initialize_motion() { motion.update({0, 0}, millis(), false); }
 
 void initialize_session(unsigned long now)
 {
+    ++report_revision;
+    protocol::reset_telemetry_session();
     for (int &remaining : reports) remaining = 0;
     can_clear_rx_overrun_reports();
     live.control_mode_started_ms = now;
@@ -100,6 +104,8 @@ void accept_command(const CommandPacket &command, unsigned long now)
 void update_drive(DriveMode drive_mode,
                   unsigned int v_pwm, unsigned int w_pwm, unsigned long now)
 {
+    live.drive_mode = drive_mode;
+    live.requested_motion = {};
     if (live.serial_mode != SERIAL_MODE_CONTROL)
     {
         live.command_timeout = false;
@@ -255,6 +261,7 @@ static void motor_stop_all(void)
 
 static void update_vehicle_output(vehicle::RcCommand command, unsigned long now)
 {
+    live.requested_motion = command;
     const bool allowed = !has_driver_fault() && !reports[static_cast<uint8_t>(Error::BatteryLow)];
     motion.update(command, static_cast<uint32_t>(now), allowed);
     live.motor_enabled = live.motor_enabled && motion.ready && allowed;

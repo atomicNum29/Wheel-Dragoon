@@ -70,6 +70,8 @@ enum class Error : uint8_t {
     Checksum, Framing, CommandRange, CommandTimeout, Estop, VoltageStale, Count
 };
 struct Status {
+    DriveMode drive_mode = DRIVE_MODE_STOP;
+    vehicle::RcCommand requested_motion; // selected input before scheduling; MANUAL/PIVOT only
     bool booting = true;
     bool driver_powerdown = false;
     bool driver_starting = false;
@@ -82,7 +84,7 @@ struct Status {
 };
 const Status &status();
 const vehicle::MotionController &motion_output();
-// Reports expire only after successfully transmitted canonical 0x82 packets.
+// Reports expire after fully written state packets from the same report revision/session.
 void report(Error error);
 bool reported(Error error);
 void initialize_power();
@@ -100,6 +102,7 @@ void report_safety_tx_failure(void);
 bool has_driver_fault(void);
 void refresh_errors(unsigned long now);
 void consume_error_reports(void);
+uint32_t error_report_revision();
 FaultSnapshot fault_snapshot(unsigned long now);
 MotorState motor_state(const FaultSnapshot &fault);
 int16_t rpm_to_i16(float rpm);

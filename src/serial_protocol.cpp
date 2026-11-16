@@ -4,6 +4,7 @@
 #include "can_control.hpp"
 #include "can_debug.hpp"
 #include "little_endian.hpp"
+#include <string.h>
 
 namespace protocol {
 using namespace wire;
@@ -35,11 +36,56 @@ constexpr uint16_t SYSTEM_ERR_DRIVER_STATUS_FAULT_PRESENT = (1u << 8);
 constexpr uint16_t SYSTEM_ERR_DRIVER_RX_TIMEOUT = (1u << 9);
 constexpr uint16_t SYSTEM_ERR_VOLTAGE_STALE = (1u << 10);
 constexpr uint16_t SYSTEM_ERR_CAN_RX_OVERRUN = (1u << 11);
+constexpr uint16_t SYSTEM_ERR_USB_TX_DROP = (1u << 12);
+constexpr uint16_t SYSTEM_ERR_USB_TX_WRITE = (1u << 13);
 
 CommandFrameParser command_rx_parser = {{0}, 0, CMD_RX_WAIT_HEADER_0};
-uint8_t system_status_tx_seq = 0;
+constexpr uint32_t STATE_PERIOD_MS = 10;
+constexpr uint8_t MAX_TX_SIZE = 63, TX_ATTEMPTS_PER_LOOP = 2;
+static_assert(WHEEL_PACKET_SIZE <= MAX_TX_SIZE && VOLTAGE_PACKET_SIZE <= MAX_TX_SIZE &&
+              STATE_PACKET_SIZE <= MAX_TX_SIZE, "Telemetry frame exceeds fixed TX storage");
+static_assert(wire::system::SESSION + 1 + CHECKSUM_SIZE == STATE_PACKET_SIZE, "State layout size mismatch");
+static_assert(DRIVE_MODE_PIVOT <= wire::system::MODE_MASK &&
+              static_cast<uint8_t>(vehicle::Transition::SETTLING) <= wire::system::MODE_MASK,
+              "Mode/transition must fit their four-bit wire fields");
+enum TxKind : uint8_t { WHEEL = 0, VOLTAGE = 1, STATE = 2, AUXILIARY = 3 };
+struct TxFrame {
+    uint8_t bytes[MAX_TX_SIZE] = {};
+    uint8_t size = 0;
+    uint32_t report_revision = 0, overrun_count = 0;
+    uint32_t tx_drop_revision = 0, tx_write_revision = 0;
+    uint16_t session = 0; // Internal completion guard; only the low byte is sent on the wire.
+};
+template <uint8_t Capacity> struct TxQueue {
+    TxFrame frames[Capacity];
+    uint8_t head = 0, count = 0;
+    bool push(const TxFrame &frame) {
+        const bool dropped = count == Capacity;
+        if (dropped) { head = (head + 1) % Capacity; --count; }
+        frames[(head + count) % Capacity] = frame;
+        ++count;
+        return dropped;
+    }
+    bool pop(TxFrame &frame) {
+        if (!count) return false;
+        frame = frames[head]; head = (head + 1) % Capacity; --count; return true;
+    }
+    bool clear() { const bool dropped = count != 0; count = head = 0; return dropped; }
+};
+TxQueue<16> wheel_queue;
+TxQueue<4> voltage_queue;
+TxQueue<1> state_queue, auxiliary_queue;
+TxFrame active;
+uint8_t active_offset = 0, active_kind = WHEEL, next_kind = WHEEL;
+uint16_t wheel_seq[4] = {}, voltage_seq[2] = {}, state_seq = 0, telemetry_session = 0;
+uint16_t tx_errors = 0;
+// Internal revisions prevent a completed older snapshot clearing a newer event.
+uint32_t tx_drop_revision = 0, tx_write_revision = 0;
+uint32_t state_at_ms = 0;
+bool state_clock_started = false;
 } // namespace
 void begin() { Serial.begin(USB_SERIAL_BAUD); }
+void report_tx_drop() { tx_errors |= SYSTEM_ERR_USB_TX_DROP; ++tx_drop_revision; }
 
 static inline bool command_in_range(const CommandPacket &command)
 {
@@ -275,59 +321,181 @@ static uint8_t telemetry_validity_bits(void)
     return validity;
 }
 
-static void put_motor_telemetry(uint8_t *packet, uint8_t offset, const MotorTelemetry &telemetry)
+static TxFrame frame_header(uint8_t type, uint8_t size, uint16_t sequence)
 {
-    packet[offset + wire::system::WHEEL_STATUS] = telemetry.status;
-    little_endian::write_i16(&packet[offset + wire::system::WHEEL_RPM], telemetry.actual_rpm);
-    little_endian::write_i32(&packet[offset + wire::system::WHEEL_ENCODER], telemetry.encoder_count);
-    little_endian::write_u32(&packet[offset + wire::system::WHEEL_TIMESTAMP], telemetry.rx_timestamp_us);
+    TxFrame f;
+    f.size = size;
+    f.session = telemetry_session;
+    f.bytes[HEADER_0] = PKT_HEADER_0;
+    f.bytes[HEADER_1] = PKT_HEADER_1;
+    f.bytes[LENGTH] = size - FRAME_OVERHEAD;
+    f.bytes[TYPE] = type;
+    f.bytes[4] = TELEMETRY_VERSION;
+    little_endian::write_u16(f.bytes + 5, sequence);
+    return f;
 }
+static void finish_frame(TxFrame &f) { f.bytes[f.size - 1] = xor_checksum(f.bytes, f.size - 1); }
 
-static bool send_system_status(void)
+void queue_wheel(uint8_t id, uint8_t status, int16_t rpm, int32_t encoder, uint32_t rx_us)
 {
-    uint8_t packet[SYSTEM_STATUS_PACKET_SIZE] = {};
-    const unsigned long now = millis();
-    control::refresh_errors(now);
-    // Serialize before consuming a report: a count of one is still reported.
-    const FaultSnapshot fault = control::fault_snapshot(now);
-    packet[HEADER_0] = PKT_HEADER_0;
-    packet[HEADER_1] = PKT_HEADER_1;
-    packet[LENGTH] = SYSTEM_STATUS_PACKET_LENGTH;
-    packet[TYPE] = SYSTEM_STATUS_PACKET_TYPE;
-    packet[wire::system::VERSION] = SYSTEM_STATUS_PACKET_VERSION;
-    packet[wire::system::SEQUENCE] = system_status_tx_seq;
-    packet[wire::system::STATE] = static_cast<uint8_t>(control::motor_state(fault));
-    little_endian::write_u16(&packet[wire::system::ERROR], build_system_error_bits(fault));
-    packet[wire::system::VALIDITY] = telemetry_validity_bits();
-    little_endian::write_u16(&packet[wire::system::VOLTAGE_A], can_control::telemetry().driver_a.millivolts);
-    little_endian::write_u16(&packet[wire::system::VOLTAGE_B], can_control::telemetry().driver_b.millivolts);
-    put_motor_telemetry(packet, wire::system::LF, can_control::telemetry().lf);
-    put_motor_telemetry(packet, wire::system::RF, can_control::telemetry().rf);
-    put_motor_telemetry(packet, wire::system::LR, can_control::telemetry().lr);
-    put_motor_telemetry(packet, wire::system::RR, can_control::telemetry().rr);
-
-    if (Serial.availableForWrite() >= SYSTEM_STATUS_PACKET_SIZE)
-    {
-        little_endian::write_u32(&packet[wire::system::TIMESTAMP], micros());
-        packet[SYSTEM_STATUS_PACKET_SIZE - 1u] = xor_checksum(packet, SYSTEM_STATUS_PACKET_SIZE - 1u);
-        if (Serial.write(packet, SYSTEM_STATUS_PACKET_SIZE) != SYSTEM_STATUS_PACKET_SIZE)
-            return false;
-        system_status_tx_seq++;
-        control::consume_error_reports();
-        return true;
+    if (id >= 4 || control::status().serial_mode != control::SERIAL_MODE_CONTROL) return;
+    TxFrame f = frame_header(WHEEL_PACKET_TYPE, WHEEL_PACKET_SIZE, wheel_seq[id]++);
+    f.bytes[7] = id;
+    little_endian::write_u32(f.bytes + 8, rx_us);
+    f.bytes[12] = status;
+    little_endian::write_i16(f.bytes + 13, rpm);
+    little_endian::write_i32(f.bytes + 15, encoder);
+    finish_frame(f);
+    if (wheel_queue.push(f)) report_tx_drop();
+}
+void queue_voltage(uint8_t id, uint16_t millivolts, uint32_t rx_us)
+{
+    if (id >= 2 || control::status().serial_mode != control::SERIAL_MODE_CONTROL) return;
+    TxFrame f = frame_header(VOLTAGE_PACKET_TYPE, VOLTAGE_PACKET_SIZE, voltage_seq[id]++);
+    f.bytes[7] = id;
+    little_endian::write_u32(f.bytes + 8, rx_us);
+    little_endian::write_u16(f.bytes + 12, millivolts);
+    finish_frame(f);
+    if (voltage_queue.push(f)) report_tx_drop();
+}
+static void discard_unstarted_active(bool report_loss = false)
+{
+    if (!active.size || active_offset) return; // Finish any already-started frame without interleaving.
+    if (report_loss) report_tx_drop();
+    active.size = 0;
+}
+void reset_telemetry_session()
+{
+    wheel_queue.clear();
+    voltage_queue.clear();
+    state_queue.clear();
+    auxiliary_queue.clear();
+    discard_unstarted_active();
+    ++telemetry_session;
+    state_clock_started = false;
+    // Sequence counters and pending TX error flags persist through session resets.
+}
+bool queue_auxiliary(const uint8_t *packet, size_t size)
+{
+    if (size < 5 || size > MAX_TX_SIZE || auxiliary_queue.count) return false;
+    TxFrame f;
+    f.size = static_cast<uint8_t>(size);
+    memcpy(f.bytes, packet, size);
+    auxiliary_queue.push(f);
+    return true;
+}
+void discard_debug_tx()
+{
+    if (auxiliary_queue.count && auxiliary_queue.frames[auxiliary_queue.head].bytes[TYPE] != 0x84)
+        auxiliary_queue.clear();
+    if (active_kind == AUXILIARY && active.bytes[TYPE] != 0x84) discard_unstarted_active();
+}
+static int16_t milli(float value)
+{
+    if (!isfinite(value)) return 0;
+    return static_cast<int16_t>(lroundf(vehicle::clamp(value * 1000.0f, -32768.0f, 32767.0f)));
+}
+static void capture_state(uint32_t now_ms)
+{
+    const auto &live = control::status();
+    const auto &motion = control::motion_output();
+    const uint32_t observed_overruns = can_rx_overrun_count();
+    const FaultSnapshot fault = control::fault_snapshot(now_ms);
+    // Discard an unstarted older state snapshot too; a partial frame stays immutable.
+    if (active_kind == STATE) discard_unstarted_active(true);
+    if (state_queue.clear()) report_tx_drop();
+    TxFrame f = frame_header(STATE_PACKET_TYPE, STATE_PACKET_SIZE, state_seq++);
+    uint8_t *p = f.bytes;
+    p[wire::system::STATE] = static_cast<uint8_t>(control::motor_state(fault));
+    p[wire::system::MODE_MOTION] = (static_cast<uint8_t>(live.drive_mode) & wire::system::MODE_MASK) |
+        ((static_cast<uint8_t>(motion.transition) & wire::system::MODE_MASK) << wire::system::TRANSITION_SHIFT);
+    const bool request_valid = !live.driver_powerdown && !live.driver_starting &&
+        (live.drive_mode == DRIVE_MODE_MANUAL || live.drive_mode == DRIVE_MODE_PIVOT);
+    // Same pre-TX drive gate used by the CAN command scheduler; not a TX ACK.
+    const bool drive_allowed = live.motor_enabled && !live.driver_powerdown && !live.driver_starting &&
+        !live.estop_active && !live.command_timeout && !control::has_driver_fault() && !control::reported(control::Error::BatteryLow);
+    vehicle::RcCommand applied;
+    const bool applied_valid = motion.applied_command(applied);
+    uint16_t flags = (live.motor_enabled ? wire::system::ENABLED : 0) |
+        (motion.ready ? wire::system::READY : 0) | (motion.feasible ? wire::system::FEASIBLE : 0) |
+        (motion.limited ? wire::system::RPM_LIMITED : 0) | (request_valid ? wire::system::REQUEST_VALID : 0) |
+        (live.estop_active ? wire::system::ESTOP_ACTIVE : 0) | (live.command_timeout ? wire::system::TIMEOUT_ACTIVE : 0) |
+        (live.driver_powerdown ? wire::system::POWERDOWN : 0) | (live.driver_starting ? wire::system::DRIVER_STARTING : 0) |
+        (drive_allowed ? wire::system::DRIVE_ALLOWED : 0) | (motion.calibrated() ? wire::system::STEERING_VALID : 0) |
+        (applied_valid ? wire::system::APPLIED_VALID : 0);
+    little_endian::write_u16(p + wire::system::FLAGS, flags);
+    little_endian::write_u16(p + wire::system::ERROR, build_system_error_bits(fault) | tx_errors);
+    p[wire::system::VALIDITY] = telemetry_validity_bits();
+    little_endian::write_i16(p + wire::system::REQUEST_V, request_valid ? milli(live.requested_motion.linear_velocity) : 0);
+    little_endian::write_i16(p + wire::system::REQUEST_THETA, request_valid ? milli(live.requested_motion.steering_angle) : 0);
+    little_endian::write_i16(p + wire::system::REQUEST_W, request_valid ? milli(live.requested_motion.angular_velocity) : 0);
+    little_endian::write_i16(p + wire::system::APPLIED_V, milli(applied.linear_velocity));
+    little_endian::write_i16(p + wire::system::APPLIED_THETA, applied.pivot ? 0 : milli(applied.steering_angle));
+    little_endian::write_i16(p + wire::system::APPLIED_W, applied.pivot ? milli(applied.angular_velocity) : 0);
+    p[wire::system::APPLIED_MODE] = applied_valid ? static_cast<uint8_t>(applied.pivot ? DRIVE_MODE_PIVOT : DRIVE_MODE_MANUAL) : 0xFF;
+    p[wire::system::SESSION] = static_cast<uint8_t>(telemetry_session);
+    f.report_revision = control::error_report_revision();
+    f.overrun_count = observed_overruns;
+    f.tx_drop_revision = tx_drop_revision;
+    f.tx_write_revision = tx_write_revision;
+    finish_frame(f);
+    state_queue.push(f);
+}
+static bool select_frame()
+{
+    for (uint8_t n = 0; n < 4; ++n) {
+        const uint8_t kind = (next_kind + n) % 4;
+        bool found = kind == WHEEL ? wheel_queue.pop(active) : kind == VOLTAGE ? voltage_queue.pop(active) :
+                     kind == STATE ? state_queue.pop(active) : auxiliary_queue.pop(active);
+        if (found) { active_kind = kind; next_kind = (kind + 1) % 4; active_offset = 0; return true; }
     }
     return false;
 }
-
-void send_status_if_ready(void)
+void service_tx()
 {
-    if (control::status().serial_mode != control::SERIAL_MODE_CONTROL || !can_control::status_pending())
-        return;
-
-    // Keep the TX pending flag set if the USB TX buffer is temporarily full. A
-    // later loop sends the newest telemetry snapshot instead of blocking CAN.
-    if (send_system_status())
-        can_control::status_sent();
+    const uint32_t now_ms = millis();
+    if (control::status().serial_mode == control::SERIAL_MODE_CONTROL) {
+        if (!state_clock_started || uint32_t(now_ms - state_at_ms) >= STATE_PERIOD_MS) {
+            if (state_clock_started) {
+                const uint32_t missed = uint32_t(now_ms - state_at_ms) / STATE_PERIOD_MS - 1;
+                if (missed) report_tx_drop();
+                state_seq = static_cast<uint16_t>(state_seq + missed);
+            }
+            state_at_ms = now_ms;
+            state_clock_started = true;
+            capture_state(now_ms);
+        }
+    } else {
+        wheel_queue.clear();
+        voltage_queue.clear();
+        state_queue.clear();
+        if (active_kind != AUXILIARY) discard_unstarted_active();
+        state_clock_started = false;
+    }
+    for (uint8_t attempt = 0; attempt < TX_ATTEMPTS_PER_LOOP; ++attempt) {
+        if (!active.size && !select_frame()) return;
+        const uint8_t remaining = active.size - active_offset;
+        int room = Serial.availableForWrite();
+        if (room > 0 && room < remaining) {
+            Serial.send_now(); // Queue a partial USB buffer, without waiting for the host.
+            room = Serial.availableForWrite();
+        }
+        if (room < remaining) return;
+        const size_t written = Serial.write(active.bytes + active_offset, remaining);
+        if (written != remaining) { tx_errors |= SYSTEM_ERR_USB_TX_WRITE; ++tx_write_revision; }
+        // Teensy may return size_t(-1); never treat that as a successful/partial write.
+        if (written > remaining || written == 0) return;
+        active_offset += static_cast<uint8_t>(written);
+        if (active_offset != active.size) return; // Preserve the tail before any other frame.
+        Serial.send_now();
+        if (active_kind == STATE && active.session == telemetry_session) {
+            if (active.report_revision == control::error_report_revision() && active.overrun_count == can_rx_overrun_count())
+                control::consume_error_reports();
+            if (active.tx_drop_revision == tx_drop_revision) tx_errors &= ~SYSTEM_ERR_USB_TX_DROP;
+            if (active.tx_write_revision == tx_write_revision) tx_errors &= ~SYSTEM_ERR_USB_TX_WRITE;
+        }
+        active.size = active_offset = 0;
+    }
 }
 
 } // namespace protocol

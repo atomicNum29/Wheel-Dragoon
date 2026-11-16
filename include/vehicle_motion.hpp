@@ -29,6 +29,16 @@ namespace vehicle
         MotionController(const MotionConfig &c, const ServoCalibration &left, const ServoCalibration &right)
             : config(c), calibration{left, right} {}
         bool calibrated() const { return valid_calibration(calibration[0]) && valid_calibration(calibration[1]); }
+        // Generated command, not measured motion or a CAN transmission ACK.
+        // During direct two-axis pose transitions no single bicycle angle exists.
+        bool applied_command(RcCommand &command) const
+        {
+            command = RcCommand{};
+            if ((transition != Transition::DRIVING && transition != Transition::BRAKING) ||
+                !scheduled_pose_valid || !ready || !calibrated() || !valid_configuration()) return false;
+            command = scheduled;
+            return true;
+        }
         bool valid_configuration() const
         {
             const auto &g = config.geometry;
@@ -136,6 +146,7 @@ namespace vehicle
             // At standstill there is no rolling constraint. Interpolate the two
             // steering axes together, including incompatible MANUAL/PIVOT poses.
             // Keep all RPMs zero until the generated angles settle at the new pose.
+            scheduled_pose_valid = false;
             float max_distance = 0;
             for (int i = 0; i < STEERING_COUNT; ++i)
                 max_distance = fmaxf(max_distance, fabsf(target_angle[i] - angle[i]));
@@ -167,6 +178,7 @@ namespace vehicle
                 else if (elapsed(now_ms, config.settle_ms))
                 {
                     scheduled = RcCommand(0, cmd.steering_angle, cmd.pivot, 0);
+                    scheduled_pose_valid = true;
                     transition = Transition::DRIVING;
                     timer_active = false;
                 }
@@ -181,6 +193,7 @@ namespace vehicle
         // is derived only when evaluating the coupled wheel outputs.
         // In DRIVING, angle[] and rpm[] always come from this same command.
         RcCommand scheduled;
+        bool scheduled_pose_valid = false;
         bool initialized = false, timer_active = false;
         uint32_t last_ms = 0, startup_at = 0, timer_at = 0;
         bool elapsed(uint32_t now, uint32_t interval)

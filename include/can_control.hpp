@@ -16,6 +16,7 @@ struct MotorTelemetry
 struct DriverVoltageTelemetry
 {
     uint16_t millivolts;
+    uint32_t rx_timestamp_us;
     unsigned long last_update_ms;
     bool valid; // Cleared when PID 143 exceeds its freshness timeout.
 };
@@ -31,9 +32,6 @@ void begin();
 void reset_session(uint32_t now_us);
 // Attempt both drivers immediately, without opening periodic response windows.
 void send_torque_off();
-bool status_pending();
-// Called only after a complete 0x82 write succeeds.
-void status_sent();
 // Read-only scheduling gate; diagnostics cannot modify response windows.
 #if FIRMWARE_TIMING_DIAGNOSTICS
 bool diagnostic_output_ready(uint32_t now_us);

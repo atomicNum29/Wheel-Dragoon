@@ -119,8 +119,7 @@ static void send_can_bridge_response(uint8_t seq, uint8_t status, const CanFrame
         packet[bridge_wire::DATA + i] = data[i];
     packet[bridge_wire::CHECKSUM] = protocol::xor_checksum(packet, CAN_BRIDGE_RESPONSE_SIZE - 1u);
 
-    if (Serial.availableForWrite() >= CAN_BRIDGE_RESPONSE_SIZE)
-        Serial.write(packet, CAN_BRIDGE_RESPONSE_SIZE);
+    if (!protocol::queue_auxiliary(packet, CAN_BRIDGE_RESPONSE_SIZE)) protocol::report_tx_drop();
 }
 
 static void queue_invalid_can_benchmark_result(uint8_t seq)
@@ -165,7 +164,7 @@ static void complete_can_benchmark_attempt(uint8_t status)
 
 void flush_result(void)
 {
-    if (!can_benchmark_result.tx_pending || Serial.availableForWrite() < CAN_BENCHMARK_RESULT_SIZE)
+    if (!can_benchmark_result.tx_pending)
         return;
 
     uint8_t packet[CAN_BENCHMARK_RESULT_SIZE] = {};
@@ -199,12 +198,13 @@ void flush_result(void)
         packet[result_wire::DATA_1 + i] = can_benchmark_result.responses[1].data[i];
     packet[result_wire::CHECKSUM] = protocol::xor_checksum(packet, CAN_BENCHMARK_RESULT_SIZE - 1u);
 
-    Serial.write(packet, CAN_BENCHMARK_RESULT_SIZE);
-    can_benchmark_result.tx_pending = false;
+    if (protocol::queue_auxiliary(packet, CAN_BENCHMARK_RESULT_SIZE))
+        can_benchmark_result.tx_pending = false;
 }
 
 void cancel(void)
 {
+    protocol::discard_debug_tx();
     can_benchmark.active = false;
     can_benchmark.waiting_for_response = false;
     can_benchmark_result.tx_pending = false;

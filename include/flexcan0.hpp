@@ -29,7 +29,7 @@ struct CanRxStats {
 CanRxStats can_rx_stats();
 // True while a FIFO/software queue loss has reports remaining.
 bool can_rx_overrun_detected();
-// Consume one overrun report after transmitting a canonical 0x82 packet.
+// Consume one overrun report after fully writing a still-current 0x87 snapshot.
 void can_rx_overrun_report_sent();
 // Clear historical RX overrun reports when starting a control session.
 void can_clear_rx_overrun_reports();

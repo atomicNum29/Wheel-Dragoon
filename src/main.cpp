@@ -50,7 +50,7 @@ void loop()
     });
     timing::measure(timing::ERRORS, [&]() { control::refresh_errors(now); });
     timing::measure(timing::CAN_SCHEDULE, [&]() { can_control::transmit_if_due(micros()); });
-    timing::measure(timing::SYSTEM_TX, [&]() { protocol::send_status_if_ready(); });
+    timing::measure(timing::SYSTEM_TX, [&]() { protocol::service_tx(); });
     rc_io::write_steering(control::motion_output());
 #if FIRMWARE_TIMING_DIAGNOSTICS
     timing::measure(timing::DIAGNOSTIC_TX, [&]() { timing::publish_if_due(); });

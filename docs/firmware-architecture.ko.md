@@ -7,7 +7,7 @@
 
 ## 네 프로필
 
-| 환경 | RC 제어 / `0x82` | 브릿지·벤치마크 | 타이밍 `0x84` |
+| 환경 | RC 제어 / `0x85`·`0x86`·`0x87` | 브릿지·벤치마크 | 타이밍 `0x84` |
 | --- | --- | --- | --- |
 | `teensy32_control` (기본) | 포함 | 제외 | 제외 |
 | `teensy32_debug` | 포함 | 포함 | 제외 |
@@ -38,8 +38,8 @@ pio run -e teensy32_debug_timing
 | [main.cpp](../src/main.cpp) | 초기화 순서, 한 루프의 처리 순서, 선택 기능 연결 |
 | [control.cpp](../src/control.cpp) | 전원·운용 모드, 명령·운동 상태, 오류 반복 보고, 세션 전환과 리셋 |
 | [rc_io.cpp](../src/rc_io.cpp) | RC 인터럽트·PWM 필터, 입력 읽기와 서보 PWM 출력 |
-| [can_control.cpp](../src/can_control.cpp) | 주기 송신·응답 창, 텔레메트리·유효성, 시스템 상태 송신 요청 |
-| [serial_protocol.cpp](../src/serial_protocol.cpp) | 프레임 파서, 제어·리셋 명령 분배, `0x82` 인코딩·송신 sequence |
+| [can_control.cpp](../src/can_control.cpp) | 주기 송신·응답 창, 텔레메트리·유효성, 휠·전압 피드백 큐 등록 |
+| [serial_protocol.cpp](../src/serial_protocol.cpp) | 프레임 파서, 제어·리셋 명령 분배, 휠·전압·상태 인코딩, 공통 USB TX 큐 |
 | [can_debug.cpp](../src/can_debug.cpp) | 디버그 전용 브릿지·벤치마크 상태와 `0xA0`/`0xA1` 인코딩 |
 | [timing_diagnostics.cpp](../src/timing_diagnostics.cpp) | 계측 통계·동결 스냅샷·전송 진행 상태와 `0x84` 인코딩 |
 | [md200t_can.cpp](../src/md200t_can.cpp) | MD200T 명령 인코딩과 응답 CAN ID 해석 |
@@ -85,10 +85,10 @@ RC 인터럽트 연결 → LED·100 ms 대기 → 세션 초기화 → CAN 초�
 1. 계측 시작, 현재 시각과 RC 모드 읽기.
 2. 전원 상태 처리 후 RC 속도·조향 입력 읽기.
 3. USB 명령 처리.
-4. 디버그 결과 송신 시도 → CAN 수신 처리 → 디버그 진행·결과 송신 시도.
+4. 디버그 결과 큐 등록 시도 → CAN 수신 처리 → 디버그 진행·결과 큐 등록 시도.
 5. 텔레메트리 freshness → 구동 명령 → 오류 보고 갱신.
-6. CAN 주기 송신 → 시스템 상태 송신 → 서보 출력.
-7. 계측 출력과 loop 시간 집계.
+6. CAN 주기 송신 → 상태 생성·공통 USB TX 큐 처리 → 서보 출력.
+7. 계측 패킷 큐 등록과 loop 시간 집계 (해당 패킷의 실제 write는 다음 TX 서비스에서 수행).
 
 디버그가 없는 프로필은 4번의 CAN 수신 처리만 수행한다. RC 입력은
 모드를 먼저 읽고 전원 처리 후 두 PWM 값을 읽는다. 채널들이 하나의 원자적 스냅샷으로
@@ -104,7 +104,7 @@ CAN 큐의 일반 소비·분배는 `can_control::process_queued_rx()`가 맡는
 | 패킷 | control | debug | timing | debug_timing |
 | --- | --- | --- | --- | --- |
 | 제어 `0x01`, 보호 리셋 `0x02` 수신 | 지원 | 지원 | 지원 | 지원 |
-| 시스템 상태 `0x82` | CONTROL에서 송신 | CONTROL에서 송신 | CONTROL에서 송신 | CONTROL에서 송신 |
+| 휠·전압·상태 `0x85/86/87` | CONTROL에서 송신 | CONTROL에서 송신 | CONTROL에서 송신 | CONTROL에서 송신 |
 | 브릿지 `0x20` / `0xA0` | 미지원 | 지원 | 미지원 | 지원 |
 | 벤치마크 `0x21` / `0xA1` | 미지원 | 지원 | 미지원 | 지원 |
 | 타이밍 `0x84` | 미지원 | 미지원 | CONTROL에서 송신 | CONTROL에서 송신 |
@@ -121,9 +121,10 @@ CLI의 브릿지 명령도 해당 프로필에서 응답하지 않는다. CLI는
 
 `0x84`는 스냅샷당 22개 레코드를 출력한다. `teensy32_timing`의 benchmark
 stage 2/4/5 및 예약된 steering stage 11은 0이다. 디버그 계측은 BRIDGE 중에도 누적하되
-CONTROL에서만 출력한다. 계측 출력은 CAN 응답 창 이후 +7..10 ms와 USB 여유 조건을
+CONTROL에서만 생성한다. 계측 패킷의 큐 등록은 CAN 응답 창 이후 +7..10 ms와 진단 슬롯 여유 조건을
 따른다. POWERDOWN·드라이버 시작 대기에는 응답 창 위상 조건을 생략한다.
-패킷 최소 간격은 20 ms, 스냅샷 최소 간격은 1초이며 통계는 누적된다. 세부 의미와
+실제 USB write는 다음 루프부터 공통 송신부가 처리하므로 해당 위상 밖일 수 있다.
+패킷 등록 최소 간격은 20 ms, 스냅샷 최소 간격은 1초이며 통계는 누적된다. 세부 의미와
 출력 지연은 [타이밍 진단](timing-diagnostics.md)에 정리했다.
 
 ## 설정과 상수의 위치
