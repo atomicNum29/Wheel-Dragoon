@@ -1,0 +1,686 @@
+{
+  "run_date_kst": "2026-11-16",
+  "config": {
+    "wheelbase": 0.42,
+    "front_track": 0.439,
+    "rear_track": 0.439,
+    "radius": 0.065,
+    "rpm_limit": 200.0,
+    "acceleration_rpm_s": 300.0,
+    "deceleration_rpm_s": 300.0,
+    "steering_rate": 180.0
+  },
+  "dt_s": 0.01,
+  "warmup_s": 10,
+  "observation_s": 5,
+  "compiler_flags": [
+    "-std=c++11",
+    "-O2",
+    "-msse2",
+    "-mfpmath=sse",
+    "-ffp-contract=off",
+    "-Wall",
+    "-Wextra"
+  ],
+  "compiler": "g++ (MinGW.org GCC-6.3.0-1) 6.3.0",
+  "source_sha256": {
+    "include\\vehicle_motion.hpp": "2d10a5da6c95ba5651fc44ae0f0bcfb7aa7805da8d6559d7588218f702ce0de8",
+    "include\\vehicle_kinematics.hpp": "930a366c97ac6bb20f9128619d1244960015cb78c8ba3236e91ed4e9214cb786",
+    "include\\steering_config.hpp": "ba56657c1a5fe034fd1b4d9bf54843881d949470d04ea0673e433ef0e7ce8e5f",
+    "analysis\\linear_motion_schedule\\compare_theta.py": "c9f0d4e5cfe7b1762a7119aca0e60af301ba416bcc2b6b569eedd24572a6350b",
+    "analysis\\linear_motion_schedule\\replay_theta.cpp": "ead8793e3405933f33edacfc653aaf1d2dd20cbae9ef583ee5753498e2f24917",
+    "analysis\\linear_motion_schedule\\simulate.py": "4e00c68cccbb07a1f5a35d406b63589a85a8bdbbf1354524a16c75bb37595184"
+  },
+  "cases": [
+    {
+      "key": "01_straight_acceleration",
+      "title": "직진 가속",
+      "v0": 0.2,
+      "v1": 1.2,
+      "k0": 0,
+      "k1": 0,
+      "duration": 1.0
+    },
+    {
+      "key": "02_constant_speed_turn",
+      "title": "일정 선속도에서 선회",
+      "v0": 0.8,
+      "v1": 0.8,
+      "k0": 0,
+      "k1": 2,
+      "duration": 1.0
+    },
+    {
+      "key": "03_speed_and_curvature",
+      "title": "선속도·곡률 동시 증가",
+      "v0": 0.3,
+      "v1": 1.0,
+      "k0": 0,
+      "k1": 2,
+      "duration": 1.0
+    },
+    {
+      "key": "04_slowdown_into_turn",
+      "title": "감속하며 선회",
+      "v0": 1.0,
+      "v1": 0.3,
+      "k0": 0,
+      "k1": 2,
+      "duration": 1.0
+    },
+    {
+      "key": "05_left_to_right",
+      "title": "좌회전에서 우회전으로",
+      "v0": 0.6,
+      "v1": 0.6,
+      "k0": 2,
+      "k1": -2,
+      "duration": 1.0
+    },
+    {
+      "key": "06_stationary_steering",
+      "title": "정지 상태 조향",
+      "v0": 0,
+      "v1": 0,
+      "k0": -2,
+      "k1": 2,
+      "duration": 1.0
+    },
+    {
+      "key": "07_reverse_acceleration",
+      "title": "후진 속도·곡률 증가",
+      "v0": -0.3,
+      "v1": -1.0,
+      "k0": 0,
+      "k1": 2,
+      "duration": 1.0
+    },
+    {
+      "key": "08_direction_reversal",
+      "title": "일정 곡률에서 전후진 전환",
+      "v0": 0.6,
+      "v1": -0.6,
+      "k0": 1,
+      "k1": 1,
+      "duration": 1.0
+    },
+    {
+      "key": "09_fast_steering",
+      "title": "빠른 조향 요청",
+      "v0": 0.8,
+      "v1": 0.8,
+      "k0": 0,
+      "k1": 2,
+      "duration": 0.25
+    }
+  ],
+  "angle_endpoint_conversion": "theta=atan(wheelbase*kappa)",
+  "results": [
+    {
+      "case": "01_straight_acceleration",
+      "title": "직진 가속",
+      "mode": "step",
+      "theta0_deg": 0.0,
+      "theta1_deg": 0.0,
+      "v0": 0.2,
+      "v1": 1.2,
+      "ramp_duration_s": 1.0,
+      "reached_s": 0.62,
+      "final_v": 1.19999993,
+      "final_theta_deg": 0.0,
+      "max_abs_rpm": 176.294708,
+      "max_steering_rate_deg_s": 0.0,
+      "max_rpm_increase_rpm_s": 300.0,
+      "max_rpm_decrease_rpm_s": 0.0,
+      "max_attempts": 2,
+      "max_retries": 1,
+      "max_evaluations": 3,
+      "failed_search_updates": 0,
+      "active_search_updates": 62,
+      "retried_updates": 26,
+      "retry_histogram": {
+        "0": 36,
+        "1": 26
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "01_straight_acceleration",
+      "title": "직진 가속",
+      "mode": "ramp",
+      "theta0_deg": 0.0,
+      "theta1_deg": 0.0,
+      "v0": 0.2,
+      "v1": 1.2,
+      "ramp_duration_s": 1.0,
+      "reached_s": 1.0,
+      "final_v": 1.19999993,
+      "final_theta_deg": 0.0,
+      "max_abs_rpm": 176.294708,
+      "max_steering_rate_deg_s": 0.0,
+      "max_rpm_increase_rpm_s": 146.91469999999924,
+      "max_rpm_decrease_rpm_s": 0.0,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_search_updates": 100,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 100
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "02_constant_speed_turn",
+      "title": "일정 선속도에서 선회",
+      "mode": "step",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": 0.8,
+      "v1": 0.8,
+      "ramp_duration_s": 1.0,
+      "reached_s": 0.36,
+      "final_v": 0.800000012,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 195.83168,
+      "max_steering_rate_deg_s": 174.41749000000044,
+      "max_rpm_increase_rpm_s": 295.4284999999999,
+      "max_rpm_decrease_rpm_s": 163.06610000000035,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 2,
+      "failed_search_updates": 0,
+      "active_search_updates": 36,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 36
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "02_constant_speed_turn",
+      "title": "일정 선속도에서 선회",
+      "mode": "ramp",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": 0.8,
+      "v1": 0.8,
+      "ramp_duration_s": 1.0,
+      "reached_s": 1.0,
+      "final_v": 0.800000012,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 195.83168,
+      "max_steering_rate_deg_s": 67.11845999999966,
+      "max_rpm_increase_rpm_s": 132.8643999999997,
+      "max_rpm_decrease_rpm_s": 72.76992999999976,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_search_updates": 100,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 100
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "03_speed_and_curvature",
+      "title": "선속도·중앙 조향각 동시 증가",
+      "mode": "step",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": 0.3,
+      "v1": 1.0,
+      "ramp_duration_s": 1.0,
+      "reached_s": 0.67,
+      "final_v": 0.817028284,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 200.0,
+      "max_steering_rate_deg_s": 89.0449499999999,
+      "max_rpm_increase_rpm_s": 298.8891999999993,
+      "max_rpm_decrease_rpm_s": 34.76715000000041,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 2,
+      "failed_search_updates": 0,
+      "active_search_updates": 67,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 67
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "03_speed_and_curvature",
+      "title": "선속도·중앙 조향각 동시 증가",
+      "mode": "ramp",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": 0.3,
+      "v1": 1.0,
+      "ramp_duration_s": 1.0,
+      "reached_s": 1.0,
+      "final_v": 0.817028284,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 200.0,
+      "max_steering_rate_deg_s": 67.11845999999966,
+      "max_rpm_increase_rpm_s": 276.03300000000104,
+      "max_rpm_decrease_rpm_s": 122.69134999999949,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_search_updates": 100,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 100
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "04_slowdown_into_turn",
+      "title": "감속하며 선회",
+      "mode": "step",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": 1.0,
+      "v1": 0.3,
+      "ramp_duration_s": 1.0,
+      "reached_s": 0.64,
+      "final_v": 0.300000012,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 146.912262,
+      "max_steering_rate_deg_s": 177.88809999999984,
+      "max_rpm_increase_rpm_s": 0.0,
+      "max_rpm_decrease_rpm_s": 299.6391299999999,
+      "max_attempts": 2,
+      "max_retries": 1,
+      "max_evaluations": 3,
+      "failed_search_updates": 0,
+      "active_search_updates": 64,
+      "retried_updates": 51,
+      "retry_histogram": {
+        "0": 13,
+        "1": 51
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "04_slowdown_into_turn",
+      "title": "감속하며 선회",
+      "mode": "ramp",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": 1.0,
+      "v1": 0.3,
+      "ramp_duration_s": 1.0,
+      "reached_s": 1.0,
+      "final_v": 0.300000012,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 146.912262,
+      "max_steering_rate_deg_s": 67.11845999999966,
+      "max_rpm_increase_rpm_s": 0.0,
+      "max_rpm_decrease_rpm_s": 156.1066000000011,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_search_updates": 100,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 100
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "05_left_to_right",
+      "title": "좌회전에서 우회전으로",
+      "mode": "step",
+      "theta0_deg": 40.0302592718897,
+      "theta1_deg": -40.0302592718897,
+      "v0": 0.6,
+      "v1": 0.6,
+      "ramp_duration_s": 1.0,
+      "reached_s": 0.83,
+      "final_v": 0.600000024,
+      "final_theta_deg": -40.030262,
+      "max_abs_rpm": 146.873749,
+      "max_steering_rate_deg_s": 179.71457999999956,
+      "max_rpm_increase_rpm_s": 230.28720000000078,
+      "max_rpm_decrease_rpm_s": 205.67780000000084,
+      "max_attempts": 2,
+      "max_retries": 1,
+      "max_evaluations": 3,
+      "failed_search_updates": 0,
+      "active_search_updates": 83,
+      "retried_updates": 41,
+      "retry_histogram": {
+        "0": 42,
+        "1": 41
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "05_left_to_right",
+      "title": "좌회전에서 우회전으로",
+      "mode": "ramp",
+      "theta0_deg": 40.0302592718897,
+      "theta1_deg": -40.0302592718897,
+      "v0": 0.6,
+      "v1": 0.6,
+      "ramp_duration_s": 1.0,
+      "reached_s": 1.0,
+      "final_v": 0.600000024,
+      "final_theta_deg": -40.030262,
+      "max_abs_rpm": 146.873749,
+      "max_steering_rate_deg_s": 134.22660999999962,
+      "max_rpm_increase_rpm_s": 197.8759999999994,
+      "max_rpm_decrease_rpm_s": 197.87290000000155,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_search_updates": 100,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 100
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "06_stationary_steering",
+      "title": "정지 상태 조향",
+      "mode": "step",
+      "theta0_deg": -40.0302592718897,
+      "theta1_deg": 40.0302592718897,
+      "v0": 0,
+      "v1": 0,
+      "ramp_duration_s": 1.0,
+      "reached_s": 0.83,
+      "final_v": 0.0,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 0.0,
+      "max_steering_rate_deg_s": 179.71457999999956,
+      "max_rpm_increase_rpm_s": 0.0,
+      "max_rpm_decrease_rpm_s": 0.0,
+      "max_attempts": 2,
+      "max_retries": 1,
+      "max_evaluations": 3,
+      "failed_search_updates": 0,
+      "active_search_updates": 83,
+      "retried_updates": 41,
+      "retry_histogram": {
+        "0": 42,
+        "1": 41
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "06_stationary_steering",
+      "title": "정지 상태 조향",
+      "mode": "ramp",
+      "theta0_deg": -40.0302592718897,
+      "theta1_deg": 40.0302592718897,
+      "v0": 0,
+      "v1": 0,
+      "ramp_duration_s": 1.0,
+      "reached_s": 1.0,
+      "final_v": 0.0,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 0.0,
+      "max_steering_rate_deg_s": 134.22660999999962,
+      "max_rpm_increase_rpm_s": 0.0,
+      "max_rpm_decrease_rpm_s": 0.0,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_search_updates": 100,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 100
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "07_reverse_acceleration",
+      "title": "후진 속도·중앙 조향각 증가",
+      "mode": "step",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": -0.3,
+      "v1": -1.0,
+      "ramp_duration_s": 1.0,
+      "reached_s": 0.67,
+      "final_v": -0.817028284,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 200.0,
+      "max_steering_rate_deg_s": 89.0449499999999,
+      "max_rpm_increase_rpm_s": 298.8891999999993,
+      "max_rpm_decrease_rpm_s": 34.76715000000041,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 2,
+      "failed_search_updates": 0,
+      "active_search_updates": 67,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 67
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "07_reverse_acceleration",
+      "title": "후진 속도·중앙 조향각 증가",
+      "mode": "ramp",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": -0.3,
+      "v1": -1.0,
+      "ramp_duration_s": 1.0,
+      "reached_s": 1.0,
+      "final_v": -0.817028284,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 200.0,
+      "max_steering_rate_deg_s": 67.11845999999966,
+      "max_rpm_increase_rpm_s": 276.03300000000104,
+      "max_rpm_decrease_rpm_s": 122.69134999999949,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_search_updates": 100,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 100
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "08_direction_reversal",
+      "title": "일정 중앙 조향각에서 전후진 전환",
+      "mode": "step",
+      "theta0_deg": 22.78240573048169,
+      "theta1_deg": 22.78240573048169,
+      "v0": 0.6,
+      "v1": -0.6,
+      "ramp_duration_s": 1.0,
+      "reached_s": 1.5,
+      "final_v": -0.600000024,
+      "final_theta_deg": 22.7824059,
+      "max_abs_rpm": 113.692345,
+      "max_steering_rate_deg_s": 0.0,
+      "max_rpm_increase_rpm_s": 300.000024,
+      "max_rpm_decrease_rpm_s": 300.000048,
+      "max_attempts": 2,
+      "max_retries": 1,
+      "max_evaluations": 3,
+      "failed_search_updates": 0,
+      "active_search_updates": 43,
+      "retried_updates": 10,
+      "retry_histogram": {
+        "0": 33,
+        "1": 10
+      },
+      "transitions": [
+        "DRIVING",
+        "BRAKING",
+        "SETTLING",
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "08_direction_reversal",
+      "title": "일정 중앙 조향각에서 전후진 전환",
+      "mode": "ramp",
+      "theta0_deg": 22.78240573048169,
+      "theta1_deg": 22.78240573048169,
+      "v0": 0.6,
+      "v1": -0.6,
+      "ramp_duration_s": 1.0,
+      "reached_s": 1.0,
+      "final_v": -0.600000024,
+      "final_theta_deg": 22.7824059,
+      "max_abs_rpm": 113.692345,
+      "max_steering_rate_deg_s": 0.0,
+      "max_rpm_increase_rpm_s": 227.38650000000007,
+      "max_rpm_decrease_rpm_s": 227.38647999999984,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_search_updates": 100,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 100
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "09_fast_steering",
+      "title": "빠른 조향 요청",
+      "mode": "step",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": 0.8,
+      "v1": 0.8,
+      "ramp_duration_s": 0.25,
+      "reached_s": 0.36,
+      "final_v": 0.800000012,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 195.83168,
+      "max_steering_rate_deg_s": 174.41749000000044,
+      "max_rpm_increase_rpm_s": 295.4284999999999,
+      "max_rpm_decrease_rpm_s": 163.06610000000035,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 2,
+      "failed_search_updates": 0,
+      "active_search_updates": 36,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 36
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "case": "09_fast_steering",
+      "title": "빠른 조향 요청",
+      "mode": "ramp",
+      "theta0_deg": 0.0,
+      "theta1_deg": 40.0302592718897,
+      "v0": 0.8,
+      "v1": 0.8,
+      "ramp_duration_s": 0.25,
+      "reached_s": 0.33,
+      "final_v": 0.800000012,
+      "final_theta_deg": 40.030262,
+      "max_abs_rpm": 195.83168,
+      "max_steering_rate_deg_s": 179.952765,
+      "max_rpm_increase_rpm_s": 297.0015999999987,
+      "max_rpm_decrease_rpm_s": 173.3193,
+      "max_attempts": 1,
+      "max_retries": 0,
+      "max_evaluations": 2,
+      "failed_search_updates": 0,
+      "active_search_updates": 33,
+      "retried_updates": 0,
+      "retry_histogram": {
+        "0": 33
+      },
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    }
+  ]
+}

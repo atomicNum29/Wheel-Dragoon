@@ -12,7 +12,7 @@ import json
 import subprocess
 
 import numpy as np
-from simulate import CASES, COLORS, ROOT, WHEELS, load_config, simulate, plt, font_manager
+from simulate import CASES, COLORS, ROOT, WHEELS, load_config, simulate, plt, font_manager, require_curvature_scheduler
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "controller_output"
@@ -22,6 +22,7 @@ STATES = {0: "STARTUP", 1: "DRIVING", 2: "BRAKING", 3: "STEERING", 4: "SETTLING"
 
 
 def prepare():
+    require_curvature_scheduler()
     BUILD.mkdir(parents=True, exist_ok=True)
     source = (ROOT / "include/vehicle_motion.hpp").read_text(encoding="utf-8")
     # Count existing branches; do not change the scheduling arithmetic.

@@ -11,7 +11,7 @@ import json
 import subprocess
 
 import numpy as np
-from simulate import ROOT, COLORS, WHEELS, load_config, plt, font_manager
+from simulate import ROOT, COLORS, WHEELS, load_config, plt, font_manager, require_curvature_scheduler
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "sequence_output"
@@ -28,6 +28,7 @@ def replace_once(source, old, new):
 
 
 def prepare(build=BUILD, harness=HERE / "replay_sequence.cpp"):
+    require_curvature_scheduler()
     build.mkdir(parents=True, exist_ok=True)
     source = (ROOT / "include/vehicle_motion.hpp").read_text(encoding="utf-8")
     fields = """        mutable unsigned replay_evaluations = 0;

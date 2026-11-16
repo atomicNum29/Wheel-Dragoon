@@ -5,15 +5,28 @@
 
 문서 기준일: 2026-11-16.
 
+## 현재 펌웨어와의 관계
+
+이 디렉터리에 저장된 실험 1~5는 **선속도·곡률(`v, κ`) 기반** 계산과 구현의 기록이다.
+현재 펌웨어의 MANUAL 입력·보간 변수는 선속도·가상 중앙 휠 조향각(`v, θ`)으로 변경되었다.
+실험 1~5의 그림·CSV·JSON은 다시 계산하지 않았으며, 새 `v, θ` 구현의 검증 결과가 아니다.
+새 구현의 step·ramp 재생은 [실험 6](linear_motion_schedule/theta_output/README.ko.md)에 별도로 저장했다.
+
+기존 실험 코드와 곡률 기반 펌웨어는 커밋 `7f61e4f`에 함께 보존되어 있다.
+실험 1~5의 재실행 명령은 해당 커밋의 별도 체크아웃을 대상으로 한다. 해당 Python 진입점은
+곡률 명령 API가 없으면 중단한다. 곡률 값을 중앙 조향각으로 잘못 전달하지 않도록 하는 확인이다.
+실험 6은 중앙 조향각을 직접 입력한다. RC 필터·PWM 역변환·노이즈를 포함한 실험은 새 구현으로 재실행하지 않았다.
+
 ## 실험 목록과 저장된 결과의 설정
 
 | 실험 | 실행 코드 | 결과 디렉토리 | 실행 조합 | RPM 크기 증가 / 감소 한계 |
 |---|---|---|---|---|
 | 1. 단순 선형 보간 | [simulate.py](linear_motion_schedule/simulate.py) | [output](linear_motion_schedule/output/) | 9개 시나리오 | 300 / 300 RPM/s. 계산에는 적용하지 않고 비교 기준으로 사용 |
-| 2. 현재 구현 알고리즘 재생 | [compare_controller.py](linear_motion_schedule/compare_controller.py) | [controller_output](linear_motion_schedule/controller_output/) | 9개 시나리오 × step·ramp = 18개 | 300 / 300 RPM/s. C++ 스케줄러에 적용 |
+| 2. 당시 곡률 기반 알고리즘 재생 | [compare_controller.py](linear_motion_schedule/compare_controller.py) | [controller_output](linear_motion_schedule/controller_output/) | 9개 시나리오 × step·ramp = 18개 | 300 / 300 RPM/s. C++ 스케줄러에 적용 |
 | 3. 진행률 이력 재사용 검사 | [check_fraction_history.py](linear_motion_schedule/check_fraction_history.py) | [fraction_output](linear_motion_schedule/fraction_output/) | 9개 시나리오 × step·ramp = 18개 | 200 / 400 RPM/s. 해당 결과 생성 당시의 설정 |
 | 4. 정지 후 입력 순서 비교 | [compare_sequence.py](linear_motion_schedule/compare_sequence.py) | [sequence_output](linear_motion_schedule/sequence_output/) | 2개 순서 × step·ramp = 4개 | 300 / 300 RPM/s. C++ 스케줄러에 적용 |
 | 5. RC 노이즈 입력 | [compare_rc_noise.py](linear_motion_schedule/compare_rc_noise.py) | [noise_output](linear_motion_schedule/noise_output/) | 노이즈 3 × 입력 2 × 속도 2 × 곡률 2 × 순서 2 = 48개 | 300 / 300 RPM/s. C++ 스케줄러에 적용 |
+| 6. 중앙 조향각 기반 알고리즘 재생 | [compare_theta.py](linear_motion_schedule/compare_theta.py) | [theta_output](linear_motion_schedule/theta_output/) | 9개 시나리오 × step·ramp = 18개 | 300 / 300 RPM/s. v·θ C++ 스케줄러에 적용 |
 
 실험 1·2는 2026-11-15에 300/300 RPM/s 설정으로 갱신했다.
 실험 3은 이 설정 변경 이후 재실행하지 않은 결과다.
@@ -27,6 +40,7 @@
 
 - `v`: 후륜 축 중앙을 기준으로 한 선속도. 단위는 m/s이며, 전진은 양수, 후진은 음수다.
 - `κ` 또는 `k`: 곡률. 단위는 1/m이다. 일반 주행 운동학에서 차체 각속도는 `ω = vκ`이다.
+- `θ`: 가상 전륜 중앙 휠 조향각. 실험 6의 C++ 입력은 rad, CSV·그래프는 degree이다. `κ = tan(θ)/L`이다.
 - 양의 곡률은 전진 시 좌회전에 해당한다. 같은 곡률에서 후진하면 차체 각속도 부호는 반대가 된다.
 - `LF`, `RF`, `LR`, `RR`: 각각 좌측 전륜, 우측 전륜, 좌측 후륜, 우측 후륜이다.
 - 조향각은 좌우 전륜의 차량 기준 각도 지령이다. 서보축 각도 측정값이나 PWM 펄스폭이 아니다.
@@ -96,7 +110,7 @@ RPM 상한, 가감속 제한, 조향각속도 제한, 상태 전환 절차를 �
 | [summary.csv](linear_motion_schedule/output/summary.csv) | 시나리오별 조건·최대값·초과 항목 |
 | [summary.json](linear_motion_schedule/output/summary.json) | 설정, 소스 해시, 휠별 수치, 초과 판정 |
 
-## 2. 현재 구현 알고리즘 재생
+## 2. 당시 곡률 기반 알고리즘 재생
 
 ### 계산 내용
 
@@ -169,7 +183,7 @@ Python 스크립트는 C++ 실행 파일을 컴파일·실행하고 결과를 �
 
 ## 4. 정지 후 입력 순서 비교
 
-[replay_sequence.cpp](linear_motion_schedule/replay_sequence.cpp)가 현재 C++ 스케줄러에
+[replay_sequence.cpp](linear_motion_schedule/replay_sequence.cpp)가 실행 당시 곡률 기반 C++ 스케줄러에
 다음 두 입력 순서를 적용한다. 시작 명령은 선속도·곡률 모두 0이다.
 
 | 순서 | 0.5초에 시작하는 입력 | 2.0초에 시작하는 입력 |
@@ -208,7 +222,7 @@ Gaussian AR(1)이며, 측정 오차는 프레임별 독립 난수다. 프레임 
 조건당 하나의 난수열이며 여러 seed에 걸친 통계 실험은 아니다.
 
 명목 v·κ를 PWM으로 역변환하여 노이즈를 더한 뒤, 실제 소스에서 추출한
-10샘플 정수 이동평균·±50µs 데드밴드·MANUAL 변환을 거쳐 현재 스케줄러에 넣는다.
+10샘플 정수 이동평균·±50µs 데드밴드·MANUAL 변환을 거쳐 실행 당시 곡률 기반 스케줄러에 넣는다.
 노이즈를 포함한 중립 준비 10초 후 DRIVING에서 5초를 10ms 간격으로 기록한다.
 ISR 에지 동작·채널 위상·장치 응답은 모델에 포함하지 않는다.
 
@@ -220,6 +234,25 @@ ISR 에지 동작·채널 위상·장치 응답은 모델에 포함하지 않는
 실험 4는 v·κ를 직접 입력했고, 실험 5는 RC 필터·정수화·프레임 갱신도 포함한다.
 두 실험의 차이 전체를 노이즈만의 영향으로 간주할 수 없다.
 모든 조건·수치와 그래프 목록은 [실험 5 설명](linear_motion_schedule/noise_output/README.ko.md)에 있다.
+
+## 6. 중앙 조향각 기반 알고리즘 재생
+
+현재 `vehicle_motion.hpp`를 PC에서 컴파일하여 실행한다. 실험 2와 같은 9개 시나리오의
+시작·목표 곡률을 `θ=atan(Lκ)`로 환산하여 같은 시작·종료 자세를 사용한다.
+step은 첫 갱신부터 최종 `v, θ`를 입력한다. ramp는 1초(9번 0.25초) 동안 `v, θ`를 선형 변경한다.
+따라서 이전 곡률 선형 ramp와 중간 요청 경로가 다르다.
+
+- 초기 명령 10초 유지 후 DRIVING에서 시작하고, 10ms 간격으로 5초 기록한다.
+- 중앙 조향각·선속도의 요청과 생성값, 전륜 각도, 네 휠 RPM, 변화율, 재시도, 상태를 기록한다.
+- 원본 헤더 실행과 계측 복사본의 첫 16개 출력 열을 비교한다.
+- 도달 시각은 마지막 샘플 대신 별도로 계산한 최종 목표와 비교한다. 목표에는 공통 200RPM 제한을 적용한다.
+  모든 조향각 오차 1e-4도, RPM 오차 1e-3 이내에 이후 계속 머무는 첫 시각이며 미도달은 null이다.
+- RC 필터·노이즈, 실제 서보·구동기 응답, CAN·PWM 전송은 포함하지 않는다.
+
+[실험 6 보고서](linear_motion_schedule/theta_output/README.ko.md)에 전체 표·그래프·재시도 분포를,
+[summary.csv](linear_motion_schedule/theta_output/summary.csv)에 수치표를 저장한다.
+시나리오별 상세 그림은 왼쪽 step, 오른쪽 ramp이며 마지막 행은 펌웨어 상태 변수다.
+실험 2와 도달 판정 기준이 다르므로 도달 시간을 동일 지표로 직접 비교하지 않는다.
 
 ## 지표를 읽는 방법
 
@@ -281,7 +314,7 @@ Python은 NumPy·Matplotlib을 사용한다. C++ 재생은 PATH의 `g++`를 사�
 # 1. 단순 선형 보간
 uv run --no-project --with numpy --with matplotlib python analysis/linear_motion_schedule/simulate.py
 
-# 2. 현재 구현 알고리즘 재생
+# 2. 당시 곡률 기반 알고리즘 재생
 uv run --no-project --with numpy --with matplotlib python analysis/linear_motion_schedule/compare_controller.py
 
 # 3. 진행률 이력 재사용 검사
@@ -292,16 +325,19 @@ uv run --no-project --with numpy --with matplotlib python analysis/linear_motion
 
 # 5. RC 노이즈 입력
 uv run --no-project --with numpy --with matplotlib python analysis/linear_motion_schedule/compare_rc_noise.py
+
+# 6. 중앙 조향각 기반 재생 (현재 체크아웃)
+uv run --no-project --with numpy --with matplotlib python analysis/linear_motion_schedule/compare_theta.py
 ```
 
 각 실행은 실행 시점의 저장소 설정을 사용하고 해당 결과 디렉토리에 같은 이름의 파일을 쓴다.
-따라서 현재 설정으로 실험 3을 다시 실행하면 저장된 200/400RPM/s 결과도 새 설정의 결과로 덮어쓴다.
+따라서 `7f61e4f`의 300/300RPM/s 설정으로 실험 3을 다시 실행하면 저장된 200/400RPM/s 결과도 새 설정의 결과로 덮어쓴다.
 단순 선형 보간은 `--case`, `--custom`, `--dt`, `--output` 인자를 지원한다.
 
-`controller_output/build/`, `fraction_output/build/`, `sequence_output/build/`, `noise_output/build/`에는 생성된 계측 헤더, 실행 파일 및 원본 비교 CSV가 위치한다.
+`controller_output/build/`, `fraction_output/build/`, `sequence_output/build/`, `noise_output/build/`, `theta_output/build/`에는 생성된 계측 헤더, 실행 파일 및 원본 비교 CSV가 위치한다.
 이 경로와 실행 파일·Python 캐시는 하위 `.gitignore`의 제외 대상이다.
 
-다섯 실험 모두 실제 장치와 통신하지 않는다. 결과에는 실제 서보·모터 응답,
+여섯 실험 모두 실제 장치와 통신하지 않는다. 결과에는 실제 서보·모터 응답,
 CAN 전송 및 정수화, 서보 PWM 출력 프레임, 부하·미끄러짐, 센서 측정값이 포함되지 않는다.
 실험 5에만 가정한 RC 수신 프레임 간격과 정수 PWM 입력 처리가 포함된다.
 PC에서 계산한 지령과 호출 횟수이며, MCU 실행시간이나 최악 실행시간을 측정한 데이터는 아니다.

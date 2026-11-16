@@ -51,7 +51,20 @@ CASES = [
 ]
 
 
+def require_curvature_scheduler():
+    """Do not feed historical curvature commands to the center-angle API."""
+    source = (ROOT / "include/vehicle_kinematics.hpp").read_text(encoding="utf-8")
+    command = re.search(r"struct RcCommand\s*\{(.*?)\n\};", source, re.S)
+    if command is None or not re.search(r"\bfloat\s+curvature\s*;", command.group(1)):
+        raise RuntimeError(
+            "These archived experiments require the v/curvature firmware API. "
+            "Use a separate checkout of 7f61e4f; see analysis/README.md. "
+            "The current v/center-angle API requires adapted experiments."
+        )
+
+
 def load_config():
+    require_curvature_scheduler()
     sources = {name: (ROOT / "include" / name).read_text(encoding="utf-8")
                for name in ("vehicle_kinematics.hpp", "steering_config.hpp")}
 

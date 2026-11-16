@@ -11,7 +11,7 @@ import json
 import subprocess
 
 import numpy as np
-from simulate import CASES, ROOT, plt, font_manager, load_config
+from simulate import CASES, ROOT, plt, font_manager, load_config, require_curvature_scheduler
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "fraction_output"
@@ -57,6 +57,7 @@ def replace_once(text, old, new):
 
 
 def prepare():
+    require_curvature_scheduler()
     BUILD.mkdir(parents=True, exist_ok=True)
     source = (ROOT / "include/vehicle_motion.hpp").read_text(encoding="utf-8")
     edits = [
