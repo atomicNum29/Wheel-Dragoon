@@ -3,7 +3,7 @@
 이 디렉토리는 조향각·휠 RPM 지령을 계산하는 오프라인 시뮬레이션의 코드와 결과를 담는다.
 이 문서는 실험 조건, 계산 대상, 기록 항목과 파일 구성을 설명한다.
 
-문서 기준일: 2026-11-15.
+문서 기준일: 2026-11-16.
 
 ## 실험 목록과 저장된 결과의 설정
 
@@ -12,10 +12,12 @@
 | 1. 단순 선형 보간 | [simulate.py](linear_motion_schedule/simulate.py) | [output](linear_motion_schedule/output/) | 9개 시나리오 | 300 / 300 RPM/s. 계산에는 적용하지 않고 비교 기준으로 사용 |
 | 2. 현재 구현 알고리즘 재생 | [compare_controller.py](linear_motion_schedule/compare_controller.py) | [controller_output](linear_motion_schedule/controller_output/) | 9개 시나리오 × step·ramp = 18개 | 300 / 300 RPM/s. C++ 스케줄러에 적용 |
 | 3. 진행률 이력 재사용 검사 | [check_fraction_history.py](linear_motion_schedule/check_fraction_history.py) | [fraction_output](linear_motion_schedule/fraction_output/) | 9개 시나리오 × step·ramp = 18개 | 200 / 400 RPM/s. 해당 결과 생성 당시의 설정 |
+| 4. 정지 후 입력 순서 비교 | [compare_sequence.py](linear_motion_schedule/compare_sequence.py) | [sequence_output](linear_motion_schedule/sequence_output/) | 2개 순서 × step·ramp = 4개 | 300 / 300 RPM/s. C++ 스케줄러에 적용 |
+| 5. RC 노이즈 입력 | [compare_rc_noise.py](linear_motion_schedule/compare_rc_noise.py) | [noise_output](linear_motion_schedule/noise_output/) | 노이즈 3 × 입력 2 × 속도 2 × 곡률 2 × 순서 2 = 48개 | 300 / 300 RPM/s. C++ 스케줄러에 적용 |
 
 실험 1·2는 2026-11-15에 300/300 RPM/s 설정으로 갱신했다.
 실험 3은 이 설정 변경 이후 재실행하지 않은 결과다.
-세 결과 디렉토리는 동일한 설정으로 실행된 데이터 묶음이 아니다.
+실험 4·5는 2026-11-16에 실행했다. 결과 디렉토리 전체가 동일한 설정으로 실행된 데이터 묶음은 아니다.
 
 각 `summary.json`의 `source_sha256`에는 결과 생성에 사용한 헤더의 SHA-256이 기록되어 있다.
 저장된 `steering_config.hpp` 해시는 실험 1·2에서 `d3fb3315…`, 실험 3에서 `a92832de…`이다.
@@ -165,6 +167,60 @@ Python 스크립트는 C++ 실행 파일을 컴파일·실행하고 결과를 �
 `reuse_angle_ratio`, `reuse_rpm_ratio`는 재사용 후보의 변화량을 해당 허용 변화량으로 나눈 최대 비율이다.
 `first_angle_ratio`, `first_rpm_ratio`는 첫 후보에 대해 계산한 같은 값이다.
 
+## 4. 정지 후 입력 순서 비교
+
+[replay_sequence.cpp](linear_motion_schedule/replay_sequence.cpp)가 현재 C++ 스케줄러에
+다음 두 입력 순서를 적용한다. 시작 명령은 선속도·곡률 모두 0이다.
+
+| 순서 | 0.5초에 시작하는 입력 | 2.0초에 시작하는 입력 |
+|---|---|---|
+| 곡률 우선 | 곡률 0 → 2/m | 선속도 0 → 0.8m/s |
+| 선속도 우선 | 선속도 0 → 0.8m/s | 곡률 0 → 2/m |
+
+Step은 각 시작 시각에 즉시 변경하고, ramp는 각 시작 시각부터 1초 동안 변경한다.
+10초 초기 준비 후 DRIVING에서 시작하여 10ms 간격으로 5초를 기록한다.
+시동·STOP 모드 해제·PIVOT 전환이나 RC 잡음 입력은 포함하지 않는다.
+
+- 원본과 계측 복사본의 기본 출력·상태 14개 열을 비교한다.
+- 전륜 조향각, 네 휠 RPM, 생성 선속도·곡률, 차분 변화율, 상태와 후보 시도 횟수를 기록한다.
+- 첫 후보의 제한 초과량과 거부 조건, 첫 진행률·채택 진행률을 함께 기록한다.
+- 시간순 그림과 스로틀 입력 시작 시점을 맞춘 속도 비교 그림을 제공한다.
+- 속도 지표는 스로틀 입력 후 최초 비영 지령, 90% 도달, 목표 속도 유지 도달로 나눈다.
+- 최종 전체 출력 도달 기준은 해석적 최종 목표 대비 RPM 1e-3RPM, 조향각 1e-4° 이내다.
+  실험 2의 마지막 샘플 기준 도달 판정과 정의·허용오차가 다르다.
+
+조건, 집계 구간, CSV 열과 결과 표는 [실험 4 설명](linear_motion_schedule/sequence_output/README.ko.md)에 있다.
+
+## 5. RC 노이즈 입력
+
+실험 4의 두 순서에 대해 명목 목표 선속도 0.3/0.8m/s, 곡률 1/2m⁻¹,
+step/각 1초 ramp와 세 노이즈 수준을 조합한다. 첫 입력은 0.5초, 두 번째는 2초다.
+
+| 노이즈 | 손 떨림의 정상상태 표준편차 | 측정 오차의 균등분포 범위 |
+|---|---:|---:|
+| 약 | 2µs | ±1µs |
+| 중 | 5µs | ±3µs |
+| 강 | 10µs | ±5µs |
+
+수치는 실측 RC 규격이 아닌 합성 입력의 가정이다. 손 떨림은 상관시간 0.15초인
+Gaussian AR(1)이며, 측정 오차는 프레임별 독립 난수다. 프레임 간격은 20ms로 가정한다.
+동일 목표·입력 방식의 두 순서와 세 노이즈 수준에 같은 표준 난수열을 사용한다.
+조건당 하나의 난수열이며 여러 seed에 걸친 통계 실험은 아니다.
+
+명목 v·κ를 PWM으로 역변환하여 노이즈를 더한 뒤, 실제 소스에서 추출한
+10샘플 정수 이동평균·±50µs 데드밴드·MANUAL 변환을 거쳐 현재 스케줄러에 넣는다.
+노이즈를 포함한 중립 준비 10초 후 DRIVING에서 5초를 10ms 간격으로 기록한다.
+ISR 에지 동작·채널 위상·장치 응답은 모델에 포함하지 않는다.
+
+원본 실행과 계측본의 첫 28개 CSV 열을 비교한다. 명목 PWM, 잡음 성분, 측정·필터 PWM,
+변환된 요청, 생성 조향·RPM, 상태·재시도 및 첫 후보 초과량을 기록한다.
+노이즈로 목표가 계속 변하므로 최종 정착 시간 대신 90% 최초 도달,
+목표 ±5% 안에서 200ms를 유지하는 첫 구간, 마지막 1초의 평균·표준편차 등을 기록한다.
+
+실험 4는 v·κ를 직접 입력했고, 실험 5는 RC 필터·정수화·프레임 갱신도 포함한다.
+두 실험의 차이 전체를 노이즈만의 영향으로 간주할 수 없다.
+모든 조건·수치와 그래프 목록은 [실험 5 설명](linear_motion_schedule/noise_output/README.ko.md)에 있다.
+
 ## 지표를 읽는 방법
 
 ### 변화율
@@ -230,15 +286,22 @@ uv run --no-project --with numpy --with matplotlib python analysis/linear_motion
 
 # 3. 진행률 이력 재사용 검사
 uv run --no-project --with numpy --with matplotlib python analysis/linear_motion_schedule/check_fraction_history.py
+
+# 4. 정지 후 입력 순서 비교
+uv run --no-project --with numpy --with matplotlib python analysis/linear_motion_schedule/compare_sequence.py
+
+# 5. RC 노이즈 입력
+uv run --no-project --with numpy --with matplotlib python analysis/linear_motion_schedule/compare_rc_noise.py
 ```
 
 각 실행은 실행 시점의 저장소 설정을 사용하고 해당 결과 디렉토리에 같은 이름의 파일을 쓴다.
 따라서 현재 설정으로 실험 3을 다시 실행하면 저장된 200/400RPM/s 결과도 새 설정의 결과로 덮어쓴다.
 단순 선형 보간은 `--case`, `--custom`, `--dt`, `--output` 인자를 지원한다.
 
-`controller_output/build/`, `fraction_output/build/`에는 생성된 계측 헤더, 실행 파일 및 원본 비교 CSV가 위치한다.
+`controller_output/build/`, `fraction_output/build/`, `sequence_output/build/`, `noise_output/build/`에는 생성된 계측 헤더, 실행 파일 및 원본 비교 CSV가 위치한다.
 이 경로와 실행 파일·Python 캐시는 하위 `.gitignore`의 제외 대상이다.
 
-세 실험 모두 실제 장치와 통신하지 않는다. 결과에는 실제 서보·모터 응답,
-CAN 전송 및 정수화, PWM 프레임, 부하·미끄러짐, 센서 측정값이 포함되지 않는다.
+다섯 실험 모두 실제 장치와 통신하지 않는다. 결과에는 실제 서보·모터 응답,
+CAN 전송 및 정수화, 서보 PWM 출력 프레임, 부하·미끄러짐, 센서 측정값이 포함되지 않는다.
+실험 5에만 가정한 RC 수신 프레임 간격과 정수 PWM 입력 처리가 포함된다.
 PC에서 계산한 지령과 호출 횟수이며, MCU 실행시간이나 최악 실행시간을 측정한 데이터는 아니다.

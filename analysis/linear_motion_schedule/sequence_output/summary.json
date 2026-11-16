@@ -1,0 +1,215 @@
+{
+  "run_date_kst": "2026-11-16",
+  "config": {
+    "wheelbase": 0.42,
+    "front_track": 0.439,
+    "rear_track": 0.439,
+    "radius": 0.065,
+    "MAX_LINEAR_SPEED_MPS": 2.0,
+    "rpm_limit": 200.0,
+    "acceleration_rpm_s": 300.0,
+    "deceleration_rpm_s": 300.0,
+    "steering_rate": 180.0,
+    "rc_maximum_inner_angle": 70.0,
+    "source_sha256": {
+      "vehicle_kinematics.hpp": "442fb63799214107993dc2677dc08ed573893bd635a30361fe7feb264ed86237",
+      "steering_config.hpp": "d3fb3315313acea881a2fd302a2dd6bd176402bb1825dd0e83a12d1803e3bb4c"
+    }
+  },
+  "dt_s": 0.01,
+  "warmup_s": 10,
+  "observation_s": 5,
+  "first_input_s": 0.5,
+  "second_input_s": 2,
+  "ramp_duration_s": 1,
+  "target_v": 0.8,
+  "target_k": 2,
+  "initial_command": [
+    0,
+    0
+  ],
+  "initial_transition": "DRIVING",
+  "compiler_flags": [
+    "-std=c++11",
+    "-O2",
+    "-msse2",
+    "-mfpmath=sse",
+    "-ffp-contract=off",
+    "-Wall",
+    "-Wextra"
+  ],
+  "compiler": "g++ (MinGW.org GCC-6.3.0-1) 6.3.0",
+  "source_sha256": {
+    "vehicle_motion.hpp": "9bee01e919a671fa7640f04de3783f90433b375a83a5c4672b5c62a814e68757",
+    "vehicle_kinematics.hpp": "442fb63799214107993dc2677dc08ed573893bd635a30361fe7feb264ed86237",
+    "steering_config.hpp": "d3fb3315313acea881a2fd302a2dd6bd176402bb1825dd0e83a12d1803e3bb4c"
+  },
+  "harness_sha256": "7653a0699df3ad12374442107d741da469043fe000a9ab3cc235068ec97303a5",
+  "instrumented_output_matches_original": true,
+  "results": [
+    {
+      "order": "steer_first",
+      "input_mode": "step",
+      "speed_onset_s": 2.0,
+      "curvature_onset_s": 0.5,
+      "first_nonzero_speed_delay_s": 0.0,
+      "speed_90_delay_s": 0.7400000000000002,
+      "speed_reached_delay_s": 0.81,
+      "curvature_reached_delay_s": 0.51,
+      "acceleration_phase_peak_target_rpm": 195.83163570410954,
+      "ideal_continuous_rpm_slew_duration_s": 0.6527721190136985,
+      "acceleration_phase_rejected_updates": 32,
+      "acceleration_phase_max_first_rpm_excess": 1.5020370483398438e-05,
+      "acceleration_phase_reject_masks": [
+        8
+      ],
+      "final_outputs_reached_s": 2.81,
+      "final_v": 0.800000012,
+      "final_k": 2.00000024,
+      "speed_before_second_input": 0.0,
+      "curvature_before_second_input": 2.00000024,
+      "max_attempts": 2,
+      "max_evaluations": 3,
+      "failed_search_updates": 0,
+      "active_window_end_s": 2.81,
+      "active_retry_histogram": {
+        "0": 157,
+        "1": 75
+      },
+      "first_rejection_mask_counts": {
+        "2": 43,
+        "8": 32
+      },
+      "max_first_rpm_excess": 1.5020370483398438e-05,
+      "max_first_angle_excess_rad": 0.0031320564448833466,
+      "max_abs_rpm": 195.831665,
+      "max_abs_rpm_rate": 300.000024,
+      "max_abs_angle_rate_deg_s": 179.46662999999992,
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "order": "speed_first",
+      "input_mode": "step",
+      "speed_onset_s": 0.5,
+      "curvature_onset_s": 2.0,
+      "first_nonzero_speed_delay_s": 0.0,
+      "speed_90_delay_s": 0.43000000000000005,
+      "speed_reached_delay_s": 0.48,
+      "curvature_reached_delay_s": 0.4700000000000002,
+      "acceleration_phase_peak_target_rpm": 117.52980412939962,
+      "ideal_continuous_rpm_slew_duration_s": 0.3917660137646654,
+      "acceleration_phase_rejected_updates": 19,
+      "acceleration_phase_max_first_rpm_excess": 7.3909759521484375e-06,
+      "acceleration_phase_reject_masks": [
+        8
+      ],
+      "final_outputs_reached_s": 2.47,
+      "final_v": 0.800000012,
+      "final_k": 2.00000024,
+      "speed_before_second_input": 0.800000012,
+      "curvature_before_second_input": 0.0,
+      "max_attempts": 2,
+      "max_evaluations": 3,
+      "failed_search_updates": 0,
+      "active_window_end_s": 2.47,
+      "active_retry_histogram": {
+        "0": 146,
+        "1": 52
+      },
+      "first_rejection_mask_counts": {
+        "2": 33,
+        "8": 19
+      },
+      "max_first_rpm_excess": 7.3909759521484375e-06,
+      "max_first_angle_excess_rad": 0.0031320564448833466,
+      "max_abs_rpm": 195.831665,
+      "max_abs_rpm_rate": 300.00002399999994,
+      "max_abs_angle_rate_deg_s": 179.46662999999992,
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "order": "steer_first",
+      "input_mode": "ramp",
+      "speed_onset_s": 2.0,
+      "curvature_onset_s": 0.5,
+      "first_nonzero_speed_delay_s": 0.009999999999999787,
+      "speed_90_delay_s": 0.9100000000000001,
+      "speed_reached_delay_s": 1.0,
+      "curvature_reached_delay_s": 1.0,
+      "acceleration_phase_peak_target_rpm": 195.83163570410954,
+      "ideal_continuous_rpm_slew_duration_s": 0.6527721190136985,
+      "acceleration_phase_rejected_updates": 0,
+      "acceleration_phase_max_first_rpm_excess": null,
+      "acceleration_phase_reject_masks": [],
+      "final_outputs_reached_s": 3.0,
+      "final_v": 0.800000012,
+      "final_k": 2.00000024,
+      "speed_before_second_input": 0.0,
+      "curvature_before_second_input": 2.00000024,
+      "max_attempts": 1,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_window_end_s": 3.0,
+      "active_retry_histogram": {
+        "0": 251
+      },
+      "first_rejection_mask_counts": {},
+      "max_first_rpm_excess": null,
+      "max_first_angle_excess_rad": null,
+      "max_abs_rpm": 195.831665,
+      "max_abs_rpm_rate": 195.8344000000011,
+      "max_abs_angle_rate_deg_s": 61.27243,
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    },
+    {
+      "order": "speed_first",
+      "input_mode": "ramp",
+      "speed_onset_s": 0.5,
+      "curvature_onset_s": 2.0,
+      "first_nonzero_speed_delay_s": 0.010000000000000009,
+      "speed_90_delay_s": 0.9099999999999999,
+      "speed_reached_delay_s": 1.0,
+      "curvature_reached_delay_s": 1.0,
+      "acceleration_phase_peak_target_rpm": 117.52980412939962,
+      "ideal_continuous_rpm_slew_duration_s": 0.3917660137646654,
+      "acceleration_phase_rejected_updates": 0,
+      "acceleration_phase_max_first_rpm_excess": null,
+      "acceleration_phase_reject_masks": [],
+      "final_outputs_reached_s": 3.0,
+      "final_v": 0.800000012,
+      "final_k": 2.00000024,
+      "speed_before_second_input": 0.800000012,
+      "curvature_before_second_input": 0.0,
+      "max_attempts": 1,
+      "max_evaluations": 1,
+      "failed_search_updates": 0,
+      "active_window_end_s": 3.0,
+      "active_retry_histogram": {
+        "0": 251
+      },
+      "first_rejection_mask_counts": {},
+      "max_first_rpm_excess": null,
+      "max_first_angle_excess_rad": null,
+      "max_abs_rpm": 195.831665,
+      "max_abs_rpm_rate": 117.53160000000094,
+      "max_abs_angle_rate_deg_s": 61.27243,
+      "transitions": [
+        "DRIVING"
+      ],
+      "all_feasible": true,
+      "source_output_match": true
+    }
+  ]
+}

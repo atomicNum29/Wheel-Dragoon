@@ -2,3 +2,5 @@ __pycache__/
 *.exe
 controller_output/build/
 fraction_output/build/
+sequence_output/build/
+noise_output/build/
