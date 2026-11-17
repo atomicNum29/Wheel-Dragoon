@@ -16,6 +16,7 @@ PC 관측과 장비 인계는 해당 사용 안내를 참고한다.
 | USB 바이트 규격, 오류, 모드 전환 | [USB 프로토콜](usb-protocol.ko.md) | [serial_protocol.cpp](../src/serial_protocol.cpp), [can_debug.cpp](../src/can_debug.cpp) |
 | ROS 측 제어·피드백 구현 | [ROS USB 연동 가이드](ros-usb-integration.ko.md) | `0x03` 제어, `0x85/86/87` 피드백, 단위·시각·순번·세션·유효성 |
 | PC 관측, CLI, 단발 명령 | [호스트 도구](can-cli-windows.md) | [can_cli.py](../src/can_cli.py), [packet_monitor.py](../src/packet_monitor.py), [control.py](../src/control.py) |
+| Windows/Linux 명령 입력형 조작 | [조작 CLI](control-cli.ko.md) | `control.py`, 공통 `mcu_protocol.py`, 주기 명령·피드백 표시 |
 | 누적 시간·응답 누락·0x84 해석 | [타이밍 진단](timing-diagnostics.md) | [timing_diagnostics.cpp](../src/timing_diagnostics.cpp) |
 | 다른 PC/Pi로 전달 | [인계 절차](raspberry-pi-handoff.ko.md) | [pyproject.toml](../pyproject.toml), [uv.lock](../uv.lock) |
 | 보류 중인 확인·개선 항목 | [후속 작업](todo.ko.md) | [vehicle_motion.hpp](../include/vehicle_motion.hpp) |
@@ -36,6 +37,7 @@ PC 관측과 장비 인계는 해당 사용 안내를 참고한다.
 Teensy 대상 펌웨어 빌드·실물 통신 검증은 수행하지 않았다.
 세 종류 USB 피드백 및 공통 송신 큐 변경은 소스 검토만 수행했다. 빌드·패킷 테스트·실물 검증은 아직 수행하지 않았다.
 `0x03` AUTO 연결과 비상 조향도 정적 검토만 수행했다. 기존 시뮬레이션은 이 추가 경로의 검증 결과가 아니다.
+호스트 조작 CLI와 새 피드백 디코더도 정적 검토만 수행했다. Python 실행·OS별 터미널·실물 연결 검증은 미수행이다.
 장비에 업로드된 바이너리와의 일치 여부도 미확인이다.
 활성 `test/` 디렉터리는 없다. 소프트웨어의 구동 상태·조향 도달 추정은 실제 정지·서보 도달을
 확인하는 피드백이 아니다. 각 기능의 제약은 해당 문서에서 설명한다.

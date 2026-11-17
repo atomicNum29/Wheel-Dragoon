@@ -1,12 +1,13 @@
-# 호스트 도구: 수신, 단발 명령, CAN 디버깅
+# 호스트 도구: 조작 CLI, 수신, CAN 디버깅
 
 [문서 안내](README.md) · [USB 규격](usb-protocol.ko.md) · [타이밍 진단](timing-diagnostics.md)
 
-Python 도구는 Windows와 POSIX 터미널에서 USB 수신, 단발 명령 전송, CAN 디버깅을 제공한다.
+Python 도구는 Windows와 Linux 터미널에서 USB 수신, 주기 조작 명령 전송, CAN 디버깅을 제공한다.
 소스는 [can_cli.py](../src/can_cli.py), [packet_monitor.py](../src/packet_monitor.py),
 [control.py](../src/control.py)다.
-새 `0x03` 명령과 `0x85/86/87` 필드 해석은 아직 이 도구들에 연결하지 않았다.
-현재 펌웨어의 제어·피드백 연동은 [ROS USB 가이드](ros-usb-integration.ko.md)를 기준으로 구현한다.
+`control.py`는 새 `0x03` 명령을 보내고 `0x85/86/87`을 해석한다. 다른 두 도구도 새 피드백 해석을 지원한다.
+공통 프레이밍·명령 인코딩·피드백 디코딩은 [mcu_protocol.py](../src/mcu_protocol.py)에 있다.
+실행 절차는 [조작 CLI](control-cli.ko.md), 필드 의미는 [ROS USB 가이드](ros-usb-integration.ko.md)를 따른다.
 
 ## 환경과 선택
 
@@ -18,9 +19,9 @@ Teensy의 USB CDC 스트림을 115200 baud UART 선로의 처리량으로 계산
 
 | 목적 | 도구 | 장치로 명령 전송 |
 | --- | --- | --- |
-| checksum 유효 패킷 HEX 관측 | `packet_monitor.py` | 없음 |
+| checksum 유효 패킷 HEX/필드 관측 | `packet_monitor.py` (`--decode`로 해석) | 없음 |
 | 상태·타이밍 해석, 대화형 CAN 요청 | `can_cli.py` | 요청 입력 또는 시작 명령이 있을 때 |
-| `0x01` 한 번 또는 보호 리셋 전송 | `control.py` | 있음 |
+| `0x03` 주기 조작·단발 명령·보호 리셋 | `control.py` | 명령 입력 또는 초기 명령이 있을 때 |
 
 ## 명령을 보내지 않는 관측
 
@@ -30,7 +31,8 @@ uv run python src/packet_monitor.py --port COM3
 
 `packet_monitor.py`는 포트에서 읽기만 한다. `AA 55`와 length 1..64를 기준으로 프레임을 모으고,
 checksum이 일치하는 패킷만 출력한다. 불완전 프레임은 보관하며 손상 시 한 바이트씩 재동기화한다.
-상태 필드의 의미를 해석하지 않는 HEX 수신기다. 종료는 Ctrl+C다.
+기본은 HEX 수신기이며 `--decode`를 추가하면 `0x85/86/87` 필드를 해석한다. 종료는 Ctrl+C다.
+알려진 프레임 크기도 검사한다. 수신 결과를 줄여서 보려면 `control.py --port COM3 monitor`를 사용한다.
 
 해석된 출력을 보려면 다음 CLI를 사용한다. 시작 명령을 생략하면 시작 시 CAN 요청을 전송하지 않는다.
 
@@ -76,17 +78,14 @@ PID149=7 설정이 보고돼 있더라도 현재 실제 장비 설정을 읽어 
 두 응답 중 일부만 도착해도 결과에 남는다. `0xA1` 전송 보류는 다음 요청을 지연시키며,
 USB 버퍼 쓰기와 PC의 결과 수신·저장은 별개다. 상세 취소 조건과 필드는 [USB 규격](usb-protocol.ko.md)을 따른다.
 
-## `control.py`의 현재 역할과 제한
+## 조작 CLI
 
-`control.py v_mps w_radps --port COM3`는 `0x01`을 **한 번** 전송한다.
-속도 허용 범위는 ±2 m/s, 각속도는 ±5 rad/s이며 호스트는 이를 milli 단위 int16으로 만든다.
-현재 펌웨어는 이 `0x01`을 framing 오류로 거부하며 구동·timeout 갱신·CONTROL 복귀에 사용하지 않는다.
-따라서 이 도구의 `--disable`·`--estop`도 현재 펌웨어의 구동 중지 수단이 아니다.
-AUTO 구동에는 새 `0x03` 송신 구현이 필요하다. MANUAL/PIVOT에서는 RC를 계속 사용한다.
+`uv run python src/control.py --port COM3`로 명령 입력형 CLI를 연다. Linux에서는 `/dev/ttyACM0` 등으로 바꾼다.
+시작 시 관측만 하며 `drive 0.3 10`, `pivot 0.5`, `stop`, `disable`, `estop` 등을 입력해 조작한다.
+일반 조향 단위는 가상 중앙 휠의 도(degree)다. 기본 목표 송신 주기는 50Hz이고 표시 주기는 2Hz다.
+MANUAL/PIVOT은 RC가 제어하며 호스트 명령은 RC AUTO에서만 적용된다.
 
-일반 명령 뒤 응답 처리는 `readline().decode()`이며 바이너리 `0x82` 디코더가 아니다.
-출력 문자열이나 빈 응답으로 명령 수용·정지를 확인할 수 없다. 상태 관측에는 위 수신 도구를 사용한다.
-
-`control.py --reset --port COM3`는 보호 리셋 `0x02`를 전송하며 응답을 기다리지 않는다.
-펌웨어는 전원 상태가 허용하면 TQ-OFF를 시도한 뒤 MCU를 리셋한다. 전송 성공이나 실제 정지를
-확인한 다음에만 재부팅하는 절차가 아니다.
+초기 명령, 기간 지정, 단발 송신, 수신 전용, 종료 정책은 [조작 CLI](control-cli.ko.md)에 정리했다.
+이전 `control.py v_mps w_radps` 위치 인자와 `--disable`/`--estop` 옵션은 지원하지 않는다.
+각각 `drive V THETA_DEG`, `disable`, `estop` 명령을 사용한다. 보호 리셋은 `reset` 또는 기존 `--reset`으로 보낸다.
+write 성공은 MCU 수락·물리적 정지 확인이 아니다. 이번 호스트 변경은 정적 검토만 수행했으며 실행 검증하지 않았다.

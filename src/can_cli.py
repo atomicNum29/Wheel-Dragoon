@@ -10,6 +10,7 @@ from typing import Optional
 
 import serial
 import serial.tools.list_ports
+from mcu_protocol import PacketStreamParser, decode_telemetry, format_telemetry
 
 IS_WINDOWS = os.name == "nt"
 if IS_WINDOWS:
@@ -284,48 +285,6 @@ class RaisingArgumentParser(argparse.ArgumentParser):
         raise CommandError(message)
 
 
-class PacketStreamParser:
-    """Incrementally split the MCU byte stream into checksum-valid packets."""
-
-    def __init__(self) -> None:
-        self.buffer = bytearray()
-
-    def feed(self, data: bytes) -> list[bytes]:
-        self.buffer.extend(data)
-        packets: list[bytes] = []
-
-        while True:
-            header_index = self.buffer.find(HEADER)
-            if header_index < 0:
-                # Keep a trailing 0xAA because it may be the first header byte.
-                self.buffer[:] = self.buffer[-1:] if self.buffer[-1:] == HEADER[:1] else b""
-                break
-            if header_index > 0:
-                del self.buffer[:header_index]
-            if len(self.buffer) < 3:
-                break
-
-            payload_length = self.buffer[2]
-            if payload_length == 0 or payload_length > MAX_PACKET_LENGTH:
-                del self.buffer[0]
-                continue
-
-            packet_size = payload_length + 4
-            if len(self.buffer) < packet_size:
-                break
-
-            candidate = bytes(self.buffer[:packet_size])
-            if xor_checksum(candidate[:-1]) == candidate[-1]:
-                packets.append(candidate)
-                del self.buffer[:packet_size]
-            else:
-                # Discard only the first header byte so an embedded header can
-                # be found without losing the following valid packet.
-                del self.buffer[0]
-
-        return packets
-
-
 class TerminalUi:
     PROMPT = "can> "
 
@@ -428,16 +387,16 @@ class TerminalUi:
         return lines
 
 
-def wait_for_activity(ser: serial.Serial, ui: TerminalUi) -> tuple[bool, bool]:
+def wait_for_activity(ser: serial.Serial, ui: TerminalUi, timeout_s: float = 0.1) -> tuple[bool, bool]:
     if IS_WINDOWS:
         # Windows select() accepts sockets, not COM handles or console input.
         serial_ready = ser.in_waiting > 0
         input_ready = bool(msvcrt.kbhit())
         if not serial_ready and not input_ready:
-            time.sleep(0.005)
+            time.sleep(min(0.005, timeout_s))
         return serial_ready, input_ready
     serial_fd = ser.fileno()
-    readable, _, _ = select.select([serial_fd, ui.fd], [], [], 0.1)
+    readable, _, _ = select.select([serial_fd, ui.fd], [], [], timeout_s)
     return serial_fd in readable, ui.fd in readable
 
 
@@ -478,6 +437,7 @@ def find_teensy_port() -> Optional[str]:
     if candidates:
         return candidates[0] if len(candidates) == 1 else None
 
+    fallback = []
     for port in ports:
         name = (port.device or "").lower()
         if (
@@ -486,8 +446,8 @@ def find_teensy_port() -> Optional[str]:
             or "usbserial" in name
             or "ttyusb" in name
         ):
-            return port.device
-    return None
+            fallback.append(port.device)
+    return fallback[0] if len(fallback) == 1 else None
 
 
 def build_bridge_request(
@@ -780,6 +740,11 @@ def format_timing_packet(packet: bytes) -> str:
 
 def format_packet(packet: bytes) -> str:
     timestamp = time.strftime("%H:%M:%S")
+    if packet[3] in (0x85, 0x86, 0x87):
+        try:
+            return f"[{timestamp}] {format_telemetry(decode_telemetry(packet))}"
+        except ValueError as exc:
+            return f"[{timestamp}] RX ignored: {exc}"
     if packet[3] == TIMING_PACKET_TYPE and packet[2] == TIMING_PACKET_LENGTH:
         return f"[{timestamp}] {format_timing_packet(packet)}"
     if packet[3] == CAN_BENCHMARK_RESULT_TYPE and packet[2] == CAN_BENCHMARK_RESULT_LENGTH:
