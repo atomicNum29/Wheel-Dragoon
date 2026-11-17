@@ -4,7 +4,6 @@
 .pio/
 .venv/
 .vscode/
-backups/
 # Use ! prefix to force-include something excluded by defaults.
 #
 # Built-in defaults (always excluded unless negated):

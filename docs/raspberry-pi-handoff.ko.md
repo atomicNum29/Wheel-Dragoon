@@ -10,7 +10,6 @@
 원본 PC에서 `git status --short`와 `git rev-parse HEAD`로 커밋과 미커밋 파일을 함께 기록한다.
 커밋 ID만으로 작업 트리의 수정·추가 파일까지 전달됐다고 볼 수 없다.
 전달할 파일은 소스·설정·문서·`pyproject.toml`·`uv.lock`이며, `.pio`·`.venv`는 대상 환경에서 다시 만든다.
-과거 복구가 목적일 때만 [2026-11-07 백업](../backups/rc-cleanup-20261107-154207/README.md)을 별도로 참고한다.
 
 인계받은 쪽에서는 전달된 커밋과 미커밋 파일을 대조한다. `git pull`은 원격에 있는 커밋을
 가져오며, 원본 PC의 미커밋 파일은 별도로 전달해야 한다.
@@ -41,5 +40,4 @@ uv run python src/packet_monitor.py --port /dev/ttyACM0
 | 정상 제어와 benchmark의 조건 차이 | [호스트 도구](can-cli-windows.md) |
 | RC 유실·정지 전달·fault 보고의 남은 제약 | [사고 검토와 적용 범위](rc-loss-of-control-review-2026-11-09.ko.md) |
 
-현재 검증 상태는 [문서 안내](README.md)를 참고한다. 백업의 테스트 결과와 실행 명령은
-당시 기록이며 인계한 소스의 검증 결과로 사용할 수 없다.
+현재 검증 상태는 [문서 안내](README.md)를 참고한다.

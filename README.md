@@ -40,12 +40,10 @@ src/*.cpp            제어, RC, CAN, USB, 선택적 디버그·계측
 include/             모듈 인터페이스, 운동학·모션·보정 설정
 src/*.py             USB 관측·명령 전송용 호스트 도구
 docs/                현재 사용 문서와 날짜가 명시된 사고 검토
-backups/             2026-11-07 정리 전 자료와 복구 정보
 ```
 
 현재 설정은 [steering_config.hpp](include/steering_config.hpp), 통신 스케줄은
-[can_tx_schedule.hpp](include/can_tx_schedule.hpp)가 기준이다. 과거 문서와 테스트는
-백업의 당시 기록이며 현재 기능·검증 결과로 사용하지 않는다. 활성 `test/` 디렉터리는 없다.
+[can_tx_schedule.hpp](include/can_tx_schedule.hpp)가 기준이다. 활성 `test/` 디렉터리는 없다.
 
 ## 현재 동작과 확인 범위
 

@@ -42,16 +42,10 @@ Teensy 대상 펌웨어 빌드·실물 통신 검증은 수행하지 않았다.
 활성 `test/` 디렉터리는 없다. 소프트웨어의 구동 상태·조향 도달 추정은 실제 정지·서보 도달을
 확인하는 피드백이 아니다. 각 기능의 제약은 해당 문서에서 설명한다.
 
-## 사고 분석과 보관 자료
+## 사고 분석 기록
 
-아래 자료는 날짜가 명시된 관측·설계·복구 기록이다. 현재 사용법은 위 기준 문서를 따른다.
+아래 자료는 날짜가 명시된 사고 관측과 분석 기록이다. 현재 사용법은 위 기준 문서를 따른다.
 
 | 기록 | 내용 |
 | --- | --- |
 | [2026-11-09 조종 기능 상실 검토](rc-loss-of-control-review-2026-11-09.ko.md) | 사고 관측, 원인 후보, 코드 근거와 미확인 조건 |
-| [2026-11-07 RC 정리 백업](../backups/rc-cleanup-20261107-154207/README.md) | ZIP·manifest·patch와 복구 절차 |
-| [초기 조향 설계 한국어](../backups/rc-cleanup-20261107-154207/removed-files/docs/independent-steering.ko.md) / [영어](../backups/rc-cleanup-20261107-154207/removed-files/docs/independent-steering.md) | 당시 설계와 검증 기록 |
-| [변경 그룹 메모](../backups/rc-cleanup-20261107-154207/removed-files/docs/change-groups.md) | 당시 커밋 분리·staging 메모 |
-
-보관 자료의 테스트 결과·설치 코어·제조사 문서 검토는 각각 기록된 시점의 근거다.
-백업의 실행 안내나 바이너리를 현재 소스의 검증 결과로 사용하지 않는다.
