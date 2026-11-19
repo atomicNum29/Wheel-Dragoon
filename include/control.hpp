@@ -30,7 +30,8 @@ typedef enum
     DRIVE_MODE_MANUAL = 1,
     DRIVE_MODE_AUTO = 2,
     DRIVE_MODE_POWERDOWN = 3,
-    DRIVE_MODE_PIVOT = 4
+    DRIVE_MODE_PIVOT = 4,
+    DRIVE_MODE_FAILSAFE = 5
 } DriveMode;
 struct WheelRpmCommand
 {
@@ -94,6 +95,8 @@ void initialize_power();
 void finish_boot();
 void initialize_motion();
 void update_power(DriveMode drive_mode, unsigned long now);
+DriveMode resolve_control_mode(DriveMode receiver_mode, unsigned long now);
+void observe_usb_tx(bool success);
 // Called before USB RX so AUTO entry cannot reuse the previous mode's command.
 void select_drive_mode(DriveMode drive_mode);
 void accept_command(const CommandPacket &command, unsigned long now);

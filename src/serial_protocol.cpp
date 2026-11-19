@@ -48,7 +48,7 @@ static_assert(wire::system::SESSION + 1 + CHECKSUM_SIZE == STATE_PACKET_SIZE, "S
 static_assert(CMD_PACKET_LENGTH + FRAME_OVERHEAD == CMD_PACKET_SIZE &&
               wire::command::ANGULAR + 2 + CHECKSUM_SIZE == CMD_PACKET_SIZE &&
               CMD_PACKET_SIZE <= SERIAL_PACKET_MAX_SIZE, "Command layout size mismatch");
-static_assert(DRIVE_MODE_PIVOT <= wire::system::MODE_MASK &&
+static_assert(DRIVE_MODE_FAILSAFE <= wire::system::MODE_MASK &&
               static_cast<uint8_t>(vehicle::Transition::EMERGENCY_STOP) <= wire::system::MODE_MASK,
               "Mode/transition must fit their four-bit wire fields");
 enum TxKind : uint8_t { WHEEL = 0, VOLTAGE = 1, STATE = 2, AUXILIARY = 3 };
@@ -88,7 +88,7 @@ uint32_t state_at_ms = 0;
 bool state_clock_started = false;
 } // namespace
 void begin() { Serial.begin(USB_SERIAL_BAUD); }
-void report_tx_drop() { tx_errors |= SYSTEM_ERR_USB_TX_DROP; ++tx_drop_revision; }
+void report_tx_drop() { control::observe_usb_tx(false); tx_errors |= SYSTEM_ERR_USB_TX_DROP; ++tx_drop_revision; }
 
 static inline bool command_in_range(const CommandPacket &command)
 {
@@ -516,12 +516,13 @@ void service_tx()
         }
         if (room < remaining) return;
         const size_t written = Serial.write(active.bytes + active_offset, remaining);
-        if (written != remaining) { tx_errors |= SYSTEM_ERR_USB_TX_WRITE; ++tx_write_revision; }
+        if (written != remaining) { control::observe_usb_tx(false); tx_errors |= SYSTEM_ERR_USB_TX_WRITE; ++tx_write_revision; }
         // Teensy may return size_t(-1); never treat that as a successful/partial write.
         if (written > remaining || written == 0) return;
         active_offset += static_cast<uint8_t>(written);
         if (active_offset != active.size) return; // Preserve the tail before any other frame.
         Serial.send_now();
+        if (active.session == telemetry_session) control::observe_usb_tx(true);
         if (active_kind == STATE && active.session == telemetry_session) {
             if (active.report_revision == control::error_report_revision() && active.overrun_count == can_rx_overrun_count())
                 control::consume_error_reports();

@@ -31,7 +31,7 @@ void loop()
 {
     timing::begin_loop();
     const unsigned long now = millis();
-    const DriveMode drive_mode = rc_io::read_mode();
+    const DriveMode drive_mode = control::resolve_control_mode(rc_io::read_mode(), now);
     timing::measure(timing::POWER, [&]() { control::update_power(drive_mode, now); });
     control::select_drive_mode(drive_mode);
     const rc_io::PwmInput pwm = rc_io::read_pwm();

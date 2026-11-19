@@ -8,9 +8,21 @@ constexpr int FILTER_SAMPLES = 10;
 constexpr long MODE_INITIAL_US = 1200;
 constexpr long MODE_VALID_MIN_US = 800, MODE_VALID_MAX_US = 2200;
 constexpr long MODE_POWERDOWN_END_US = 1100, MODE_STOP_END_US = 1300;
-constexpr long MODE_MANUAL_END_US = 1600, MODE_PIVOT_END_US = 1800;
+constexpr long MODE_MANUAL_END_US = 1500, MODE_PIVOT_END_US = 1700;
+constexpr long MODE_AUTO_END_US = 1900;
 volatile unsigned int v_pulseWidth = 0, w_pulseWidth = 0;
 volatile DriveMode mode_state = DRIVE_MODE_STOP;
+volatile DriveMode receiver_mode_state = DRIVE_MODE_STOP;
+
+DriveMode decode_mode(long pulse_us)
+{
+    if (pulse_us < MODE_POWERDOWN_END_US) return DRIVE_MODE_POWERDOWN;
+    if (pulse_us < MODE_STOP_END_US) return DRIVE_MODE_STOP;
+    if (pulse_us < MODE_MANUAL_END_US) return DRIVE_MODE_MANUAL;
+    if (pulse_us < MODE_PIVOT_END_US) return DRIVE_MODE_PIVOT;
+    if (pulse_us < MODE_AUTO_END_US) return DRIVE_MODE_AUTO;
+    return DRIVE_MODE_FAILSAFE;
+}
 
 // Each channel keeps its own history. Initial samples and integer division match
 // the existing receiver filter; changing a validity rule is a separate policy edit.
@@ -85,17 +97,10 @@ void mode_decodePWM()
     if (pulse_width_us < MODE_VALID_MIN_US || pulse_width_us > MODE_VALID_MAX_US)
         return;
 
-    const long mode_pulseWidth = mode_filter.push(pulse_width_us);
-    if (mode_pulseWidth < MODE_POWERDOWN_END_US)
-        mode_state = DRIVE_MODE_POWERDOWN;
-    else if (mode_pulseWidth < MODE_STOP_END_US)
-        mode_state = DRIVE_MODE_STOP;
-    else if (mode_pulseWidth < MODE_MANUAL_END_US)
-        mode_state = DRIVE_MODE_MANUAL;
-    else if (mode_pulseWidth < MODE_PIVOT_END_US)
-        mode_state = DRIVE_MODE_PIVOT;
-    else
-        mode_state = DRIVE_MODE_AUTO;
+    receiver_mode_state = decode_mode(pulse_width_us);
+    const long mode_pulse_width = mode_filter.push(pulse_width_us);
+    // Receiver failsafe must not pass through intermediate filtered drive modes.
+    mode_state = receiver_mode_state == DRIVE_MODE_FAILSAFE ? DRIVE_MODE_FAILSAFE : decode_mode(mode_pulse_width);
 }
 
 } // namespace
@@ -110,6 +115,7 @@ void initialize_inputs()
     attachInterrupt(digitalPinToInterrupt(MODE_PIN), mode_decodePWM, CHANGE);
 }
 DriveMode read_mode() { return mode_state; }
+DriveMode read_receiver_mode() { return receiver_mode_state; }
 PwmInput read_pwm() { return {v_pulseWidth, w_pulseWidth}; }
 
 void initialize_steering(const vehicle::MotionController &motion)

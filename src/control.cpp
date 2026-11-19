@@ -17,6 +17,41 @@ constexpr uint32_t SYSTEM_RESET_REQUEST = 0x05FA0004u; // AIRCR VECTKEY | SYSRES
 constexpr float RPM_ROUNDING_OFFSET = 0.5f;
 constexpr int DRIVER_A_RELAY_PIN = 5, DRIVER_B_RELAY_PIN = 6;
 Status live;
+constexpr uint32_t USB_TIMEOUT_COUNT_MS = 60;
+constexpr uint8_t USB_CONSECUTIVE_LIMIT = 5, USB_TOTAL_LIMIT = 30;
+bool control_signal_estop = false, recovery_powerdown_seen = false;
+bool recovery_centering = false;
+bool receiver_failsafe = false;
+bool usb_rx_seen = false, usb_tx_seen = false;
+bool usb_limit_reached = false;
+uint8_t usb_rx_streak = 0, usb_tx_streak = 0, usb_total_errors = 0;
+uint32_t timeout_count_at_ms = 0;
+bool timeout_count_started = false;
+
+void reset_usb_health()
+{
+    usb_rx_seen = usb_tx_seen = false;
+    usb_limit_reached = false;
+    usb_rx_streak = usb_tx_streak = usb_total_errors = 0;
+    timeout_count_started = false;
+}
+void observe_usb(bool success, bool tx)
+{
+    if (live.drive_mode != DRIVE_MODE_AUTO || live.driver_powerdown || live.driver_starting) return;
+    uint8_t &streak = tx ? usb_tx_streak : usb_rx_streak;
+    if (success) {
+        streak = 0;
+        (tx ? usb_tx_seen : usb_rx_seen) = true;
+    } else {
+        if (streak < USB_CONSECUTIVE_LIMIT) ++streak;
+        if (usb_total_errors < USB_TOTAL_LIMIT) ++usb_total_errors;
+        usb_limit_reached |= streak >= USB_CONSECUTIVE_LIMIT || usb_total_errors >= USB_TOTAL_LIMIT;
+    }
+}
+bool usb_error_limit()
+{
+    return usb_limit_reached;
+}
 uint32_t driver_power_on_ms = 0;
 unsigned long last_valid_command_ms = 0;
 CommandPacket auto_command = {};
@@ -29,6 +64,21 @@ vehicle::MotionController motion(vehicle::MotionConfig{}, vehicle::left_servo, v
 
 static void motor_stop_all();
 static void update_vehicle_output(vehicle::RcCommand command, unsigned long now);
+static void count_usb_timeout(unsigned long now)
+{
+    if (live.drive_mode != DRIVE_MODE_AUTO || live.driver_starting || live.driver_powerdown) return;
+    if (now - last_valid_command_ms <= COMMAND_TIMEOUT_MS) return;
+    // Count elapsed periods before RX can renew the command deadline.
+    if (!timeout_count_started) {
+        timeout_count_at_ms = last_valid_command_ms + COMMAND_TIMEOUT_MS;
+        timeout_count_started = true;
+    }
+    while (static_cast<uint32_t>(now - timeout_count_at_ms) >= USB_TIMEOUT_COUNT_MS && !usb_error_limit()) {
+        timeout_count_at_ms += USB_TIMEOUT_COUNT_MS;
+        observe_usb(false, false);
+    }
+}
+
 static void invalidate_auto_command()
 {
     auto_command = {};
@@ -41,7 +91,13 @@ static void invalidate_auto_command()
 }
 const Status &status() { return live; }
 const vehicle::MotionController &motion_output() { return motion; }
-void report(Error error) { reports[static_cast<uint8_t>(error)] = ERROR_REPORT_REPEAT_COUNT; ++report_revision; }
+void observe_usb_tx(bool success) { observe_usb(success, true); }
+void report(Error error) {
+    if (error == Error::Checksum || error == Error::Framing || error == Error::CommandRange)
+        observe_usb(false, false);
+    reports[static_cast<uint8_t>(error)] = ERROR_REPORT_REPEAT_COUNT;
+    ++report_revision;
+}
 uint32_t error_report_revision() { return report_revision; }
 bool reported(Error error) { return reports[static_cast<uint8_t>(error)] > 0; }
 void report_safety_tx_failure() { report(Error::SafetyCanTx); }
@@ -59,6 +115,7 @@ void initialize_motion() { motion.update({0, 0}, millis(), false); }
 void initialize_session(unsigned long now)
 {
     invalidate_auto_command();
+    last_valid_command_ms = now;
     if (live.drive_mode == DRIVE_MODE_AUTO) protocol::discard_pending_rx();
     ++report_revision;
     protocol::reset_telemetry_session();
@@ -70,7 +127,7 @@ void initialize_session(unsigned long now)
 
 void update_power(DriveMode drive_mode, unsigned long now)
 {
-    const bool powerdown = drive_mode == DRIVE_MODE_POWERDOWN;
+    const bool powerdown = drive_mode == DRIVE_MODE_POWERDOWN || control_signal_estop;
     if (powerdown != live.driver_powerdown) {
         live.driver_powerdown = powerdown;
         live.driver_starting = !powerdown;
@@ -113,15 +170,19 @@ void accept_command(const CommandPacket &command, unsigned long now)
     // Only commands received within the current AUTO authority window are usable.
     if (live.drive_mode != DRIVE_MODE_AUTO || live.driver_powerdown || live.driver_starting)
         return;
+    bool sequence_ok = true;
     if (auto_command_valid && !auto_command_expired && now - last_valid_command_ms <= COMMAND_TIMEOUT_MS)
     {
         const uint16_t delta = static_cast<uint16_t>(command.sequence - auto_command.sequence);
+        sequence_ok = delta == 1;
         if (delta == 0 || delta >= 0x8000u)
         {
             report(Error::Framing);
             return; // Duplicate/out-of-order frames do not renew the timeout.
         }
     }
+    observe_usb(sequence_ok, false);
+    timeout_count_started = false;
     const bool estop = (command.flags & protocol::wire::CMD_FLAG_ESTOP) != 0;
     if (estop && !live.estop_active)
     {
@@ -138,12 +199,59 @@ void accept_command(const CommandPacket &command, unsigned long now)
     last_valid_command_ms = now;
 }
 
+static void latch_control_signal_estop(unsigned long now)
+{
+    if (control_signal_estop) return;
+    control_signal_estop = true;
+    recovery_powerdown_seen = false;
+    recovery_centering = false;
+    select_drive_mode(DRIVE_MODE_FAILSAFE);
+    live.motor_enabled = false;
+    live.target_wheel_rpm_cmd = {};
+    digitalWrite(DRIVER_A_RELAY_PIN, LOW);
+    digitalWrite(DRIVER_B_RELAY_PIN, LOW);
+    motion.emergency_stop(static_cast<uint32_t>(now));
+}
+
+DriveMode resolve_control_mode(DriveMode receiver_mode, unsigned long now)
+{
+    count_usb_timeout(now);
+    receiver_failsafe = receiver_mode == DRIVE_MODE_FAILSAFE;
+    if (control_signal_estop) {
+        const DriveMode unfiltered_mode = rc_io::read_receiver_mode();
+        if (receiver_mode == DRIVE_MODE_POWERDOWN && unfiltered_mode == DRIVE_MODE_POWERDOWN)
+            recovery_powerdown_seen = true;
+        if (recovery_powerdown_seen && receiver_mode == DRIVE_MODE_STOP && unfiltered_mode == DRIVE_MODE_STOP) {
+            control_signal_estop = false;
+            recovery_powerdown_seen = false;
+            recovery_centering = true;
+            reset_usb_health();
+        } else {
+            return receiver_mode == DRIVE_MODE_POWERDOWN ? DRIVE_MODE_POWERDOWN : DRIVE_MODE_FAILSAFE;
+        }
+    }
+    if (!receiver_failsafe) return receiver_mode;
+    const bool healthy_auto = live.drive_mode == DRIVE_MODE_AUTO &&
+        live.serial_mode == SERIAL_MODE_CONTROL && !live.driver_powerdown && !live.driver_starting &&
+        auto_command_valid && usb_rx_seen && usb_tx_seen && !live.estop_active &&
+        !has_driver_fault() && !reported(Error::BatteryLow);
+    if (!healthy_auto || usb_error_limit()) {
+        latch_control_signal_estop(now);
+        return DRIVE_MODE_FAILSAFE;
+    }
+    return DRIVE_MODE_AUTO;
+}
+
 void select_drive_mode(DriveMode drive_mode)
 {
     if (drive_mode == live.drive_mode) return;
     invalidate_auto_command();
     live.drive_mode = drive_mode;
-    if (drive_mode == DRIVE_MODE_AUTO) protocol::discard_pending_rx();
+    if (drive_mode == DRIVE_MODE_AUTO) {
+        reset_usb_health();
+        last_valid_command_ms = millis();
+        protocol::discard_pending_rx();
+    }
 }
 
 void update_drive(DriveMode drive_mode,
@@ -151,6 +259,34 @@ void update_drive(DriveMode drive_mode,
 {
     live.requested_motion = {};
     live.requested_motion_valid = false;
+    count_usb_timeout(now);
+    if (receiver_failsafe && drive_mode == DRIVE_MODE_AUTO && usb_error_limit())
+        latch_control_signal_estop(now);
+    if (control_signal_estop) {
+        update_power(DRIVE_MODE_FAILSAFE, now);
+        live.estop_active = true;
+        live.motor_enabled = false;
+        live.target_wheel_rpm_cmd = {};
+        motion.emergency_stop(static_cast<uint32_t>(now));
+        return;
+    }
+    // A fresh host estop takes priority over recovery centering.
+    if (live.estop_active) recovery_centering = false;
+    if (recovery_centering)
+    {
+        live.command_timeout = false;
+        live.motor_enabled = false;
+        live.target_wheel_rpm_cmd = {};
+        // Run the existing zero-speed pose scheduler even while STOP/startup
+        // inhibits drive torque; ordinary disabled updates would hold steering.
+        motion.update({0.0f, 0.0f}, static_cast<uint32_t>(now), true);
+        bool centered = motion.ready && motion.feasible &&
+                        motion.transition == vehicle::Transition::DRIVING;
+        for (int i = 0; i < vehicle::STEERING_COUNT; ++i)
+            centered &= motion.angle[i] == 0.0f;
+        recovery_centering = !centered;
+        return;
+    }
     if (live.serial_mode != SERIAL_MODE_CONTROL)
     {
         live.command_timeout = false;
@@ -308,6 +444,8 @@ FaultSnapshot fault_snapshot(unsigned long now)
 
 MotorState motor_state(const FaultSnapshot &fault)
 {
+    if (control_signal_estop)
+        return MOTOR_STATE_ESTOP;
     if (live.driver_powerdown)
         return MOTOR_STATE_DRIVER_POWERDOWN;
     if (fault.driver_fault || fault.battery_low)

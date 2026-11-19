@@ -12,6 +12,8 @@ struct PwmInput { unsigned int velocity_us, steering_us; };
 void initialize_inputs();
 // Individual ISR-owned reads; no cross-channel atomic snapshot is implied.
 DriveMode read_mode();
+// Latest valid unfiltered mode: qualifies explicit POWERDOWN/STOP recovery selections.
+DriveMode read_receiver_mode();
 PwmInput read_pwm();
 int32_t offset_with_deadband(unsigned int pulse_width_us);
 void initialize_steering(const vehicle::MotionController &motion);

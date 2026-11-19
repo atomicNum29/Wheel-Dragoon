@@ -147,7 +147,10 @@ RPM·encoder는 원시값이며 거리·차체 속도로 보정한 값이 아니
 | 27 | u8 | CONTROL 세션 번호, 255 다음 0으로 순환 |
 | 28 | u8 | checksum |
 
-RC mode는 STOP=0, MANUAL=1, AUTO=2, POWERDOWN=3, PIVOT=4다.
+RC mode는 STOP=0, MANUAL=1, AUTO=2, POWERDOWN=3, PIVOT=4, FAILSAFE=5다.
+수신기 failsafe에서 정상 USB AUTO 권한을 유지하는 동안 mode는 AUTO다. 제어 신호 상실
+비상 정지와 연속 5회/누적 30회·timeout 지속 300 ms 조건, POWERDOWN → STOP 복구 절차는
+[RC 제어 문서](rc-steering.ko.md#제어-신호-상실-비상-정지)를 따른다.
 모션 상태는 STARTUP=0, DRIVING=1, BRAKING=2, STEERING=3, SETTLING=4, EMERGENCY_STOP=5다.
 `mode = packet[8] & 0x0F`, `transition = (packet[8] >> 4) & 0x0F`로 분리한다.
 예를 들어 PIVOT/STEERING은 `0x34`, AUTO/EMERGENCY_STOP은 `0x52`다.
@@ -166,7 +169,7 @@ POWERDOWN·드라이버 시작 대기에도 송신하고 BRIDGE/RESETTING에서�
 | 2 | 모션 feasible (마지막 목표 평가 결과) |
 | 3 | 모션 limited: RPM 크기 상한 적용, 변화율 제한 전체를 뜻하지 않음 |
 | 4 | 선택된 목표 필드 유효; RC MANUAL/PIVOT 또는 timeout 전의 수락된 AUTO 명령 |
-| 5 | 활성 host estop (현재 MANUAL/PIVOT에서는 무시) |
+| 5 | 활성 host estop 또는 제어 신호 상실 비상 정지 |
 | 6 | 활성 host command timeout |
 | 7 | driver_powerdown |
 | 8 | driver_starting |
@@ -216,13 +219,14 @@ Validity bit0..3은 LF/RF/LR/RR, bit4/5는 전압 A/B이며 bit6/7은 0이다.
 
 | 값 | state | 우선순위 높은 순서 |
 | ---: | --- | ---: |
-| 7 | DRIVER_POWERDOWN | 1 |
-| 4 | FAULT: driver fault 또는 저전압 | 2 |
-| 3 | ESTOP: 현재 활성 입력 | 3 |
-| 5 | BOOTING: boot 또는 드라이버 시작 대기 | 4 |
-| 2 | TIMEOUT_STOP: 현재 활성 timeout | 5 |
-| 0 | DISABLED | 6 |
-| 1 | ENABLED | 7 |
+| 3 | ESTOP: 제어 신호 상실 비상 정지 활성 | 1 |
+| 7 | DRIVER_POWERDOWN | 2 |
+| 4 | FAULT: driver fault 또는 저전압 | 3 |
+| 3 | ESTOP: 활성 host estop 입력 | 4 |
+| 5 | BOOTING: boot 또는 드라이버 시작 대기 | 5 |
+| 2 | TIMEOUT_STOP: 현재 활성 timeout | 6 |
+| 0 | DISABLED | 7 |
+| 1 | ENABLED | 8 |
 | 6 | 예약 | 사용하지 않음 |
 
 | Error bit | 의미 |
@@ -230,7 +234,7 @@ Validity bit0..3은 LF/RF/LR/RR, bit4/5는 전압 A/B이며 bit6/7은 0이다.
 | 0 | USB checksum 오류 |
 | 1 | command timeout 보고 |
 | 2 | CAN TX 실패: 안전 명령 또는 전압 조회 |
-| 3 | host estop 보고 |
+| 3 | host estop 또는 제어 신호 상실 비상 정지 보고 |
 | 4 | 저전압 |
 | 5 | framing / 지원하지 않는 요청 |
 | 6 | 명령 속도 범위 초과 |
@@ -255,7 +259,9 @@ USB 오류 bit12/13은 별도로 래치한다. 같은 세션의 `0x87` 전체 wr
 전송할 수 없는 동안에는 유지하며 CONTROL 세션 초기화도 아직 보고하지 못한 USB 오류를 지우지 않는다.
 정상 모드 전환·세션 초기화·명시적 디버그 취소에 따른 큐 비우기는 오류로 보고하지 않는다.
 큐 여유가 없어 benchmark/타이밍 패킷을 보류했다가 다시 등록하는 것 역시 실제 폐기가 아니므로 오류가 아니다.
-USB bit12/13은 진단용이며 기존 구동 차단 조건에 추가하지 않는다.
+USB bit12/13의 보고 비트 자체는 기존 구동 차단 조건에 추가하지 않는다.
+다만 해당 송신 실패·스킵 이벤트는 AUTO 구간의 USB 이상 횟수에 집계되어, 수신기 failsafe와
+겹치고 연속 5회 또는 누적 30회 한계에 도달하면 제어 신호 상실 비상 정지로 이어진다.
 
 ## CAN 브릿지 `0x20` / `0xA0`
 

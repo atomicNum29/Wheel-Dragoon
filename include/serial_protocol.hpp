@@ -69,5 +69,5 @@ void service_tx();
 // Copies one diagnostic frame if its slot is free. True means queued, not host ACK.
 bool queue_auxiliary(const uint8_t *packet, size_t size);
 void discard_debug_tx(); // Does not cancel a queued timing snapshot.
-void report_tx_drop(); // Diagnostic only; never changes drive authority.
+void report_tx_drop(); // Counts toward USB health while AUTO is selected.
 } // namespace protocol
