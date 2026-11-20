@@ -82,6 +82,7 @@ struct Status {
     bool motor_enabled = false;
     bool estop_active = false;
     bool command_timeout = true;
+    bool rc_signal_lost = false; // Receiver mode channel currently reports failsafe.
     SerialMode serial_mode = SERIAL_MODE_CONTROL;
     unsigned long control_mode_started_ms = 0;
     WheelRpmCommand target_wheel_rpm_cmd = {};

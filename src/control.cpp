@@ -215,10 +215,11 @@ static void latch_control_signal_estop(unsigned long now)
 
 DriveMode resolve_control_mode(DriveMode receiver_mode, unsigned long now)
 {
+    const DriveMode unfiltered_mode = rc_io::read_receiver_mode();
+    live.rc_signal_lost = unfiltered_mode == DRIVE_MODE_FAILSAFE;
     count_usb_timeout(now);
     receiver_failsafe = receiver_mode == DRIVE_MODE_FAILSAFE;
     if (control_signal_estop) {
-        const DriveMode unfiltered_mode = rc_io::read_receiver_mode();
         if (receiver_mode == DRIVE_MODE_POWERDOWN && unfiltered_mode == DRIVE_MODE_POWERDOWN)
             recovery_powerdown_seen = true;
         if (recovery_powerdown_seen && receiver_mode == DRIVE_MODE_STOP && unfiltered_mode == DRIVE_MODE_STOP) {

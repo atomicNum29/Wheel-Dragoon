@@ -456,7 +456,8 @@ static void capture_state(uint32_t now_ms)
         (live.driver_powerdown ? wire::system::POWERDOWN : 0) | (live.driver_starting ? wire::system::DRIVER_STARTING : 0) |
         (drive_allowed ? wire::system::DRIVE_ALLOWED : 0) | (motion.calibrated() ? wire::system::STEERING_VALID : 0) |
         (applied_valid ? wire::system::APPLIED_VALID : 0) |
-        (request_valid && live.requested_motion.pivot ? wire::system::REQUEST_PIVOT : 0);
+        (request_valid && live.requested_motion.pivot ? wire::system::REQUEST_PIVOT : 0) |
+        (live.rc_signal_lost ? wire::system::RC_SIGNAL_LOST : 0);
     little_endian::write_u16(p + wire::system::FLAGS, flags);
     little_endian::write_u16(p + wire::system::ERROR, build_system_error_bits(fault) | tx_errors);
     p[wire::system::VALIDITY] = telemetry_validity_bits();

@@ -154,7 +154,7 @@ RC mode는 STOP=0, MANUAL=1, AUTO=2, POWERDOWN=3, PIVOT=4, FAILSAFE=5다.
 모션 상태는 STARTUP=0, DRIVING=1, BRAKING=2, STEERING=3, SETTLING=4, EMERGENCY_STOP=5다.
 `mode = packet[8] & 0x0F`, `transition = (packet[8] >> 4) & 0x0F`로 분리한다.
 예를 들어 PIVOT/STEERING은 `0x34`, AUTO/EMERGENCY_STOP은 `0x52`다.
-RC mode의 5..15와 모션 상태의 6..15는 예약이다.
+RC mode의 6..15와 모션 상태의 6..15는 예약이다.
 
 시간·uptime·누락 누적값·개별 휠 지령은 싣지 않는다. 이전 미확정 초안은 이 29바이트 규격으로 대체했다.
 
@@ -177,7 +177,16 @@ POWERDOWN·드라이버 시작 대기에도 송신하고 BRIDGE/RESETTING에서�
 | 10 | 조향 보정 유효; 0이면 각도 필드를 실제 PWM 출력으로 해석하지 않음 |
 | 11 | 적용 지령 v·θ·ω와 적용 모드가 유효함 |
 | 12 | 목표 운동 모드 PIVOT; bit4=1일 때 해석, 0이면 일반 v·θ |
-| 13..15 | 예약 0 |
+| 13 | RC_SIGNAL_LOST: 최신 유효 모드 펄스가 1900 µs 이상인 수신기 failsafe 상태 |
+| 14..15 | 예약 0 |
+
+`RC_SIGNAL_LOST`는 제어 권한·비상 정지 래치와 독립적인 현재 RC 신호 상실 표시다.
+수신기는 송신기 신호 상실 시 모드 채널에 2000 µs를 계속 출력하며, 최신 유효 원시 펄스의
+모드가 failsafe인지 보고한다. AUTO 제어권을 유지하고 `DRIVE_ALLOWED=1`이어도 이 bit는 1이다.
+정상 범위의 RC 모드 펄스가 돌아오면 bit는 0으로 복귀하며, 비상 정지 래치가 남아 있어도
+RC 복구 사실을 표시한다. 펄스 수신 중단 타이머나 비상 정지 이력 플래그는 아니다.
+패킷 크기(29바이트), flags 위치(offset 9, u16), 버전은 기존과 같다.
+CLI 상태 출력에서도 `rc_signal_lost=0/1`로 표시한다.
 
 MANUAL 목표는 후륜 축 중앙 v와 가상 전륜 중앙 θ다. PIVOT은 v=θ=0, ω가 유효하다.
 AUTO에서도 bit4/12로 목표의 유효성과 운동 모드를 판별한다. RC mode=AUTO만으로 일반/PIVOT을 구분할 수 없다.

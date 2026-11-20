@@ -51,6 +51,7 @@ constexpr uint16_t POWERDOWN = 1u << 7, DRIVER_STARTING = 1u << 8;
 constexpr uint16_t DRIVE_ALLOWED = 1u << 9, STEERING_VALID = 1u << 10;
 constexpr uint16_t APPLIED_VALID = 1u << 11;
 constexpr uint16_t REQUEST_PIVOT = 1u << 12;
+constexpr uint16_t RC_SIGNAL_LOST = 1u << 13;
 constexpr uint8_t LF_VALID = 1u << 0, RF_VALID = 1u << 1;
 constexpr uint8_t LR_VALID = 1u << 2, RR_VALID = 1u << 3;
 constexpr uint8_t VOLTAGE_A_VALID = 1u << 4, VOLTAGE_B_VALID = 1u << 5;

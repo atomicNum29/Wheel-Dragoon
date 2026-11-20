@@ -138,5 +138,5 @@ def format_telemetry(data: dict) -> str:
     return (f"STATE session={data['session']} seq={data['seq']} mode={MODES[data['mode']]} "
             f"state={STATES.get(data['state'], 'UNKNOWN')} motion={TRANSITIONS[data['transition']]} "
             f"gate={int(bool(flags & (1 << 9)))} estop={int(bool(flags & (1 << 5)))} "
-            f"timeout={int(bool(flags & (1 << 6)))} errors=0x{data['errors']:04X} "
+            f"timeout={int(bool(flags & (1 << 6)))} rc_signal_lost={int(bool(flags & (1 << 13)))} errors=0x{data['errors']:04X} "
             f"flags=0x{flags:04X} valid=0x{data['validity']:02X} request[{requested}] applied[{applied}]")

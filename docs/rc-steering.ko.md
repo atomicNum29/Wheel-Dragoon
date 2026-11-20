@@ -94,6 +94,9 @@ STOP 구간을 통과한 것만으로는 해제하지 않는다.
 USB 상태에서 정상 유지 중에는 mode=AUTO(2), 제어 신호 상실 비상 정지에서는
 mode=FAILSAFE(5), motor state=ESTOP(3), ESTOP_ACTIVE=1, POWERDOWN=1로 보고한다.
 복구 절차 중 POWERDOWN을 선택한 동안 mode=POWERDOWN(3)이며 비상 정지는 유지한다.
+상태 flags bit13 `RC_SIGNAL_LOST`는 최신 유효 원시 모드 펄스의 failsafe 여부를 따로 보고한다.
+정상 USB AUTO를 유지하는 동안에도 RC가 끊겼으면 1이며, RC가 복구되면 비상 정지 래치와
+무관하게 0으로 돌아온다.
 
 MANUAL/PIVOT에서는 호스트 enable/estop 플래그와 500 ms 명령 timeout을 구동 판단에 사용하지 않는다.
 AUTO에서는 진입 이후 수락한 `0x03`이 없거나 마지막 수락 후 500 ms를 초과하면 timeout이다.
